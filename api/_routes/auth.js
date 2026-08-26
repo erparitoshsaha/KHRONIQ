@@ -240,7 +240,7 @@ router.post('/forgot-password', async (req, res) => {
     user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
     await user.save();
 
-    const resetUrl = `${process.env.VERCEL ? 'https://zenith-sigma-ruby.vercel.app' : (process.env.FRONTEND_URL || 'http://localhost:5173')}/reset-password/${rawToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${rawToken}`;
 
     await sendEmail({
       to: user.email,
