@@ -174,18 +174,16 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                       {link.label}
                     </button>
                     
-                    {/* FULL SCREEN WIDE SOLID LUXURY MEGA MENU */}
-                    <div className={`fixed left-0 right-0 w-screen bg-white border-y border-gray-200 shadow-2xl p-0 hidden group-hover:block z-50 text-left transition-all duration-300 top-[80px] left-0 ${megaMenuForceClosed ? '!hidden' : ''}`}>
+                    {/* FULL SCREEN WIDE LIGHT GLASSMORPHIC (LIQUIFIED) MEGA MENU */}
+                    <div className={`fixed left-0 right-0 w-screen bg-white/40 backdrop-blur-2xl border-y border-white/20 shadow-[0_25px_50px_rgba(0,0,0,0.15)] p-0 hidden group-hover:block z-50 text-left transition-all duration-300 top-[80px] left-0 ${megaMenuForceClosed ? '!hidden' : ''}`}>
                       <div className="max-w-7xl mx-auto px-8 py-10 grid grid-cols-12 gap-10">
                         {/* Left Column: Category selectors */}
-                        <div className="col-span-3 border-r border-gray-200 pr-6 flex flex-col space-y-3">
+                        <div className="col-span-3 border-r border-neutral-200/40 pr-6 flex flex-col space-y-3">
                           <button
                             type="button"
                             onMouseEnter={() => setActiveSubMenu('price')}
-                            className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 cursor-pointer ${
-                              activeSubMenu === 'price'
-                                ? 'bg-black text-white font-black shadow-sm'
-                                : 'text-gray-700 hover:text-black hover:bg-gray-100 border border-transparent'
+                            className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${
+                              activeSubMenu === 'price' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
                             }`}
                           >
                             <span>Shop By Price</span>
@@ -194,10 +192,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                           <button
                             type="button"
                             onMouseEnter={() => setActiveSubMenu('recipient')}
-                            className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 cursor-pointer ${
-                              activeSubMenu === 'recipient'
-                                ? 'bg-black text-white font-black shadow-sm'
-                                : 'text-gray-700 hover:text-black hover:bg-gray-100 border border-transparent'
+                            className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${
+                              activeSubMenu === 'recipient' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
                             }`}
                           >
                             <span>Watches For Recipient</span>
@@ -209,7 +205,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                         <div className="col-span-5 px-6">
                           {activeSubMenu === 'price' && (
                             <div className="space-y-6">
-                              <h4 className="text-[10px] font-black tracking-[0.25em] text-neutral-950 uppercase border-b border-gray-200 pb-2">Shop By Price</h4>
+                              <h4 className="text-[10px] font-black tracking-[0.25em] text-black uppercase">Shop By Price</h4>
                               <div className="grid grid-cols-2 gap-4">
                                 {[
                                   { label: 'Under ₹50,000', maxPrice: 1000 },
@@ -224,7 +220,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                                       setMegaMenuForceClosed(true);
                                       onPageChange('shop', { maxPrice: p.maxPrice });
                                     }}
-                                    className="text-left text-xs text-gray-800 hover:text-luxury-red transition duration-150 font-bold uppercase tracking-wider py-1.5 cursor-pointer block border-b border-transparent hover:border-luxury-red w-fit"
+                                    className="text-left text-xs text-black hover:text-black/60 transition duration-150 font-bold uppercase tracking-wider py-1.5 cursor-pointer block border-b border-transparent hover:border-black/40 w-fit"
                                   >
                                     {p.label}
                                   </button>
@@ -235,8 +231,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
 
                           {activeSubMenu === 'recipient' && (
                             <div className="space-y-6">
-                              <h4 className="text-[10px] font-black tracking-[0.25em] text-neutral-950 uppercase border-b border-gray-200 pb-2">Watches For Recipient</h4>
-                              {/* 2 Column Recipient Layout */}
+                              <h4 className="text-[10px] font-black tracking-[0.25em] text-black uppercase">Watches For Recipient</h4>
+                              {/* 2 Column Recipient Layout to match screenshot */}
                               <div className="grid grid-cols-2 gap-x-12 gap-y-4">
                                 <div className="flex flex-col space-y-3.5">
                                   {[
@@ -251,7 +247,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                                         setMegaMenuForceClosed(true);
                                         onPageChange('shop', r.filter);
                                       }}
-                                      className="text-left text-xs text-gray-800 hover:text-luxury-red transition duration-150 font-bold uppercase tracking-wider py-1.5 cursor-pointer block border-b border-transparent hover:border-luxury-red w-fit"
+                                      className="text-left text-xs text-black hover:text-black/60 transition duration-150 font-bold uppercase tracking-wider py-1.5 cursor-pointer block border-b border-transparent hover:border-black/40 w-fit"
                                     >
                                       {r.label}
                                     </button>
@@ -270,7 +266,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                                         setMegaMenuForceClosed(true);
                                         onPageChange('shop', r.filter);
                                       }}
-                                      className="text-left text-xs text-gray-800 hover:text-luxury-red transition duration-150 font-bold uppercase tracking-wider py-1.5 cursor-pointer block border-b border-transparent hover:border-luxury-red w-fit"
+                                      className="text-left text-xs text-black hover:text-black/60 transition duration-150 font-bold uppercase tracking-wider py-1.5 cursor-pointer block border-b border-transparent hover:border-black/40 w-fit"
                                     >
                                       {r.label}
                                     </button>
@@ -283,21 +279,20 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
 
                         {/* Right Column: Looking for a Gift card */}
                         <div className="col-span-4 relative overflow-hidden rounded-xl bg-neutral-950 text-white flex flex-col justify-between p-6 min-h-[220px] shadow-lg group/gift">
-                          <div className="absolute inset-0 bg-cover bg-center opacity-60 scale-100 group-hover/gift:scale-105 transition duration-700" style={{ backgroundImage: "url('/assets/media__1783681299347.png')" }} />
+                          <div className="absolute inset-0 bg-cover bg-center opacity-60 scale-100 group-hover/gift:scale-105 transition duration-700" style={{ backgroundImage: "url('/assets/gift_partner.jpg')" }} />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                           <div className="relative z-10 space-y-1">
                             <span className="text-[9px] font-bold tracking-[0.3em] uppercase text-luxury-gold">Curated Gifting</span>
                             <h4 className="font-serif text-2xl font-black tracking-wider leading-tight text-white mt-1">LOOKING<br/>for<br/>A GIFT?</h4>
                           </div>
                           <button
-                            type="button"
                             onClick={() => {
                               localStorage.setItem('khroniq_is_gifting_journey', 'true');
                               onPageChange('gifting');
                             }}
-                            className="relative z-10 w-full py-3 bg-white hover:bg-neutral-200 transition duration-300 shadow-md cursor-pointer rounded-lg flex items-center justify-center"
+                            className="relative z-10 w-full py-3 bg-white text-neutral-950 font-black text-xs uppercase tracking-widest rounded-lg hover:bg-neutral-800 hover:text-white transition duration-300 shadow-md cursor-pointer"
                           >
-                            <span className="text-neutral-950 font-black text-xs uppercase tracking-widest">Shop Gifting Solutions</span>
+                            Shop Gifting Solutions
                           </button>
                         </div>
                       </div>
@@ -321,23 +316,23 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
           </nav>
 
           {/* Center Logo */}
-          <div className="flex-1 md:flex-none flex justify-center items-center">
+          <div className="flex-1 md:flex-none flex justify-center items-center min-w-0 px-2">
             <button 
               onClick={() => {
                 localStorage.setItem('khroniq_is_gifting_journey', 'false');
                 onPageChange('home');
               }} 
-              className="flex flex-col items-center gap-1 transition duration-300 cursor-pointer py-1"
+              className="flex flex-col items-center gap-0.5 sm:gap-1 transition duration-300 cursor-pointer py-1 max-w-[130px] sm:max-w-none"
             >
               <img 
                 src="/assets/logo_icon.png" 
                 alt="KHRONIQ Logo" 
-                className="w-10 h-10 md:w-12 md:h-12 object-contain" 
+                className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain shrink-0" 
               />
               <img 
                 src="/assets/logo_text.png" 
                 alt="KHRONIQ" 
-                className="h-4 md:h-5 object-contain" 
+                className="h-3.5 sm:h-4 md:h-5 max-w-[100px] sm:max-w-[120px] md:max-w-none object-contain shrink-0" 
               />
             </button>
           </div>

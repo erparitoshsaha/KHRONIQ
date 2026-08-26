@@ -1,23 +1,14 @@
 import 'dotenv/config';
-import dns from 'dns';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import helmet from 'helmet';
 
-// Fix Node.js DNS SRV lookup (querySrv ECONNREFUSED) across environments (local & serverless)
-try {
-  dns.setDefaultResultOrder('ipv4first');
-  dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch (e) {
-  // ignore fallback errors
-}
-
-// Import Models
-import Product from './_models/Product.js';
-import User from './_models/User.js';
-import Coupon from './_models/Coupon.js';
-import brandUpdateModel from './_models/BrandUpdate.js'; // Let's keep it clean
-import Blog from './_models/Blog.js';
+// Import Utilities & Middlewares
+import validateEnv from './utils/validateEnv.js';
+import connectDB, { isDBConnected } from './utils/db.js';
+import errorHandler from './_middleware/errorHandler.js';
+import { apiLimiter } from './_middleware/rateLimiter.js';
 
 // Import Routes
 import authRoutes from './_routes/auth.js';
@@ -35,60 +26,107 @@ import adminRoutes from './_routes/admin.js';
 import brandUpdateRoutes from './_routes/brandUpdates.js';
 import warrantyRoutes from './_routes/warranty.js';
 import blogRoutes from './_routes/blogs.js';
+import contactRoutes from './_routes/contact.js';
+import newsletterRoutes from './_routes/newsletter.js';
+
+// 1. Validate environment configuration on boot
+validateEnv();
 
 const app = express();
 
-// Database Connection Status Variables
-let dbConnectionError = null;
-const mongoURI = process.env.MONGODB_URI || process.env.MONGODB_FALLBACK_URI;
+// 2. Security Headers via Helmet
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", 'https://checkout.razorpay.com', 'https://api.razorpay.com'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https://res.cloudinary.com', 'https://*.razorpay.com'],
+        connectSrc: ["'self'", 'https://api.razorpay.com', 'https://lumberjack.razorpay.com', 'https://res.cloudinary.com'],
+        frameSrc: ["'self'", 'https://api.razorpay.com', 'https://checkout.razorpay.com'],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: []
+      }
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' }
+  })
+);
 
-let dbConnectingPromise = null;
+// 3. Explicit CORS Whitelisting
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000'
+].filter(Boolean);
 
-const connectDb = async () => {
-  if (!mongoURI) {
-    console.error('MONGODB_URI is not defined in environment variables.');
-    return;
-  }
-  try {
-    await mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 5000 });
-  } catch (err) {
-    console.warn('MongoDB connection retry...', err.message);
-    try {
-      await mongoose.disconnect();
-    } catch (e) {
-      // ignore disconnect error
-    }
-    await mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 10000 });
-  }
-};
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server) or matching allowed origins
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('CORS policy does not allow access from this origin.'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-razorpay-signature']
+  })
+);
 
+// 4. Request Body Limit (1MB JSON)
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// 5. Database Connection Middleware
 const ensureDb = async (req, res, next) => {
-  if (mongoose.connection.readyState === 1) {
-    return next();
-  }
+  // Allow health check to evaluate DB without blocking
+  if (req.path === '/api/health') return next();
+
   try {
-    if (!dbConnectingPromise) {
-      dbConnectingPromise = connectDb().then(async () => {
-        dbConnectionError = null;
-        await seedDatabase();
-      }).catch((err) => {
-        dbConnectingPromise = null;
-        throw err;
-      });
-    }
-    await dbConnectingPromise;
+    await connectDB();
     next();
   } catch (err) {
-    console.error('DB not ready:', err);
-    dbConnectionError = err.message || err.toString();
-    return res.status(503).json({ success: false, message: 'Database connection failed. Check MONGODB_URI env variable.' });
+    console.error('Database connection failed during request processing:', err.message);
+    return res.status(503).json({
+      success: false,
+      message: 'Database service is currently unavailable. Please try again shortly.'
+    });
   }
 };
 
-// Middlewares
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(ensureDb);
+
+// 6. Global API Rate Limiter
+app.use('/api', apiLimiter);
+
+// 7. Route Handlers
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/brands', brandRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/admin/media', mediaRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/brand-updates', brandUpdateRoutes);
+app.use('/api/warranty', warrantyRoutes);
+app.use('/api/blogs', blogRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/newsletter', newsletterRoutes);
+
+// Base Endpoint
+app.get('/api', (req, res) => {
+  res.json({ message: 'Welcome to the KHRONIQ Atelier API' });
+});
 
 // Production-safe health endpoint
 app.get('/api/health', (req, res) => {
@@ -105,90 +143,25 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-app.use(ensureDb);
-
-// Vercel Serverless Routing URL Restorer
-app.use((req, res, next) => {
-  if (req.headers['x-now-route-asis'] || process.env.VERCEL) {
-    req.url = req.originalUrl;
-  }
-  next();
-});
-
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/coupons', couponRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/wishlist', wishlistRoutes);
-app.use('/api/brands', brandRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/admin/media', mediaRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/brand-updates', brandUpdateRoutes);
-app.use('/api/warranty', warrantyRoutes);
-app.use('/api/blogs', blogRoutes);
-
-
-// Base Endpoint
-app.get('/api', (req, res) => {
-  res.json({ message: 'Welcome to the KHRONIQ API' });
-});
-
-// Database Seed Function
-const seedDatabase = async () => {
-  try {
-    // Startup seeding is completed. Product persistence is fully managed by admin dashboard.
-    
-    // Seed Default Blogs (only on first initialization)
-    const blogCount = await Blog.countDocuments();
-    if (blogCount === 0) {
-      const initialBlogs = [
-        {
-          title: "The Art of Swadeshi Horology",
-          content: "Behind the scenes of KHRONIQ's Le Locle and Indian assembly processes, bringing high-precision chronometer watches to modern watch enthusiasts. Discover how we balance heritage design with modern components.",
-          author: "Vikram R. Mehta",
-          image: "/assets/gentleman_lifestyle.png",
-          category: "Horology"
-        },
-        {
-          title: "Choosing the Right Case Finish",
-          content: "A guide on selecting between polished stainless steel, rose gold PVD, and matte ceramic finishes for your bespoke timepiece. Learn which finish best suits your daily attire and lifestyle.",
-          author: "Ananya Sharma",
-          image: "/assets/aurex_lifestyle.png",
-          category: "Guides"
-        }
-      ];
-      await Blog.insertMany(initialBlogs);
-      console.log('Database Seeding: Default Blogs successfully seeded!');
-    }
-
-  } catch (error) {
-    console.error('Error seeding database:', error);
-  }
-};
-
-// Connect on startup in non-Vercel mode (local dev)
-if (!process.env.VERCEL) {
-  mongoose.connect(mongoURI).then(async () => {
-    console.log('Successfully connected to MongoDB');
-    await seedDatabase();
-  }).catch((err) => {
-    console.error('MongoDB connection error:', err);
-  });
-}
+// 8. Global Express Error Handler Middleware
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-// Only listen when running locally
+// Listen when running directly on VPS or local Node process
 if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+  connectDB()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`KHRONIQ API Server running on port ${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error('Initial database connection failed on boot:', err.message);
+      app.listen(PORT, () => {
+        console.log(`KHRONIQ API Server running on port ${PORT} (Database pending connection)`);
+      });
+    });
 }
 
 export default app;

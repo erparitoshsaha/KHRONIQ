@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { addToCart, toggleWishlist, addReview, selectCurrentCurrency, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import ProductCard from '../components/ProductCard';
 import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { getExpectedDeliveryDate } from './Checkout';
+import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 
 export default function ProductDetail({ params, onPageChange }) {
   const dispatch = useDispatch();
@@ -61,6 +61,51 @@ export default function ProductDetail({ params, onPageChange }) {
     });
   };
 
+  const isWishlisted = product ? wishlist.includes(product.id) : false;
+
+  useEffect(() => {
+    if (product) {
+      document.title = `${product.name} | KHRONIQ`;
+
+      const scriptId = 'product-jsonld';
+      let scriptTag = document.getElementById(scriptId);
+      if (!scriptTag) {
+        scriptTag = document.createElement('script');
+        scriptTag.id = scriptId;
+        scriptTag.type = 'application/ld+json';
+        document.head.appendChild(scriptTag);
+      }
+
+      const productSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.name,
+        image: product.image ? [product.image] : [],
+        description: product.description || `${product.name} luxury timepiece by KHRONIQ`,
+        sku: product.id,
+        brand: {
+          '@type': 'Brand',
+          name: product.brand || 'KHRONIQ'
+        },
+        offers: {
+          '@type': 'Offer',
+          url: window.location.href,
+          priceCurrency: 'INR',
+          price: product.price,
+          availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+          itemCondition: 'https://schema.org/NewCondition'
+        }
+      };
+
+      scriptTag.textContent = JSON.stringify(productSchema);
+    }
+
+    return () => {
+      const existing = document.getElementById('product-jsonld');
+      if (existing) existing.remove();
+    };
+  }, [product]);
+
   if (!product) {
     return (
       <div className="text-center py-20 space-y-4">
@@ -75,10 +120,8 @@ export default function ProductDetail({ params, onPageChange }) {
     );
   }
 
-  const isWishlisted = wishlist.includes(product.id);
-
   // Calculate average rating
-  const approvedReviews = product.reviews?.filter(r => r.status === 'approved') || [];
+  const approvedReviews = product?.reviews?.filter(r => r.status === 'approved') || [];
   const averageRating = approvedReviews.length > 0
     ? (approvedReviews.reduce((sum, r) => sum + r.rating, 0) / approvedReviews.length).toFixed(1)
     : null;
@@ -341,7 +384,7 @@ export default function ProductDetail({ params, onPageChange }) {
               />
               <button
                 type="submit"
-                className="px-5 py-2 bg-luxury-text text-white text-xs font-bold uppercase tracking-widest hover:bg-black/80 transition cursor-pointer rounded-sm"
+                className="px-5 py-2 bg-luxury-gold text-luxury-dark text-xs font-bold uppercase tracking-widest hover:bg-luxury-gold-dark transition cursor-pointer"
               >
                 Check
               </button>

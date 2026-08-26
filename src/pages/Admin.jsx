@@ -27,11 +27,11 @@ import {
 } from 'lucide-react';
 
 const PRESET_STRAPS = [
-  { name: 'Tan Leather', image: '/assets/strap_leather_tan.jpg' },
-  { name: 'Diamond Silver Link', image: '/assets/strap_silver_diamond.jpg' },
-  { name: 'Classic Gold Chain', image: '/assets/strap_gold_chain.jpg' },
-  { name: 'Forest Green Rubber', image: '/assets/strap_rubber_green.jpg' },
-  { name: 'Brushed Steel Link', image: '/assets/strap_steel_link.jpg' }
+  { name: 'Tan Leather', image: '/assets/wt4.png' },
+  { name: 'Diamond Silver Link', image: '/assets/wt3.png' },
+  { name: 'Classic Gold Chain', image: '/assets/wt5.png' },
+  { name: 'Forest Green Rubber', image: '/assets/wt8.png' },
+  { name: 'Brushed Steel Link', image: '/assets/watch_black_steel.png' }
 ];
 
 const generateUnitCodePair = () => ({
@@ -110,6 +110,10 @@ export default function Admin({ onPageChange }) {
   const currentUser = useSelector(state => state.watch.currentUser);
   const currentCurrency = useSelector(selectCurrentCurrency);
   const blogs = useSelector(state => state.watch.blogs || []);
+
+  useEffect(() => {
+    document.title = 'Master Atelier Dashboard | KHRONIQ';
+  }, []);
 
   // Active Admin Sub-Tab
   const [activeTab, setActiveTab] = useState('analytics'); // analytics | products | orders | coupons | reviews | updates | blogs
@@ -1579,7 +1583,7 @@ const handleEditImageUpload = async (e) => {
                   />
                   <input
                     type="text"
-                    placeholder="Or enter image path/URL manually (e.g. /assets/watch_uploaded_1.jpg)"
+                    placeholder="Or enter image path/URL manually (e.g. /assets/watch_red.jpg)"
                     value={newProduct.image || ''}
                     onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
                     className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 mt-1.5 focus:outline-none focus:border-luxury-gold"
@@ -2174,7 +2178,7 @@ const handleEditImageUpload = async (e) => {
                     />
                     <input
                       type="text"
-                      placeholder="Or enter image path/URL manually (e.g. /assets/watch_uploaded_1.jpg)"
+                      placeholder="Or enter image path/URL manually (e.g. /assets/watch_red.jpg)"
                       value={editForm.image || ''}
                       onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
                       className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 mt-1.5 focus:outline-none focus:border-luxury-gold"
@@ -3230,7 +3234,7 @@ const handleEditImageUpload = async (e) => {
                     value={newBlog.image}
                     onChange={(e) => setNewBlog({ ...newBlog, image: e.target.value })}
                     className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 mt-1.5 focus:outline-none"
-                    placeholder="Or enter image path/URL manually (e.g. /assets/gentleman_lifestyle.png)"
+                    placeholder="Or enter image path/URL manually (e.g. /assets/lifestyle_black_cafe.jpg)"
                   />
                   {uploadingBlogImage && <p className="text-[10px] text-luxury-gold">Uploading...</p>}
                   {newBlog.image && !uploadingBlogImage && (
@@ -3369,7 +3373,7 @@ const handleEditImageUpload = async (e) => {
                 {blogs.map((blog) => (
                   <div key={blog.id || blog._id} className="bg-luxury-gray border border-white/5 p-4 rounded-md flex gap-4 items-start">
                     <img 
-                      src={blog.image || '/assets/media__1782899491225.jpg'} 
+                      src={blog.image || '/assets/lifestyle_black_cafe.jpg'} 
                       alt={blog.title} 
                       className="w-20 h-20 object-cover rounded border border-white/10 bg-black flex-shrink-0"
                     />

@@ -24,6 +24,20 @@ export default function Static({ params, _onPageChange }) {
     }
   }, [params]);
 
+  useEffect(() => {
+    const titles = {
+      about: 'About Our Heritage | KHRONIQ',
+      contact: 'Contact Concierge | KHRONIQ',
+      faq: 'Frequently Asked Questions | KHRONIQ',
+      terms: 'Terms of Service | KHRONIQ',
+      privacy: 'Privacy Policy | KHRONIQ',
+      shipping: 'Shipping & Delivery | KHRONIQ',
+      returns: 'Returns & Exchanges | KHRONIQ',
+      blogs: 'Horology Journal & Articles | KHRONIQ'
+    };
+    document.title = titles[activeTab] || 'Atelier Information | KHRONIQ';
+  }, [activeTab]);
+
   const handleContactSubmit = (e) => {
     e.preventDefault();
     setContactSuccess(true);
@@ -1829,7 +1843,7 @@ export default function Static({ params, _onPageChange }) {
               <div className="h-64 bg-luxury-bg border border-luxury-text/10 rounded flex items-center justify-center p-6 relative overflow-hidden">
                 <Compass className="absolute text-luxury-gold-dark/5 w-80 h-80 -right-20 -bottom-20 rotate-12" />
                 <img
-                  src="/assets/media__1782899491320.jpg"
+                  src="/assets/spotlight_red_angled.png"
                   alt="Swiss manufacture"
                   className="max-h-full max-w-full object-contain relative z-10 filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.15)]"
                 />
@@ -2338,7 +2352,7 @@ export default function Static({ params, _onPageChange }) {
                   <div key={blog.id || blog._id} className="group border border-luxury-text/10 hover:border-luxury-gold-dark/40 rounded overflow-hidden flex flex-col bg-luxury-bg/5 transition duration-300">
                     <div className="h-44 overflow-hidden relative bg-black">
                       <img 
-                        src={blog.image || '/assets/media__1782899491225.jpg'} 
+                        src={blog.image || '/assets/lifestyle_black_cafe.jpg'} 
                         alt={blog.title} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
                       />

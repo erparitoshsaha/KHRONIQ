@@ -553,18 +553,20 @@ function HeroVideoCycler() {
 
       {/* ── Slide Arrows ── */}
       <button
-        onClick={handlePrev}
+        type="button"
+        onClick={(e) => { e.stopPropagation(); handlePrev(); }}
         aria-label="Previous video"
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/30 backdrop-blur-sm border border-white/25 text-white flex items-center justify-center hover:bg-black/55 transition duration-200 cursor-pointer"
+        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-black/40 backdrop-blur-md border border-white/30 text-white flex items-center justify-center hover:bg-black/70 active:scale-95 transition-all duration-200 cursor-pointer pointer-events-auto touch-manipulation shadow-lg"
       >
-        <ChevronLeft size={18} />
+        <ChevronLeft size={22} />
       </button>
       <button
-        onClick={handleNext}
+        type="button"
+        onClick={(e) => { e.stopPropagation(); handleNext(); }}
         aria-label="Next video"
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/30 backdrop-blur-sm border border-white/25 text-white flex items-center justify-center hover:bg-black/55 transition duration-200 cursor-pointer"
+        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-black/40 backdrop-blur-md border border-white/30 text-white flex items-center justify-center hover:bg-black/70 active:scale-95 transition-all duration-200 cursor-pointer pointer-events-auto touch-manipulation shadow-lg"
       >
-        <ChevronRight size={18} />
+        <ChevronRight size={22} />
       </button>
 
       {/* ── Slide position indicator ── */}
@@ -596,23 +598,37 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages }) {
     {
       name: 'CRIMSON RED',
       fullName: 'Khroniq Crimson Red',
-      lifestyleImg: '/assets/slide_red_lifestyle.jpg',
-      productImg: '/assets/slide_red_product.png',
-      lifestyleStyle: { filter: 'brightness(0.9) contrast(1.05)', backgroundPosition: 'center center' },
+      lifestyleImg: homeImages.hero_slide1_lifestyle || '/assets/lifestyle_red.jpg',
+      productImg: homeImages.hero_slide1_product || '/assets/watch_red.jpg',
+      lifestyleStyle: { filter: 'brightness(0.82) contrast(1.1) saturate(1.05)', backgroundPosition: 'center 40%' },
     },
     {
       name: 'EMERALD GREEN',
       fullName: 'Khroniq Emerald Green',
-      lifestyleImg: '/assets/slide_green_lifestyle.jpg',
-      productImg: '/assets/slide_green_product.png',
-      lifestyleStyle: { filter: 'brightness(0.9) contrast(1.05)', backgroundPosition: 'center center' },
+      lifestyleImg: homeImages.hero_slide2_lifestyle || '/assets/slide_green_lifestyle.jpg',
+      productImg: homeImages.hero_slide2_product || '/assets/watch_green.jpg',
+      lifestyleStyle: { filter: 'brightness(0.78) contrast(1.12) saturate(1.08)', backgroundPosition: 'center 35%' },
+    },
+    {
+      name: 'MIDNIGHT BLACK',
+      fullName: 'Khroniq Midnight Black',
+      lifestyleImg: homeImages.hero_slide3_lifestyle || '/assets/lifestyle_black_cafe.jpg',
+      productImg: homeImages.hero_slide3_product || '/assets/watch_black_steel.png',
+      lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
+    },
+    {
+      name: 'COBALT BLUE',
+      fullName: 'Khroniq Cobalt Blue',
+      lifestyleImg: homeImages.hero_slide4_lifestyle || '/assets/lifestyle_blue_window.jpg',
+      productImg: homeImages.hero_slide4_product || '/assets/watch_blue_brown.png',
+      lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
     },
     {
       name: 'STERLING SILVER',
       fullName: 'Khroniq Sterling Silver',
-      lifestyleImg: '/assets/slide_white_lifestyle.jpg',
-      productImg: '/assets/slide_white_product.png',
-      lifestyleStyle: { filter: 'brightness(0.9) contrast(1.05)', backgroundPosition: 'center center' },
+      lifestyleImg: homeImages.hero_slide5_lifestyle || '/assets/lifestyle_pink_cafe.jpg',
+      productImg: homeImages.hero_slide5_product || '/assets/slide_white_product.png',
+      lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
     }
   ];
 
@@ -773,22 +789,22 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages }) {
 
 const defaultHomeImages = {
   gender_men: '/assets/men_watches.jpg',
-  gender_women: '/assets/women_watches_beach.jpg',
+  gender_women: '/assets/women_watches_beach.jpeg',
   collection_khronomaster: '/assets/watch_green.jpg',
   collection_defy: '/assets/watch_red.jpg',
   collection_heritage: '/assets/watch_green.jpg',
-  hero_slide1_lifestyle: '/assets/lifestyle_red.png',
+  hero_slide1_lifestyle: '/assets/lifestyle_red.jpg',
   hero_slide1_product: '/assets/watch_red.jpg',
-  hero_slide2_lifestyle: '/assets/spotlight_green_side.jpeg',
+  hero_slide2_lifestyle: '/assets/slide_green_lifestyle.jpg',
   hero_slide2_product: '/assets/watch_green.jpg',
   hero_slide3_lifestyle: '/assets/lifestyle_black_cafe.jpg',
   hero_slide3_product: '/assets/watch_black_steel.png',
   hero_slide4_lifestyle: '/assets/lifestyle_blue_window.jpg',
   hero_slide4_product: '/assets/watch_blue_brown.png',
   hero_slide5_lifestyle: '/assets/lifestyle_pink_cafe.jpg',
-  hero_slide5_product: '/assets/lifestyle_silver_new.png',
+  hero_slide5_product: '/assets/slide_white_product.png',
   khronomaster_professional: '/assets/spotlight_red_angled.png',
-  dive_deeper_tile1: '/assets/spotlight_green_side.png',
+  dive_deeper_tile1: '/assets/spotlight_green_side.jpeg',
   dive_deeper_tile2: '/assets/spotlight_red_overhead.png',
   khroniq_updates: '/assets/khroniq_updates_bg.jpg'
 };
@@ -797,11 +813,14 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   const products = useSelector(state => state.watch.products);
   const [homeImages, setHomeImages] = useState(defaultHomeImages);
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
+  const spotlightImage = homeImages.khronomaster_professional || "/assets/spotlight_red_angled.png";
   const spotlightImages = [
-    "/assets/spotlight_red_slate.jpg",
-    "/assets/spotlight_green_stone.jpg",
-    "/assets/spotlight_white_steel.jpg",
-    "/assets/spotlight_black_roman.png",
+    spotlightImage,
+    "/assets/spotlight_green_side.jpeg",
+    "/assets/spotlight_red_overhead.png",
+    // "/assets/watch_uploaded_2.png",
+    "/assets/watch_green.jpg",
+    "/assets/watch_red.jpg",
   ];
 
   const [currentSpotlight, setCurrentSpotlight] = useState(0);
@@ -813,6 +832,10 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     return () => clearInterval(interval);
   }, []);
   const currentCurrency = useSelector(selectCurrentCurrency);
+
+  useEffect(() => {
+    document.title = 'KHRONIQ — Haute Horlogerie & Precision Timepieces';
+  }, []);
 
   useEffect(() => {
     fetch('/api/admin/media/public')
@@ -1104,8 +1127,8 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
         {/* Video — deepest layer, drifts opposite — cycles video 1 → video 2 → … */}
         <motion.div className="absolute inset-0 z-0" style={{ x: vidX, y: vidY, scale: 1.06 }}>
           <HeroVideoCycler />
-          <div className="absolute inset-0 bg-black/28" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(0,0,0,0.65)_100%)]" />
+          <div className="absolute inset-0 bg-black/28 pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(0,0,0,0.65)_100%)] pointer-events-none" />
           {/* Masking overlay to cover the bottom-right Gemini watermark on the video */}
           <div className="absolute bottom-0 right-0 w-64 h-48 sm:w-[28rem] sm:h-[20rem] bg-gradient-to-br from-transparent via-black/90 to-black blur-2xl sm:blur-3xl pointer-events-none z-10 opacity-95" />
         </motion.div>
@@ -1129,19 +1152,19 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
 
         {/* ── ALL content as one unified block — follows cursor ── */}
         <motion.div
-          className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-12 gap-8 items-center"
+          className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-12 gap-8 items-center pointer-events-none"
           style={{ x: contentX, y: contentY }}
         >
-          <div className="col-span-1 sm:col-span-8 space-y-6 text-center sm:text-left" style={{ transform: 'translate(-20px, 30px)' }}>
+          <div className="col-span-1 sm:col-span-8 space-y-6 text-center sm:text-left pointer-events-auto" style={{ transform: 'translate(-20px, 30px)' }}>
             {/* Badge */}
             <motion.div initial={{ opacity: 0, y: -26 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }} className="flex justify-center sm:justify-start">
               <motion.span
-                className="inline-flex items-center border border-luxury-gold/50 px-5 py-2 rounded-full bg-black/50 backdrop-blur-sm"
+                className="inline-flex items-center border border-luxury-gold/50 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full bg-black/50 backdrop-blur-sm max-w-[85vw]"
                 whileHover={{ scale: 1.05, borderColor: 'rgba(197,168,128,0.9)' }} transition={{ duration: 0.15 }}>
                 <img
                   src="/assets/logo_text.png"
                   alt="KHRONIQ"
-                  className="h-12 object-contain"
+                  className="h-8 sm:h-12 max-w-[65vw] sm:max-w-none object-contain"
                   style={{ filter: 'brightness(1.05) saturate(1.1)' }}
                 />
               </motion.span>
@@ -1153,11 +1176,9 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                 Born from the
               </div>
               <div className="font-cinzel font-bold text-2xl sm:text-3xl md:text-4xl tracking-wider uppercase leading-tight mt-1">
-                <span style={{
-                  background: 'linear-gradient(135deg, #047857 0%, #065f46 45%, #022c22 100%)',
-                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-                  filter: 'drop-shadow(0 0 15px rgba(4,120,87,0.35)) drop-shadow(0 0 35px rgba(2,44,34,0.15))',
-                  display: 'inline-block',
+                <span className="text-white inline-block" style={{
+                  color: '#ffffff',
+                  filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.4)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))',
                 }}>movement of Time</span>
               </div>
             </motion.div>

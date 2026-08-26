@@ -105,7 +105,7 @@ const RECIPIENTS = [
     label: 'Father',
     desc: 'A timepiece as dependable and distinguished as he is.',
     accent: '#c5a880',
-    gradient: 'from-black/95 via-amber-950/50 to-black/30',
+    gradient: 'from-amber-900/90 via-amber-800/70 to-yellow-900/80',
     tag: 'Most Popular',
     filter: { gender: 'men' },
     bgImg: '/assets/gift_father.jpg',
@@ -116,7 +116,7 @@ const RECIPIENTS = [
     label: 'Mother',
     desc: 'Elegant craftsmanship to celebrate her timeless grace.',
     accent: '#34d399',
-    gradient: 'from-black/95 via-emerald-950/50 to-black/30',
+    gradient: 'from-emerald-900/90 via-teal-800/70 to-green-900/80',
     filter: { gender: 'women' },
     bgImg: '/assets/gift_mother.jpg',
   },
@@ -126,7 +126,7 @@ const RECIPIENTS = [
     label: 'Partner',
     desc: 'Mark every moment together with a symbol of forever.',
     accent: '#f472b6',
-    gradient: 'from-black/95 via-rose-950/50 to-black/30',
+    gradient: 'from-pink-900/90 via-rose-800/70 to-pink-900/80',
     filter: { gender: 'women' },
     bgImg: '/assets/gift_partner.jpg',
   },
@@ -136,7 +136,7 @@ const RECIPIENTS = [
     label: 'Friend (Him)',
     desc: 'Celebrate the bond that stands the test of time — gift him a watch as bold as your friendship.',
     accent: '#60a5fa',
-    gradient: 'from-black/95 via-blue-950/50 to-black/30',
+    gradient: 'from-blue-900/90 via-blue-800/70 to-indigo-900/80',
     filter: { gender: 'men' },
     bgImg: '/assets/gift_friend_him.jpg',
   },
@@ -146,9 +146,9 @@ const RECIPIENTS = [
     label: 'Friend (Her)',
     desc: 'For the friend who lights up every room — gift her elegance she\'ll wear with pride.',
     accent: '#2dd4bf',
-    gradient: 'from-black/95 via-teal-950/50 to-black/30',
+    gradient: 'from-teal-900/90 via-cyan-800/70 to-emerald-900/80',
     filter: { gender: 'women' },
-    bgImg: '/assets/women_watches_beach.jpeg',
+    bgImg: '/assets/gift_sister.jpg',
   },
   {
     id: 'brother',
@@ -156,7 +156,7 @@ const RECIPIENTS = [
     label: 'Brother',
     desc: 'Your partner in mischief, your lifelong ally — give him time worth wearing.',
     accent: '#818cf8',
-    gradient: 'from-black/95 via-indigo-950/50 to-black/30',
+    gradient: 'from-indigo-900/90 via-violet-800/70 to-purple-900/80',
     filter: { gender: 'men' },
     bgImg: '/assets/gift_brother.jpg',
   },
@@ -166,7 +166,7 @@ const RECIPIENTS = [
     label: 'Sister',
     desc: 'The first friend you ever had — celebrate her grace with a watch as elegant as she is.',
     accent: '#f9a8d4',
-    gradient: 'from-black/95 via-pink-950/50 to-black/30',
+    gradient: 'from-rose-900/90 via-pink-800/70 to-fuchsia-900/80',
     filter: { gender: 'women' },
     bgImg: '/assets/gift_sister.jpg',
   },
@@ -176,7 +176,7 @@ const RECIPIENTS = [
     label: 'Boss / Mentor',
     desc: 'Make a statement with a gift that commands respect.',
     accent: '#fbbf24',
-    gradient: 'from-black/95 via-amber-950/50 to-black/30',
+    gradient: 'from-yellow-900/90 via-amber-800/70 to-orange-900/80',
     filter: { gender: 'men' },
     bgImg: '/assets/gift_boss.jpg',
   },
@@ -221,6 +221,10 @@ export default function Gifting({ onPageChange }) {
   const [giftNote, setGiftNote] = useState('');
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
+  useEffect(() => {
+    document.title = 'Bespoke Luxury Gifting | KHRONIQ';
+  }, []);
+
   // Auto-rotate testimonials
   useEffect(() => {
     const t = setInterval(() => setActiveTestimonial(p => (p + 1) % TESTIMONIALS.length), 4000);
@@ -255,7 +259,7 @@ export default function Gifting({ onPageChange }) {
         {/* Background image */}
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/assets/men_watches_beach.jpg')", filter: 'brightness(0.28)' }}
+          style={{ backgroundImage: "url('/assets/men_watches.jpg')", filter: 'brightness(0.28)' }}
         />
         {/* Gradient overlays */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#0d0b08]" />
@@ -292,13 +296,10 @@ export default function Gifting({ onPageChange }) {
             <h1 className="font-cinzel font-bold text-5xl sm:text-6xl md:text-8xl tracking-wide uppercase leading-tight" style={{ color: '#ffffff' }}>
               Gift the
             </h1>
-            <h1 className="font-cinzel font-bold text-5xl sm:text-6xl md:text-8xl tracking-wide uppercase leading-tight mt-2"
+            <h1 className="font-cinzel font-bold text-5xl sm:text-6xl md:text-8xl tracking-wide uppercase leading-tight mt-2 text-white"
               style={{
-                background: 'linear-gradient(135deg, #c5a880 0%, #ffd89b 40%, #c5a880 70%, #93744d 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                filter: 'drop-shadow(0 0 24px rgba(197,168,128,0.4))',
+                color: '#ffffff',
+                filter: 'drop-shadow(0 0 24px rgba(255,255,255,0.4))',
               }}>
               Art of Time
             </h1>

@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Allow: /shop
+Allow: /gifting
+Allow: /customization
+Allow: /warranty
+Allow: /contact
+Disallow: /admin
+Disallow: /api/
+Disallow: /checkout
+Disallow: /profile
+Disallow: /cart
+Disallow: /reset-password/
+
+Sitemap: https://khroniq-sage.vercel.app/sitemap.xml

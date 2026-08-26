@@ -124,17 +124,17 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
           background:'linear-gradient(90deg, transparent 0%, #047857 30%, #10b981 50%, #047857 70%, transparent 100%)',
         }} />
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="flex flex-col items-center text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
-            {/* Brand statement */}
+            {/* Left – Brand statement */}
             <div style={{
               opacity: heroVisible ? 1 : 0,
               transform: heroVisible ? 'translateY(0)' : 'translateY(40px)',
               transition: 'opacity 0.9s ease, transform 0.9s ease',
-            }} className="flex flex-col items-center">
+            }}>
               {/* Logo */}
-              <div className="flex items-center space-x-5 mb-8 justify-center">
+              <div className="flex items-center space-x-5 mb-8">
                 <img 
                   src="/assets/logo_icon.png" 
                   alt="KHRONIQ Logo" 
@@ -168,13 +168,13 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
                 }}>luxury that matters.</span>
               </h2>
 
-              <p style={{ fontSize:'0.85rem', lineHeight:1.85, color:'#ffffff', maxWidth:'520px', margin:'0 auto' }}>
+              <p style={{ fontSize:'0.82rem', lineHeight:1.85, color:'#ffffff', maxWidth:'420px' }}>
                 Crafted with Swadeshi pride, KHRONIQ designs exceptional timepieces for those who dare to dream.
                 Every second counts — make it extraordinary.
               </p>
 
               {/* Badges row */}
-              <div className="flex flex-wrap gap-6 mt-10 justify-center">
+              <div className="flex flex-wrap gap-6 mt-10">
                 {BADGES.map(({ icon: Icon, label, sub }) => (
                   <div key={label} className="flex items-center space-x-3 group" style={{ cursor:'default' }}>
                     <div style={{
@@ -187,12 +187,134 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
                     onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(4,120,87,0.3)'; e.currentTarget.style.background='transparent'; }}>
                       <Icon size={15} style={{ color:'#047857' }} />
                     </div>
-                    <div className="text-left">
+                    <div>
                       <p style={{ fontSize:'0.65rem', fontWeight:700, letterSpacing:'0.12em', color:'#ffffff', textTransform:'uppercase' }}>{label}</p>
                       <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.7)', marginTop:'1px' }}>{sub}</p>
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Right – Newsletter CTA */}
+            <div style={{
+              opacity: heroVisible ? 1 : 0,
+              transform: heroVisible ? 'translateY(0)' : 'translateY(40px)',
+              transition: 'opacity 0.9s ease 0.2s, transform 0.9s ease 0.2s',
+            }}>
+              <div style={{
+                background:'rgba(255,255,255,0.025)',
+                border:'1px solid rgba(4,120,87,0.2)',
+                borderRadius:'2px',
+                padding:'2.5rem',
+                backdropFilter:'blur(8px)',
+                position:'relative',
+                overflow:'hidden',
+              }}>
+                {/* corner accents */}
+                {[
+                  { top:0, left:0, borderTop:'1.5px solid #047857', borderLeft:'1.5px solid #047857' },
+                  { top:0, right:0, borderTop:'1.5px solid #047857', borderRight:'1.5px solid #047857' },
+                  { bottom:0, left:0, borderBottom:'1.5px solid #047857', borderLeft:'1.5px solid #047857' },
+                  { bottom:0, right:0, borderBottom:'1.5px solid #047857', borderRight:'1.5px solid #047857' },
+                ].map((s, i) => (
+                  <div key={i} style={{ position:'absolute', width:'18px', height:'18px', ...s }} />
+                ))}
+
+                <p style={{
+                  fontSize:'0.6rem', letterSpacing:'0.25em', textTransform:'uppercase',
+                  color:'#047857', fontWeight:700, marginBottom:'0.6rem',
+                }}>Exclusive Access</p>
+
+                <h3 style={{
+                  fontFamily:"'Playfair Display', Georgia, serif",
+                  fontSize:'1.55rem', fontWeight:600, color:'#ffffff',
+                  lineHeight:1.3, marginBottom:'0.8rem',
+                }}>
+                  Join the KHRONIQ<br />Inner Circle
+                </h3>
+
+                <p style={{ fontSize:'0.75rem', color:'#ffffff', lineHeight:1.75, marginBottom:'1.75rem' }}>
+                  Be the first to discover new collections, private events,
+                  and exclusive offers reserved for true connoisseurs of fine watchmaking.
+                </p>
+
+                {subscribed ? (
+                  <div style={{
+                    padding:'1rem 1.5rem',
+                    background:'rgba(4,120,87,0.1)',
+                    border:'1px solid rgba(4,120,87,0.35)',
+                    borderRadius:'2px',
+                    textAlign:'center',
+                  }}>
+                    <LogoMark className="w-5 h-5 mx-auto mb-2" />
+                    <p style={{ fontSize:'0.75rem', color:'#047857', fontWeight:600, letterSpacing:'0.05em' }}>
+                      Welcome to the Inner Circle.
+                    </p>
+                    <p style={{ fontSize:'0.65rem', color:'#ffffff', marginTop:'0.3rem' }}>
+                      Expect something extraordinary soon.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubscribe}>
+                    <div style={{ position:'relative', marginBottom:'0.75rem' }}>
+                      <Mail size={14} style={{
+                        position:'absolute', left:'14px', top:'50%',
+                        transform:'translateY(-50%)', color:'rgba(4,120,87,0.5)',
+                        pointerEvents:'none',
+                      }} />
+                      <input
+                        type="email"
+                        placeholder="Your email address"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        required
+                        style={{
+                          width:'100%', boxSizing:'border-box',
+                          background:'rgba(255,255,255,0.04)',
+                          border:'1px solid rgba(4,120,87,0.2)',
+                          borderRadius:'2px',
+                          padding:'0.85rem 1rem 0.85rem 2.5rem',
+                          fontSize:'0.75rem',
+                          color:'#ffffff',
+                          outline:'none',
+                          transition:'border-color 0.3s',
+                        }}
+                        onFocus={e => { e.target.style.borderColor='#047857'; e.target.style.background='rgba(4,120,87,0.05)'; }}
+                        onBlur={e => { e.target.style.borderColor='rgba(4,120,87,0.2)'; e.target.style.background='rgba(255,255,255,0.04)'; }}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="group"
+                      style={{
+                        width:'100%',
+                        background:'linear-gradient(135deg, #047857 0%, #065f46 100%)',
+                        border:'none',
+                        borderRadius:'2px',
+                        padding:'0.9rem',
+                        color:'#ffffff',
+                        fontSize:'0.7rem',
+                        fontWeight:700,
+                        letterSpacing:'0.2em',
+                        textTransform:'uppercase',
+                        cursor:'pointer',
+                        display:'flex',
+                        alignItems:'center',
+                        justifyContent:'center',
+                        gap:'8px',
+                        transition:'opacity 0.3s, transform 0.2s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.opacity='0.88'; e.currentTarget.style.transform='translateY(-1px)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.opacity='1'; e.currentTarget.style.transform='translateY(0)'; }}
+                    >
+                      Subscribe Now <ArrowRight size={13} />
+                    </button>
+                    <p style={{ fontSize:'0.6rem', color:'#ffffff', opacity: 0.6, textAlign:'center', marginTop:'0.65rem' }}>
+                      No spam, ever. Unsubscribe at any time.
+                    </p>
+                  </form>
+                )}
               </div>
             </div>
 
@@ -319,7 +441,7 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
             </div>
 
             <p style={{ fontSize:'0.68rem', color:'#ffffff', lineHeight:1.7, marginBottom:'1.25rem' }}>
-              concierge@<br />khroniq.com
+              khroniq.com
             </p>
 
             {/* Clock-hours decoration */}
@@ -412,7 +534,7 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
           <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
             <LogoMark className="w-3.5 h-3.5" />
             <p style={{ fontSize:'0.62rem', color:'#ffffff', opacity: 0.6, letterSpacing:'0.08em' }}>
-              © 2026 KHRONIQ. All Rights Reserved. A TRUE KNOCK GROUP PRODUCT.
+              © 2026 KHRONIQ. All Rights Reserved. A TRUE KNOCK GROUP BRAND.
             </p>
           </div>
 

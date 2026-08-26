@@ -15,7 +15,7 @@
   --color-gold-900: #5d351d;
   --color-gold-950: #361b0f;
 
-  --color-luxury-gold: #c5a880;
+  --color-luxury-gold: #ffffff;
   --color-luxury-gold-dark: #0d0d0d;
   --color-luxury-red: #e10600; /* Signature Tissot Red */
   --color-luxury-dark: #ffffff; /* White cards */
@@ -44,160 +44,109 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom Scrollbar Styling */
+/* Custom Scrollbar */
+html {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #888888 transparent; /* Firefox */
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--color-luxury-bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c5a880;
-  border-radius: 3px;
+  background: #888888;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #0d0d0d;
+  background: var(--color-luxury-gold-dark);
 }
 
-/* Base Glassmorphism utility */
+/* Luxury Glassmorphism Utilities */
 .glass {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(253, 251, 247, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(32, 30, 27, 0.08);
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+.glass-light {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(32, 30, 27, 0.05);
 }
 
-/* Text glow effects */
-.text-glow {
-  text-shadow: 0 0 12px rgba(197, 168, 128, 0.4);
+/* ═══════════════════════════════════════════
+   GLOBAL KEYFRAME ANIMATIONS
+═══════════════════════════════════════════ */
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-18px); }
 }
 
-.text-glow-red {
-  text-shadow: 0 0 12px rgba(225, 6, 0, 0.4);
+@keyframes float-xy {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  33%  { transform: translate(10px, -14px) rotate(2deg); }
+  66%  { transform: translate(-8px, -8px) rotate(-1.5deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
 }
 
-/* Button & Card Hover Transitions */
-.luxury-card {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.luxury-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.12);
-  border-color: rgba(0, 0, 0, 0.18);
-}
-
-/* Keyframe Animations */
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin-slow {
-  animation: spin-slow 20s linear infinite;
-}
-
-@keyframes float-subtle {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
-.animate-float {
-  animation: float-subtle 4s ease-in-out infinite;
-}
-
-@keyframes pulse-subtle {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-.animate-pulse-subtle {
-  animation: pulse-subtle 3s ease-in-out infinite;
-}
-
-@keyframes laser-sweep {
-  0% {
-    transform: translateX(-100%) skewX(-15deg);
-    opacity: 0;
-  }
-  50% {
-    opacity: 0.8;
-  }
-  100% {
-    transform: translateX(200%) skewX(-15deg);
-    opacity: 0;
-  }
-}
-
-.animate-laser {
-  animation: laser-sweep 2.5s ease-in-out infinite;
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
-    opacity: 0.2;
-    transform: scale(0.98);
-  }
-  50% {
-    opacity: 0.45;
-    transform: scale(1.02);
-  }
+  0%, 100% { box-shadow: 0 0 0px 0px rgba(255,255,255,0); }
+  50%       { box-shadow: 0 0 22px 6px rgba(255,255,255,0.2); }
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 3s ease-in-out infinite;
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 @keyframes slide-right {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
 }
 
 @keyframes marquee {
-  0% { transform: translateX(0%); }
-  100% { transform: translateX(-50%); }
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
 }
 
+/* Animation utility classes */
+.animate-float        { animation: float-y 5s ease-in-out infinite; }
+.animate-float-xy     { animation: float-xy 7s ease-in-out infinite; }
+.animate-shimmer      { animation: shimmer 2.5s linear infinite; background-size: 200% auto; }
+.animate-pulse-glow   { animation: pulse-glow 2.5s ease-in-out infinite; }
+.animate-spin-slow    { animation: spin-slow 8s linear infinite; }
+.animate-gradient-x   { animation: gradient-x 4s ease infinite; background-size: 200% 200%; }
+.animate-fade-in-up   { animation: fade-in-up 0.75s ease-out forwards; }
 .animate-scale-in     { animation: scale-in 0.6s cubic-bezier(0.22,1,0.36,1) forwards; }
 .animate-slide-right  { animation: slide-right 0.7s cubic-bezier(0.22,1,0.36,1) forwards; }
 .animate-marquee      { animation: marquee 22s linear infinite; }
@@ -225,76 +174,64 @@ body {
   backface-visibility: hidden;
 }
 
-/* High-Contrast Brand Text Shimmer */
-@keyframes shimmer-sweep {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
+/* Custom Animations */
+.hover-gold-glow:hover {
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
-.text-shimmer {
+.star-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.star-shine::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
   background: linear-gradient(
-    90deg, 
-    #0d0c0b 0%, 
-    #4a443e 25%, 
-    #c5a880 50%, 
-    #4a443e 75%, 
-    #0d0c0b 100%
+    45deg,
+    transparent 45%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 55%
   );
-  background-size: 200% auto;
-  color: transparent;
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: shimmer-sweep 6s ease-in-out infinite;
+  transform: rotate(45deg);
+  transition: transform 0.5s ease;
 }
 
-/* Subtle Shimmer for luxury card accents */
-.badge-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(197, 168, 128, 0.15) 0%,
-    rgba(197, 168, 128, 0.35) 50%,
-    rgba(197, 168, 128, 0.15) 100%
-  );
-  background-size: 200% auto;
-  animation: shimmer-sweep 4s linear infinite;
-}
-
-/* Animated gradient text */
-.gradient-text-gold {
-  background: linear-gradient(135deg, #0d0c0b 0%, #c5a880 50%, #0d0c0b 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.gradient-text-red {
-  background: linear-gradient(135deg, #e10600 0%, #ff4d4d 50%, #990000 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Luxury Interactive Card Depth */
-.interactive-luxury-card {
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
-}
-.interactive-luxury-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.10);
-  border-color: rgba(0, 0, 0, 0.18);
+.star-shine:hover::after {
+  transform: translate(50%, 50%) rotate(45deg);
 }
 
 /* ==========================================================================
    LIGHT LUXURY THEME COMPATIBILITY OVERRIDES
    ========================================================================== */
 
+/* Overrides for text-white and text-gray classes to adapt them to light layouts */
+.text-white:not(button, button *, .bg-luxury-red *, .bg-luxury-red, .bg-red-500, .bg-red-500 *, .bg-red-600, .bg-red-600 *, .bg-red-700 *, .bg-red-700, .bg-red-800 *, .bg-red-800, .bg-\[\#1c1a17\] *, footer *, .bg-gradient-to-r *, .text-emerald-400 *, .font-mono *, .dark-panel *, header *) {
+  color: var(--color-luxury-text) !important;
+}
+
+.text-gray-300:not(footer *, .bg-\[\#1c1a17\] *, button *, .bg-luxury-red *, .bg-red-700 *, .bg-red-800 *, .bg-black\/30 *, .bg-black\/35 *, .bg-gradient-to-r *, .dark-panel *) {
+  color: var(--color-luxury-muted) !important;
+}
+
+.text-gray-400:not(footer *, .bg-\[\#1c1a17\] *, button *, .bg-luxury-red *, .bg-red-700 *, .bg-red-800 *, .bg-black\/30 *, .bg-black\/35 *, .absolute.top-3.left-3 *, .bg-gradient-to-r *, .dark-panel *) {
+  color: var(--color-luxury-muted) !important;
+}
+
+.text-gray-500:not(footer *, .bg-\[\#1c1a17\] *, button *, .bg-luxury-red *, .bg-red-700 *, .bg-red-800 *, .dark-panel *) {
+  color: rgba(32, 30, 27, 0.6) !important;
+}
+
 /* Light background inputs, drop-downs and textareas */
 input:not([type="checkbox"]):not([type="radio"]), select, textarea {
   background-color: #ffffff !important;
   color: var(--color-luxury-text) !important;
-  border: 1px solid rgba(32, 30, 27, 0.18) !important;
+  border: 1px solid rgba(32, 30, 27, 0.15) !important;
 }
 
 /* Dark-panel override — keep inputs/textareas transparent on dark backgrounds */
@@ -303,7 +240,7 @@ input:not([type="checkbox"]):not([type="radio"]), select, textarea {
 .dark-panel textarea {
   background-color: transparent !important;
   color: rgba(255, 255, 255, 0.85) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
 }
 
 input:focus, select:focus, textarea:focus {
@@ -312,19 +249,19 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.12) !important;
 }
 
-/* Adapting card, list and sidebar backgrounds to light surfaces */
-.bg-luxury-gray:not(footer *, .bg-\[\#1c1a17\] *, .bg-\[\#0d0b08\] *, .bg-\[\#111007\] *) {
+/* Adapting card, list and sidebar backgrounds to the warm light sand style */
+.bg-luxury-gray:not(footer *, .bg-\[\#1c1a17\] *) {
   background-color: #ffffff !important;
-  border-color: rgba(32, 30, 27, 0.10) !important;
+  border-color: rgba(32, 30, 27, 0.08) !important;
 }
 
 .bg-luxury-gray\/30:not(footer *, .bg-\[\#1c1a17\] *) {
   background-color: rgba(234, 226, 213, 0.3) !important;
 }
 
-.bg-luxury-dark:not(footer *, .bg-\[\#1c1a17\] *, .bg-\[\#0d0b08\] *, .bg-\[\#111007\] *, .glass *, button *) {
+.bg-luxury-dark:not(footer *, .bg-\[\#1c1a17\] *, .glass *, button *) {
   background-color: #ffffff !important;
-  border-color: rgba(32, 30, 27, 0.10) !important;
+  border-color: rgba(32, 30, 27, 0.08) !important;
 }
 
 .bg-luxury-dark\/50:not(footer *, .bg-\[\#1c1a17\] *) {
@@ -337,25 +274,13 @@ input:focus, select:focus, textarea:focus {
   color: rgba(32, 30, 27, 0.4) !important;
 }
 
-/* Border overrides on light surfaces */
-.border-white\/5:not(footer *, .bg-\[\#1c1a17\] *, .bg-\[\#0d0b08\] *, .bg-\[\#111007\] *, .bg-\[\#0a0a14\] *, .bg-\[\#0d0d0d\] *, .dark-panel *) {
-  border-color: rgba(32, 30, 27, 0.10) !important;
+/* Border overrides */
+.border-white\/5 {
+  border-color: rgba(32, 30, 27, 0.08) !important;
 }
 
-.border-white\/10:not(footer *, .bg-\[\#1c1a17\] *, .bg-\[\#0d0b08\] *, .bg-\[\#111007\] *, .bg-\[\#0a0a14\] *, .bg-\[\#0d0d0d\] *, .dark-panel *) {
-  border-color: rgba(32, 30, 27, 0.16) !important;
-}
-
-.border-white\/20:not(footer *, .bg-\[\#1c1a17\] *, .bg-\[\#0d0b08\] *, .bg-\[\#111007\] *, .bg-\[\#0a0a14\] *, .bg-\[\#0d0d0d\] *, .dark-panel *) {
-  border-color: rgba(32, 30, 27, 0.22) !important;
-}
-
-.border-white\/30:not(footer *, .bg-\[\#1c1a17\] *, .bg-\[\#0d0b08\] *, .bg-\[\#111007\] *, .bg-\[\#0a0a14\] *, .bg-\[\#0d0d0d\] *, .dark-panel *) {
-  border-color: rgba(32, 30, 27, 0.30) !important;
-}
-
-.border-white:not(footer *, .bg-\[\#1c1a17\] *, .bg-\[\#0d0b08\] *, .bg-\[\#111007\] *, .bg-\[\#0a0a14\] *, .bg-\[\#0d0d0d\] *, .dark-panel *) {
-  border-color: rgba(32, 30, 27, 0.25) !important;
+.border-white\/10 {
+  border-color: rgba(32, 30, 27, 0.12) !important;
 }
 
 /* White bg buttons with dark text override to rich charcoal buttons */
@@ -425,3 +350,4 @@ html, body, #root {
   color: #000000 !important; /* Black placeholder */
   opacity: 0.6 !important;
 }
+

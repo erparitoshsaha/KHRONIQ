@@ -12,10 +12,52 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: 'zenith-watches',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'mp4', 'webm']
   }
 });
 
-const upload = multer({ storage });
+// Filter for image-only uploads (10 MB limit)
+const imageFileFilter = (req, file, cb) => {
+  const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file format. Only JPEG, PNG, and WEBP images are allowed for product images.'), false);
+  }
+};
 
-export default upload;
+// Filter for media gallery uploads (images and videos up to 50 MB)
+const mediaFileFilter = (req, file, cb) => {
+  const allowedMimes = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'video/mp4',
+    'video/webm'
+  ];
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file format. Only JPEG, PNG, WEBP images and MP4/WEBM videos are allowed.'), false);
+  }
+};
+
+// 1. Single product image uploader (10 MB max)
+export const imageUpload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10 MB limit for images
+  },
+  fileFilter: imageFileFilter
+});
+
+// 2. Admin media gallery uploader (50 MB max for videos & images)
+export const mediaUpload = multer({
+  storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50 MB limit for videos
+  },
+  fileFilter: mediaFileFilter
+});
+
+export default imageUpload;

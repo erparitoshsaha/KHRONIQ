@@ -10,18 +10,15 @@ const userSchema = new mongoose.Schema({
   lockUntil: { type: Date },
   resetPasswordToken: { type: String },
   resetPasswordExpire: { type: Date },
+  adminOtp: { type: String },
+  adminOtpExpires: { type: Date },
+  adminOtpAttempts: { type: Number, default: 0 },
+  adminOtpLastSent: { type: Date },
   adminLoginCode: { type: String },
   adminLoginCodeExpire: { type: Date },
   cart: [{
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
-    quantity: { type: Number, required: true, default: 1 },
-    price: { type: Number },
-    customization: {
-      dialColor: { type: String },
-      strapMaterial: { type: String },
-      caseFinish: { type: String },
-      engraving: { type: String }
-    }
+    quantity: { type: Number, required: true, default: 1 }
   }],
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
   shippingAddress: {

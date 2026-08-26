@@ -4,7 +4,7 @@ const blogSchema = new mongoose.Schema({
   title: { type: String, required: true },
   content: { type: String, required: true },
   author: { type: String, default: 'KHRONIQ Editorial' },
-  image: { type: String, default: '/assets/media__1782899491225.jpg' },
+  image: { type: String, default: '/assets/lifestyle_black_cafe.jpg' },
   category: { type: String, default: 'Horology' },
   date: { type: String, default: () => new Date().toISOString().split('T')[0] }
 }, {

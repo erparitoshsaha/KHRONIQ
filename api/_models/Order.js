@@ -24,7 +24,6 @@ const orderSchema = new mongoose.Schema({
   items: [orderItemSchema],
   subtotal: { type: Number, required: true },
   discount: { type: Number, required: true, default: 0 },
-  couponCode: { type: String },
   total: { type: Number, required: true },
   shippingDetails: {
     fullName: { type: String, required: true },
@@ -35,17 +34,19 @@ const orderSchema = new mongoose.Schema({
   },
   paymentDetails: {
     method: { type: String, required: true },
-    last4: { type: String, required: true },
-    razorpayPaymentId: { type: String }
+    last4: { type: String, required: true }
   },
-  refund: {
-    status: { type: String, enum: ['none', 'processed', 'manual_required', 'failed'], default: 'none' },
+  status: { type: String, enum: ['Paid', 'Pending', 'Processing', 'Cancelled', 'Shipped', 'Exchange/Refund Requested'], default: 'Paid' },
+  razorpayOrderId: { type: String, index: true, sparse: true, unique: true },
+  razorpayPaymentId: { type: String, index: true, sparse: true, unique: true },
+  razorpaySignature: { type: String },
+  webhookProcessed: { type: Boolean, default: false },
+  refundDetails: {
+    refunded: { type: Boolean, default: false },
     refundId: { type: String },
-    amount: { type: Number },
     refundedAt: { type: Date },
-    failureReason: { type: String }
+    amount: { type: Number }
   },
-  status: { type: String, enum: ['Paid', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Exchange/Refund Requested'], default: 'Paid' },
   date: { type: String, default: () => new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) },
   time: { type: String, default: () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
   giftingOptions: {

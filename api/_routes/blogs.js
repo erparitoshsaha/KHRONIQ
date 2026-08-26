@@ -32,7 +32,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
       title,
       content,
       author: author || 'KHRONIQ Editorial',
-      image: image || '/assets/media__1782899491225.jpg',
+      image: image || '/assets/lifestyle_black_cafe.jpg',
       category: category || 'Horology'
     });
 

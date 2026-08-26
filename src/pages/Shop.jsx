@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import ProductCard from '../components/ProductCard';
-import { getDiscountedPrice } from '../store/slices/watchSlice';
+import { getDiscountedPrice, selectCurrentCurrency, formatPrice } from '../store/slices/watchSlice';
 import { SlidersHorizontal, Search, RotateCcw, X } from 'lucide-react';
 
 export default function Shop({ onPageChange, filterParams }) {
   const products = useSelector(state => state.watch.products);
+  const currentCurrency = useSelector(selectCurrentCurrency);
 
   // States
   const [searchQuery, setSearchQuery] = useState(filterParams?.search || '');
@@ -20,6 +21,10 @@ export default function Shop({ onPageChange, filterParams }) {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+
+  useEffect(() => {
+    document.title = 'Shop Luxury Watches | KHRONIQ';
+  }, []);
 
   // Listen to outer navigation category/gender updates
   useEffect(() => {
@@ -207,7 +212,7 @@ export default function Shop({ onPageChange, filterParams }) {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <h4 className="text-[10px] font-bold text-luxury-text uppercase tracking-widest">Max Price</h4>
-              <span className="text-xs text-luxury-gold-dark font-semibold">${priceRange.toLocaleString()}</span>
+              <span className="text-xs text-luxury-gold-dark font-semibold">{formatPrice(priceRange, currentCurrency)}</span>
             </div>
             <input
               type="range"
@@ -219,8 +224,8 @@ export default function Shop({ onPageChange, filterParams }) {
               className="w-full accent-luxury-gold-dark cursor-pointer"
             />
             <div className="flex justify-between text-[9px] text-luxury-muted/70">
-              <span>$1,000</span>
-              <span>$6,000</span>
+              <span>{formatPrice(1000, currentCurrency)}</span>
+              <span>{formatPrice(6000, currentCurrency)}</span>
             </div>
           </div>
 
@@ -448,7 +453,7 @@ export default function Shop({ onPageChange, filterParams }) {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <h4 className="text-[10px] font-bold text-luxury-text uppercase tracking-widest">Price Limit</h4>
-                  <span className="text-xs text-luxury-gold-dark font-bold">${priceRange}</span>
+                  <span className="text-xs text-luxury-gold-dark font-bold">{formatPrice(priceRange, currentCurrency)}</span>
                 </div>
                 <input
                   type="range"
@@ -459,6 +464,10 @@ export default function Shop({ onPageChange, filterParams }) {
                   onChange={(e) => setPriceRange(Number(e.target.value))}
                   className="w-full accent-luxury-gold-dark cursor-pointer"
                 />
+                <div className="flex justify-between text-[9px] text-luxury-muted/70">
+                  <span>{formatPrice(1000, currentCurrency)}</span>
+                  <span>{formatPrice(6000, currentCurrency)}</span>
+                </div>
               </div>
 
               {/* Mobile Movements */}

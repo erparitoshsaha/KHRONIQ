@@ -5,13 +5,13 @@ const reviewSchema = new mongoose.Schema({
   rating: { type: Number, required: true, min: 1, max: 5 },
   comment: { type: String, required: true },
   date: { type: String, default: () => new Date().toISOString().split('T')[0] },
-  status: { type: String, enum: ['approved', 'pending', 'rejected', 'hidden'], default: 'pending' }
+  status: { type: String, enum: ['approved', 'pending', 'rejected'], default: 'pending' }
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
-reviewSchema.virtual('id').get(function () {
+reviewSchema.virtual('id').get(function() {
   return this._id.toHexString();
 });
 
@@ -28,23 +28,10 @@ const productSchema = new mongoose.Schema({
   specs: {
     movement: { type: String, default: 'Automatic' },
     case: { type: String },
-    caseMaterial: { type: String, default: 'Stainless Steel' },
     strap: { type: String },
     waterResistance: { type: String },
-    glass: { type: String },
-    dialColor: { type: String, default: 'Black' },
-    watchFunction: { type: String, default: 'Hours, Minutes, Seconds' },
-    warrantyDetails: { type: String, default: 'Manufacturer Warranty' },
-    collection: { type: String, default: 'Khronomaster' },
-    warrantyPeriod: { type: String, default: '2 Years' }
+    glass: { type: String }
   },
-  discountPercent: { type: Number, default: 0 },
-  badge: { type: String, default: '' },
-  unitCodes: [{
-    serialNumber: { type: String },
-    claimCode: { type: String },
-    used: { type: Boolean, default: false }
-  }],
   customizable: { type: Boolean, default: true },
   allowStrapCustomization: { type: Boolean, default: true },
   allowCaseCustomization: { type: Boolean, default: true },
@@ -57,27 +44,7 @@ const productSchema = new mongoose.Schema({
     customStrapName: { type: String, default: '' },
     customStrapImage: { type: String, default: '' },
     customCaseName: { type: String, default: '' },
-    customCaseColor: { type: String, default: '' },
-
-    customDialColors: [{
-      name: { type: String, default: '' },
-      color: { type: String, default: '' },
-      price: { type: Number, default: 0 }
-    }],
-
-    customStraps: [{
-      name: { type: String, default: '' },
-      image: { type: String, default: '' },
-      price: { type: Number, default: 0 }
-    }],
-    customCases: [{
-      name: { type: String, default: '' },
-      color: { type: String, default: '' },
-      price: { type: Number, default: 0 }
-    }],
-    dialPrices: { type: Map, of: Number, default: {} },
-    strapPrices: { type: Map, of: Number, default: {} },
-    casePrices: { type: Map, of: Number, default: {} }
+    customCaseColor: { type: String, default: '' }
   },
   reviews: [reviewSchema]
 }, {
@@ -86,7 +53,7 @@ const productSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-productSchema.virtual('id').get(function () {
+productSchema.virtual('id').get(function() {
   return this._id.toHexString();
 });
 

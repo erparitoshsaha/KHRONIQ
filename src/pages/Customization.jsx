@@ -17,16 +17,16 @@ const FALLBACK_DIAL_COLORS = [
 ];
 
 const STRAP_IMAGES = {
-  'Tan Leather': '/assets/strap_leather_tan.jpg',
-  'Diamond Silver Link': '/assets/strap_silver_diamond.jpg',
-  'Classic Gold Chain': '/assets/strap_gold_chain.jpg',
-  'Forest Green Rubber': '/assets/strap_rubber_green.jpg',
-  'Brushed Steel Link': '/assets/strap_steel_link.jpg',
-  'Alligator Leather': '/assets/strap_leather_tan.jpg',
-  'Steel Bracelet': '/assets/strap_steel_link.jpg',
-  'Rubber Sport': '/assets/strap_rubber_green.jpg',
-  'Satin Fabric': '/assets/strap_silver_diamond.jpg',
-  'Titanium Mesh': '/assets/strap_steel_link.jpg'
+  'Tan Leather': '/assets/wt4.png',
+  'Diamond Silver Link': '/assets/wt3.png',
+  'Classic Gold Chain': '/assets/wt5.png',
+  'Forest Green Rubber': '/assets/wt8.png',
+  'Brushed Steel Link': '/assets/watch_black_steel.png',
+  'Alligator Leather': '/assets/wt4.png',
+  'Steel Bracelet': '/assets/watch_black_steel.png',
+  'Rubber Sport': '/assets/wt8.png',
+  'Satin Fabric': '/assets/wt3.png',
+  'Titanium Mesh': '/assets/watch_black_steel.png'
 };
 
 const FALLBACK_FINISHES = ['Polished', 'Brushed', 'PVD Black', 'Rose Gold PVD', 'Matte Grey'];
@@ -230,6 +230,10 @@ export default function Customization({ onPageChange, params }) {
     return finalBasePrice + dialPrice + strapPrice + casePrice;
   }, [selectedProduct, dialPrice, strapPrice, casePrice]);
 
+  useEffect(() => {
+    document.title = 'Custom Timepiece Atelier | KHRONIQ';
+  }, []);
+
   // Reset page back to customizable models selection when params.reset is received from Navbar
   useEffect(() => {
     if (params && params.reset) {
@@ -302,13 +306,13 @@ export default function Customization({ onPageChange, params }) {
         ) : (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-luxury-text">
+              <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: '#ffffff' }}>
                 {noneExplicitlySet
                   ? `All ${displayProducts.length} models available for customisation`
                   : `${displayProducts.length} model${displayProducts.length !== 1 ? 's' : ''} available for customisation`}
               </h2>
               {noneExplicitlySet && (
-                <span className="text-[10px] border px-2.5 py-1 rounded text-blue-600 border-blue-200 bg-blue-50">
+                <span className="text-[10px] border px-2.5 py-1 rounded" style={{ color: 'rgba(59,130,246,0.6)', borderColor: 'rgba(59,130,246,0.2)' }}>
                   Mark specific watches in Admin to restrict selection
                 </span>
               )}
@@ -320,26 +324,27 @@ export default function Customization({ onPageChange, params }) {
                   onClick={() => handleSelectProduct(product)}
                   whileHover={{ y: -4 }}
                   whileTap={{ scale: 0.98 }}
-                  className="group text-left rounded-xl overflow-hidden border border-gray-200 hover:border-blue-500 transition-all duration-300 cursor-pointer bg-white shadow-sm hover:shadow-md"
+                  className="group text-left rounded-xl overflow-hidden border border-white/10 hover:border-blue-500/50 transition-all duration-300 cursor-pointer"
+                  style={{ background: 'linear-gradient(145deg, #0a0a14 0%, #0d1a3a 100%)' }}
                 >
-                  <div className="relative overflow-hidden bg-gray-50" style={{ height: 200 }}>
+                  <div className="relative overflow-hidden bg-[#0d0d0d]" style={{ height: 200 }}>
                     <img
                       src={product.image}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {/* Customizable badge */}
-                    <div className="absolute top-3 right-3 text-luxury-text text-[9px] font-black tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1.5 bg-white/90 shadow-sm border border-gray-200">
-                      <Paintbrush size={9} className="text-blue-600" />
+                    <div className="absolute top-3 right-3 text-white text-[9px] font-black tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1.5" style={{ background: 'transparent' }}>
+                      <Paintbrush size={9} />
                       CUSTOMIZABLE
                     </div>
                   </div>
                   <div className="p-4 space-y-2">
-                    <p className="text-[10px] uppercase tracking-widest text-gray-500">{product.category}</p>
-                    <h3 className="font-bold text-sm leading-tight text-luxury-text">{product.name}</h3>
+                    <p className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.7)' }}>{product.category}</p>
+                    <h3 className="font-bold text-sm leading-tight" style={{ color: '#ffffff' }}>{product.name}</h3>
                     <div className="flex items-center justify-between">
-                      <span className="font-black text-luxury-text">{formatPrice(product.price)}</span>
-                      <span className="text-[10px] border px-2.5 py-1 rounded font-bold tracking-wider transition border-gray-300 text-luxury-text group-hover:bg-black group-hover:text-white group-hover:border-black">
+                      <span className="font-black" style={{ color: '#ffffff' }}>{formatPrice(product.price)}</span>
+                      <span className="text-[10px] border px-2.5 py-1 rounded font-bold tracking-wider transition" style={{ color: '#ffffff', borderColor: 'rgba(255,255,255,0.4)' }}>
                         CUSTOMISE →
                       </span>
                     </div>
@@ -367,7 +372,7 @@ export default function Customization({ onPageChange, params }) {
         {/* Back */}
         <button
           onClick={() => setSelectedProduct(null)}
-          className="flex items-center gap-2 text-luxury-text hover:text-blue-600 text-xs font-bold uppercase tracking-widest mb-8 transition cursor-pointer"
+          className="flex items-center gap-2 text-gray-300 hover:text-white text-xs font-bold uppercase tracking-widest mb-8 transition cursor-pointer"
         >
           <ChevronLeft size={16} /> All Customizable Models
         </button>
@@ -407,18 +412,17 @@ export default function Customization({ onPageChange, params }) {
             </div>
 
             {/* Summary card */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2 text-xs shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">Live Configuration</p>
+            <div className="dark-panel bg-[#111111] rounded-xl border border-white/5 p-5 space-y-3 text-xs text-white/90">
+              <p className="text-white font-bold text-[11px] uppercase tracking-widest mb-3">Your Configuration</p>
               {[
-                ['Model', selectedProduct.name],
-                ['Dial Color', dialColor?.label || 'Original'],
-                ['Strap', strapMaterial],
-                ['Case Finish', caseFinish],
-                ['Engraving', engraving ? `"${engraving}"` : 'None'],
-              ].map(([k, v]) => (
-                <div key={k} className="flex justify-between border-b border-gray-100 pb-1.5 last:border-0">
-                  <span className="text-gray-500">{k}</span>
-                  <span className="text-luxury-text font-semibold">{v}</span>
+                ['Dial Color',     dialColor?.label   || '—', selectedProduct.allowDialCustomization !== false],
+                ['Strap Material', strapMaterial      || '—', selectedProduct.allowStrapCustomization !== false],
+                ['Case Finish',    caseFinish         || '—', selectedProduct.allowCaseCustomization !== false],
+                ['Engraving',      engraving || 'None',   options.engravingAllowed],
+              ].filter(([,, allowed]) => allowed).map(([k, v]) => (
+                <div key={k} className="flex justify-between">
+                  <span className="text-gray-300">{k}</span>
+                  <span className="text-white font-semibold">{v}</span>
                 </div>
               ))}
             </div>
@@ -427,11 +431,11 @@ export default function Customization({ onPageChange, params }) {
           {/* ── RIGHT: Options ── */}
           <div className="space-y-8">
             <div>
-              <h1 className="font-serif text-3xl font-black text-luxury-text tracking-wider">
+              <h1 className="font-serif text-3xl font-black text-white tracking-wider">
                 Customise Your <br />
-                <span style={{ color: '#2563eb' }}>{selectedProduct.name}</span>
+                <span style={{ color: '#3b82f6' }}>{selectedProduct.name}</span>
               </h1>
-              <p className="text-luxury-muted text-xs mt-2 leading-relaxed">
+              <p className="text-gray-300 text-xs mt-2 leading-relaxed">
                 Each configuration is unique. Changes are reflected live in the preview.
               </p>
             </div>
@@ -439,8 +443,8 @@ export default function Customization({ onPageChange, params }) {
             {/* Dial Color */}
             {selectedProduct.allowDialCustomization !== false && (
               <div className="space-y-3">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-luxury-text">
-                  Dial Color — <span className="text-blue-600 font-bold">{dialColor?.label}</span>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-300">
+                  Dial Color — <span className="text-white">{dialColor?.label}</span>
                 </h3>
                 <div className="flex flex-wrap gap-4">
                   {options.dialColors.map((color) => {
@@ -454,10 +458,10 @@ export default function Customization({ onPageChange, params }) {
                         <button
                           onClick={() => setDialColor(color)}
                           title={color.label}
-                          className="relative w-10 h-10 rounded-full border-2 transition-all duration-200 cursor-pointer shadow-sm"
+                          className="relative w-10 h-10 rounded-full border-2 transition-all duration-200 cursor-pointer"
                           style={{
                             background: color.value,
-                            borderColor: dialColor?.value === color.value ? '#2563eb' : 'rgba(0,0,0,0.15)',
+                            borderColor: dialColor?.value === color.value ? '#2563eb' : 'transparent',
                             boxShadow: dialColor?.value === color.value ? '0 0 0 3px rgba(37,99,235,0.35)' : 'none',
                           }}
                         >
@@ -465,7 +469,7 @@ export default function Customization({ onPageChange, params }) {
                             <Check size={14} className="absolute inset-0 m-auto" style={{ color: color.textDark ? '#000' : '#fff' }} />
                           )}
                         </button>
-                        <span className="text-[9px] text-gray-500 font-mono">
+                        <span className="text-[9px] text-gray-400 font-mono">
                           +${priceVal}
                         </span>
                       </div>
@@ -478,7 +482,7 @@ export default function Customization({ onPageChange, params }) {
             {/* Strap Material */}
             {selectedProduct.allowStrapCustomization !== false && (
               <div className="space-y-3">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-luxury-text">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-300">
                   Strap Option
                 </h3>
                 <div className="grid grid-cols-3 gap-3">
@@ -488,7 +492,7 @@ export default function Customization({ onPageChange, params }) {
                       ? matchingCustom.image 
                       : ((mat === options.customStrapName && options.customStrapImage) 
                         ? options.customStrapImage 
-                        : (STRAP_IMAGES[mat] || '/assets/strap_leather_tan.jpg'));
+                        : (STRAP_IMAGES[mat] || '/assets/wt4.png'));
                     const priceVal = (() => {
                       if (matchingCustom && matchingCustom.price !== undefined && matchingCustom.price !== null) return Number(matchingCustom.price);
                       const dbVal = selectedProduct.customizationOptions?.strapPrices?.[mat];
@@ -499,14 +503,14 @@ export default function Customization({ onPageChange, params }) {
                       <button
                         key={mat}
                         onClick={() => setStrapMaterial(mat)}
-                        className={`flex flex-col items-center p-2.5 rounded border transition-all cursor-pointer bg-white ${
+                        className={`flex flex-col items-center p-2.5 rounded border transition-all cursor-pointer bg-luxury-dark/40 ${
                           strapMaterial === mat
-                            ? 'border-blue-600 shadow-md ring-2 ring-blue-600/30'
-                            : 'border-gray-200 text-gray-700 hover:border-gray-400 hover:text-black'
+                            ? 'border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.15)]'
+                            : 'border-white/5 text-gray-300 hover:border-white/20 hover:text-white'
                         }`}
-                        style={strapMaterial === mat ? { color: '#2563eb' } : {}}
+                        style={strapMaterial === mat ? { color: '#3b82f6' } : {}}
                       >
-                        <div className="w-full h-20 bg-gray-50 rounded border border-gray-200 overflow-hidden flex items-center justify-center p-1.5 mb-2">
+                        <div className="w-full h-20 bg-luxury-dark/80 rounded border border-white/5 overflow-hidden flex items-center justify-center p-1.5 mb-2">
                           <img
                             src={imgUrl}
                             alt={mat}
@@ -516,7 +520,7 @@ export default function Customization({ onPageChange, params }) {
                         <span className="text-[8px] font-bold uppercase tracking-widest text-center leading-tight">
                           {mat}
                         </span>
-                        <span className="text-[9px] text-gray-500 font-mono mt-1">
+                        <span className="text-[9px] text-gray-400 font-mono mt-1">
                           +${priceVal}
                         </span>
                       </button>
@@ -529,8 +533,8 @@ export default function Customization({ onPageChange, params }) {
             {/* Case Finish */}
             {selectedProduct.allowCaseCustomization !== false && (
               <div className="space-y-3">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-luxury-text">
-                  Case Finish — <span className="text-blue-600 font-bold">{caseFinish}</span>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-300">
+                  Case Finish — <span className="text-white">{caseFinish}</span>
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {options.caseFinishes.map((fin) => {
@@ -547,9 +551,10 @@ export default function Customization({ onPageChange, params }) {
                         onClick={() => setCaseFinish(fin)}
                         className={`px-3 py-2 text-xs font-bold rounded border transition-all cursor-pointer ${
                           caseFinish === fin
-                            ? 'border-blue-600 bg-blue-50 text-blue-600'
-                            : 'border-gray-200 text-gray-700 hover:border-gray-400 hover:text-black bg-white'
+                            ? 'border-blue-500'
+                            : 'border-white/10 text-gray-300 hover:border-white/30 hover:text-white'
                         }`}
+                        style={caseFinish === fin ? { background: 'rgba(37,99,235,0.1)', color: '#3b82f6' } : {}}
                       >
                         {fin} (+${priceVal})
                       </button>
@@ -562,8 +567,8 @@ export default function Customization({ onPageChange, params }) {
             {/* Engraving */}
             {options.engravingAllowed && (
               <div className="space-y-3">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-luxury-text">
-                  Personal Engraving <span className="text-gray-400 font-normal">(optional)</span>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-300">
+                  Personal Engraving <span className="text-white/30">(optional)</span>
                 </h3>
                 <input
                   type="text"

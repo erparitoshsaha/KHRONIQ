@@ -1,4 +1,4 @@
-export const DEFAULT_WATCH_IMAGE = '/assets/placeholder.jpg';
+export const DEFAULT_WATCH_IMAGE = '/assets/watch_red.jpg';
 
 /**
  * Normalizes an image URL, ensuring it points to a valid image source.

@@ -16,6 +16,10 @@ export default function CartPage({ onPageChange }) {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
 
+  useEffect(() => {
+    document.title = 'Your Atelier Bag | KHRONIQ';
+  }, []);
+
   // Assemble full item details
   const cartItemsWithDetails = cart.map(item => {
     const product = products.find(p => p.id === item.productId);

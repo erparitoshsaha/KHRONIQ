@@ -22,27 +22,53 @@ export default function Login({ params, onPageChange }) {
   // Status states
   const [errorMsg, setErrorMsg] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [otpSentMsg, setOtpSentMsg] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showPasswordPopup, setShowPasswordPopup] = useState(false);
   const [lockoutCountdown, setLockoutCountdown] = useState(0);
   const [isAdminEmail, setIsAdminEmail] = useState(false);
   const [adminStep, setAdminStep] = useState('email'); // 'email' | 'code'
   const [adminCode, setAdminCode] = useState('');
 
+  useEffect(() => {
+    document.title = 'Client Authentication | KHRONIQ';
+  }, []);
+
   const handleEmailChange = (e) => {
     const val = e.target.value;
     setEmail(val);
     if (authMode === 'login') {
-      setIsAdminEmail(false);
       setAdminStep('email');
       setAdminCode('');
+      setOtpSentMsg(false);
     }
   };
 
   const handleEmailBlur = async () => {
     if (authMode !== 'login' || !email.trim()) return;
-    const res = await dispatch(checkAdminEmail(email.trim()));
-    setIsAdminEmail(res.isAdmin);
+    const res = await dispatch(checkAdminEmail(email.trim().toLowerCase()));
+    setIsAdminEmail(Boolean(res?.isAdmin));
   };
+
+  // Real-time admin email detection as user types or pastes email
+  useEffect(() => {
+    if (authMode !== 'login') {
+      setIsAdminEmail(false);
+      return;
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setIsAdminEmail(false);
+      return;
+    }
+
+    const debounceTimer = setTimeout(async () => {
+      const res = await dispatch(checkAdminEmail(cleanEmail));
+      setIsAdminEmail(Boolean(res?.isAdmin));
+    }, 200);
+
+    return () => clearTimeout(debounceTimer);
+  }, [email, authMode, dispatch]);
 
   useEffect(() => {
     if (lockoutCountdown <= 0) return;
@@ -66,6 +92,7 @@ export default function Login({ params, onPageChange }) {
     e.preventDefault();
     setErrorMsg('');
     setForgotSuccess(false);
+    setOtpSentMsg(false);
 
     if (authMode === 'login') {
       const cleanEmail = email.trim().toLowerCase();
@@ -74,31 +101,69 @@ export default function Login({ params, onPageChange }) {
         return;
       }
 
-      // Check if this email is an admin email on submit
-      const checkRes = await dispatch(checkAdminEmail(cleanEmail));
-      if (checkRes.isAdmin) {
-        setIsAdminEmail(true);
-        if (adminStep === 'email') {
-          const res = await dispatch(requestAdminCode(cleanEmail));
-          if (res.success) {
-            setAdminStep('code');
+      setLoading(true);
+      try {
+        // Check if this email is an admin email on submit
+        const checkRes = await dispatch(checkAdminEmail(cleanEmail));
+        if (checkRes && checkRes.isAdmin) {
+          setIsAdminEmail(true);
+          if (adminStep === 'email') {
+            const res = await dispatch(requestAdminCode(cleanEmail));
+            if (res.success) {
+              setAdminStep('code');
+              setOtpSentMsg(true);
+            } else {
+              setErrorMsg(res.message || 'Failed to send verification code.');
+            }
           } else {
-            setErrorMsg(res.message || 'Failed to send code.');
+            if (!adminCode.trim()) {
+              setErrorMsg('Please enter the code sent to your email.');
+              setLoading(false);
+              return;
+            }
+            const res = await dispatch(verifyAdminCode(cleanEmail, adminCode.trim()));
+            if (res.success) {
+              onPageChange('admin');
+            } else {
+              setErrorMsg(res.message || 'Invalid verification code.');
+            }
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Regular customer login
+        if (!password) {
+          setErrorMsg('Please enter your password.');
+          setLoading(false);
+          return;
+        }
+
+        const res = await dispatch(loginUser(cleanEmail, password));
+        if (res.success) {
+          if (res.role === 'admin') {
+            onPageChange('admin');
+          } else if (redirectPage === 'checkout') {
+            onPageChange('checkout', { appliedCoupon });
+          } else if (redirectPage.startsWith('product-detail:')) {
+            const pid = redirectPage.split(':')[1];
+            onPageChange('product-detail', { id: pid });
+          } else {
+            onPageChange('profile');
           }
         } else {
-          if (!adminCode.trim()) {
-            setErrorMsg('Please enter the code sent to your email.');
-            return;
-          }
-          const res = await dispatch(verifyAdminCode(cleanEmail, adminCode.trim()));
-          if (res.success) {
-            onPageChange('admin');
+          if (res.remainingSeconds) {
+            setLockoutCountdown(res.remainingSeconds);
           } else {
-            setErrorMsg(res.message || 'Invalid code.');
+            setErrorMsg(res.message || 'Invalid login combination.');
           }
         }
-        return;
+      } catch (err) {
+        setErrorMsg('Network or service error. Please try again.');
+      } finally {
+        setLoading(false);
       }
+      return;
     }
 
     if (authMode === 'forgot') {
@@ -173,21 +238,21 @@ export default function Login({ params, onPageChange }) {
       
       {/* Brand Icon */}
       <div className="text-center space-y-2">
-        <Star className="mx-auto text-luxury-red animate-pulse" size={32} fill="currentColor" />
-        <h1 className="font-serif text-2xl font-bold uppercase tracking-widest text-luxury-text">Security Gateway</h1>
-        <p className="text-xs text-luxury-muted">Secure entry to the Khroniq Horological Portal.</p>
+        <Star className="mx-auto text-luxury-gold animate-pulse" size={32} fill="var(--color-luxury-gold)" />
+        <h1 className="font-serif text-2xl font-bold uppercase tracking-widest text-white">Security Gateway</h1>
+        <p className="text-xs text-gray-400">Secure entry to the Khroniq Horological Portal.</p>
       </div>
 
       {/* Login Box */}
-      <div className="bg-white border border-gray-200 rounded-md p-6 sm:p-8 space-y-6 shadow-md">
+      <div className="bg-luxury-gray border border-white/5 rounded-md p-6 sm:p-8 space-y-6 shadow-2xl">
         
         {/* Selector Tabs */}
         {authMode !== 'forgot' ? (
-          <div className="flex border-b border-gray-200">
+          <div className="flex border-b border-white/5">
             <button
               onClick={() => { setAuthMode('login'); setErrorMsg(''); setIsAdminEmail(false); setAdminStep('email'); setAdminCode(''); }}
               className={`flex-1 pb-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 cursor-pointer transition ${
-                authMode === 'login' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-black'
+                authMode === 'login' ? 'border-luxury-text text-luxury-text' : 'border-transparent text-gray-500 hover:text-gray-300'
               }`}
             >
               Sign In
@@ -196,28 +261,35 @@ export default function Login({ params, onPageChange }) {
             <button
               onClick={() => { setAuthMode('register'); setErrorMsg(''); setIsAdminEmail(false); setAdminStep('email'); setAdminCode(''); }}
               className={`flex-1 pb-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 cursor-pointer transition ${
-                authMode === 'register' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-black'
+                authMode === 'register' ? 'border-luxury-text text-luxury-text' : 'border-transparent text-gray-500 hover:text-gray-300'
               }`}
             >
               Register
             </button>
           </div>
         ) : (
-          <div className="border-b border-gray-200 pb-3">
-            <h2 className="text-xs font-bold text-luxury-red uppercase tracking-wider text-center">Reset Credentials Key</h2>
+          <div className="border-b border-white/5 pb-3">
+            <h2 className="text-xs font-bold text-luxury-gold uppercase tracking-wider text-center">Reset Credentials Key</h2>
           </div>
         )}
 
         {errorMsg && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-xs font-medium">
+          <div className="p-3 bg-luxury-red/10 border border-luxury-red/30 rounded text-luxury-red text-xs font-medium">
             {errorMsg}
           </div>
         )}
 
         {forgotSuccess && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded text-emerald-700 text-xs font-medium flex items-center space-x-1.5">
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded text-emerald-400 text-xs font-medium flex items-center space-x-1.5">
             <CheckCircle2 size={14} />
             <span>A secure credential reset key has been dispatched to your email inbox.</span>
+          </div>
+        )}
+
+        {otpSentMsg && (
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded text-emerald-400 text-xs font-medium flex items-center space-x-1.5 animate-in fade-in">
+            <CheckCircle2 size={14} className="shrink-0" />
+            <span>A 6-digit code has been dispatched to {email}. Check your inbox or spam folder.</span>
           </div>
         )}
 
@@ -226,21 +298,21 @@ export default function Login({ params, onPageChange }) {
           {/* Name (Registration Only) */}
           {authMode === 'register' && (
             <div className="space-y-1.5">
-              <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Full Name</label>
+              <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Full Name</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Username"
-                className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
               />
             </div>
           )}
 
           {/* Email (Always Needed) */}
           <div className="space-y-1.5">
-            <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Email Address</label>
+            <label className="text-[10px] text-gray-300 font-bold uppercase tracking-widest block">Email Address</label>
             <input
               type="email"
               required
@@ -249,28 +321,29 @@ export default function Login({ params, onPageChange }) {
               onChange={handleEmailChange}
               onBlur={handleEmailBlur}
               placeholder="customer@domain.com"
-              className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black disabled:opacity-50 placeholder:text-gray-400"
+              className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold disabled:opacity-50"
             />
           </div>
 
-          {/* Admin Sign-In Code (shown automatically once an admin email is detected) */}
+          {/* Admin Sign-In Code (shown automatically once an admin email is detected and code sent) */}
           {authMode === 'login' && isAdminEmail && adminStep === 'code' && (
             <div className="space-y-1.5">
-              <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Sign-In Code</label>
+              <label className="text-[10px] text-gray-300 font-bold uppercase tracking-widest block">Sign-In Code</label>
               <input
                 type="text"
                 required
+                autoFocus
                 value={adminCode}
                 onChange={(e) => setAdminCode(e.target.value)}
                 placeholder="6-digit code"
-                className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 tracking-[0.3em] focus:outline-none focus:border-black placeholder:text-gray-400"
+                className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 tracking-[0.3em] focus:outline-none focus:border-luxury-gold"
               />
               <button
                 type="button"
-                onClick={() => { setAdminStep('email'); setAdminCode(''); setErrorMsg(''); }}
-                className="text-[9px] text-gray-500 hover:text-black transition uppercase font-semibold cursor-pointer"
+                onClick={() => { setAdminStep('email'); setAdminCode(''); setErrorMsg(''); setOtpSentMsg(false); }}
+                className="text-[9px] text-gray-400 hover:text-white transition uppercase font-semibold cursor-pointer"
               >
-                Change email
+                Change email or resend code
               </button>
             </div>
           )}
@@ -279,37 +352,37 @@ export default function Login({ params, onPageChange }) {
           {authMode !== 'forgot' && !(authMode === 'login' && isAdminEmail) && (
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Password</label>
+                <label className="text-[10px] text-gray-300 font-bold uppercase tracking-widest block">Password</label>
                 <button
                   type="button"
                   onClick={() => { setAuthMode('forgot'); setErrorMsg(''); }}
-                  className="text-[9px] text-gray-600 hover:text-black transition uppercase font-semibold cursor-pointer underline"
+                  className="text-[9px] text-gray-400 hover:text-white transition uppercase font-semibold cursor-pointer"
                 >
                   Forgot Password?
                 </button>
               </div>
               <input
                 type="password"
-                required
+                required={authMode === 'register'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
               />
               {authMode === 'register' && (
-                <div className="pt-1.5 space-y-1 text-[9px] text-gray-500 font-normal">
-                  <p className="font-semibold tracking-wider text-[8px] uppercase text-gray-700">Guidelines:</p>
+                <div className="pt-1.5 space-y-1 text-[9px] text-gray-500 font-light">
+                  <p className="font-semibold tracking-wider text-[8px] uppercase text-luxury-gold/75">Guidelines:</p>
                   <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
-                    <span className={`flex items-center space-x-1 ${password.length >= 8 ? 'text-emerald-700 font-medium' : 'text-gray-400'}`}>
+                    <span className={`flex items-center space-x-1 ${password.length >= 8 ? 'text-emerald-400/90' : 'text-gray-500'}`}>
                       <span>• Min 8 chars</span>
                     </span>
-                    <span className={`flex items-center space-x-1 ${/[A-Z]/.test(password) ? 'text-emerald-700 font-medium' : 'text-gray-400'}`}>
+                    <span className={`flex items-center space-x-1 ${/[A-Z]/.test(password) ? 'text-emerald-400/90' : 'text-gray-500'}`}>
                       <span>• One uppercase</span>
                     </span>
-                    <span className={`flex items-center space-x-1 ${/[a-z]/.test(password) ? 'text-emerald-700 font-medium' : 'text-gray-400'}`}>
+                    <span className={`flex items-center space-x-1 ${/[a-z]/.test(password) ? 'text-emerald-400/90' : 'text-gray-500'}`}>
                       <span>• One lowercase</span>
                     </span>
-                    <span className={`flex items-center space-x-1 ${/[!@#$%^&*(),.?":{}|<>\-_]/.test(password) ? 'text-emerald-700 font-medium' : 'text-gray-400'}`}>
+                    <span className={`flex items-center space-x-1 ${/[!@#$%^&*(),.?":{}|<>\-_]/.test(password) ? 'text-emerald-400/90' : 'text-gray-500'}`}>
                       <span>• One special char</span>
                     </span>
                   </div>
@@ -320,14 +393,16 @@ export default function Login({ params, onPageChange }) {
 
           <button
             type="submit"
-            disabled={lockoutCountdown > 0}
-            className={`w-full py-3.5 font-bold text-xs tracking-widest uppercase transition flex items-center justify-center space-x-1.5 rounded-sm shadow-sm ${
-              lockoutCountdown > 0 
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300' 
-                : 'bg-luxury-text text-white hover:bg-black/80 cursor-pointer'
+            disabled={loading || lockoutCountdown > 0}
+            className={`w-full py-3.5 font-bold text-xs tracking-widest uppercase transition flex items-center justify-center space-x-1.5 ${
+              loading || lockoutCountdown > 0 
+                ? 'bg-gray-700 text-gray-400 cursor-not-allowed border border-white/5' 
+                : 'bg-white text-luxury-dark hover:bg-luxury-gold hover:text-luxury-dark cursor-pointer'
             }`}
           >
-            {authMode === 'register' 
+            {loading 
+              ? 'Processing...'
+              : authMode === 'register' 
               ? 'Create Account' 
               : authMode === 'forgot'
               ? 'Request Reset Link'
@@ -344,13 +419,14 @@ export default function Login({ params, onPageChange }) {
               <button
                 type="button"
                 onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
-                className="text-[10px] text-gray-500 hover:text-black transition uppercase font-semibold cursor-pointer"
+                className="text-[10px] text-gray-400 hover:text-white transition uppercase font-semibold cursor-pointer"
               >
                 Return to Sign In
               </button>
             </div>
           )}
         </form>
+
 
       </div>
 

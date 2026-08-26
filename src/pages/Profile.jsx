@@ -147,7 +147,9 @@ export default function Profile({ params, onPageChange }) {
   const [postalCode, setPostalCode] = useState(currentUser?.shippingAddress?.postalCode || '');
   const [country, setCountry] = useState(currentUser?.shippingAddress?.country || '');
   const [phone, setPhone] = useState(currentUser?.shippingAddress?.phone || '');
-  const [settingsMessage, setSettingsMessage] = useState('');
+  useEffect(() => {
+    document.title = 'Client Profile | KHRONIQ';
+  }, []);
 
   // Sync tab and user profile updates
   useEffect(() => {
@@ -249,14 +251,14 @@ export default function Profile({ params, onPageChange }) {
     <div className="space-y-8 pb-12">
       
       {/* Profile Header Banner */}
-      <div className="bg-white border border-gray-200 p-6 sm:p-8 rounded-md flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm">
+      <div className="bg-luxury-gray border border-white/5 p-6 sm:p-8 rounded-md flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="flex items-center space-x-4">
-          <div className="h-16 w-16 bg-gray-100 rounded-full border border-gray-300 flex items-center justify-center text-luxury-text text-xl font-bold">
+          <div className="h-16 w-16 bg-luxury-dark rounded-full border border-luxury-gold/50 flex items-center justify-center text-luxury-gold text-xl font-bold">
             {currentUser.name.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h1 className="text-xl font-bold text-luxury-text uppercase tracking-wider">{currentUser.name}</h1>
-            <p className="text-xs text-gray-500 font-normal mt-0.5">{currentUser.email}</p>
+            <h1 className="text-xl font-bold text-white uppercase tracking-wider">{currentUser.name}</h1>
+            <p className="text-xs text-gray-400 font-light mt-0.5">{currentUser.email}</p>
             {currentUser.role === 'admin' && (
               <span className="inline-block bg-luxury-red text-white text-[9px] font-bold tracking-widest px-2 py-0.5 rounded uppercase mt-1">
                 ADMIN ACCESS
@@ -269,14 +271,14 @@ export default function Profile({ params, onPageChange }) {
           {currentUser.role === 'admin' && (
             <button
               onClick={() => onPageChange('admin')}
-              className="px-5 py-2.5 bg-luxury-text text-white text-xs font-bold tracking-widest uppercase hover:bg-black/80 transition cursor-pointer rounded-sm"
+              className="px-5 py-2.5 bg-luxury-gold text-luxury-dark text-xs font-bold tracking-widest uppercase hover:bg-luxury-gold-dark transition cursor-pointer"
             >
               Admin Panel
             </button>
           )}
           <button
             onClick={handleLogout}
-            className="px-5 py-2.5 bg-transparent border border-gray-300 text-gray-700 hover:text-luxury-red hover:border-luxury-red text-xs font-bold tracking-widest uppercase transition flex items-center space-x-1.5 cursor-pointer rounded-sm"
+            className="px-5 py-2.5 bg-transparent border border-white/10 text-gray-300 hover:text-luxury-red hover:border-luxury-red/40 text-xs font-bold tracking-widest uppercase transition flex items-center space-x-1.5 cursor-pointer"
           >
             <LogOut size={14} />
             <span>Sign Out</span>
@@ -289,11 +291,11 @@ export default function Profile({ params, onPageChange }) {
         
         {/* Sidebar Tabs */}
         <aside className="lg:col-span-3">
-          <div className="flex lg:flex-col border border-gray-200 rounded overflow-hidden text-xs bg-white shadow-sm">
+          <div className="flex lg:flex-col border lg:border-0 border-white/5 rounded overflow-hidden text-xs text-gray-400">
             <button
               onClick={() => setActiveTab('orders')}
-              className={`flex-1 lg:flex-none text-left py-3.5 px-4 font-bold tracking-wider uppercase cursor-pointer border-r lg:border-r-0 lg:border-b border-gray-200 transition flex items-center space-x-2 ${
-                activeTab === 'orders' ? 'bg-red-50 text-gray-900 border-l-2 border-l-red-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              className={`flex-1 lg:flex-none text-left py-3.5 px-4 font-bold tracking-wider uppercase cursor-pointer border-r lg:border-r-0 lg:border-b border-black/10 transition flex items-center space-x-2 ${
+                activeTab === 'orders' ? 'bg-red-50 text-gray-900 border-l-2 border-l-red-600' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
               <Package size={14} />
@@ -302,8 +304,8 @@ export default function Profile({ params, onPageChange }) {
 
             <button
               onClick={() => setActiveTab('wishlist')}
-              className={`flex-1 lg:flex-none text-left py-3.5 px-4 font-bold tracking-wider uppercase cursor-pointer border-r lg:border-r-0 lg:border-b border-gray-200 transition flex items-center space-x-2 ${
-                activeTab === 'wishlist' ? 'bg-red-50 text-gray-900 border-l-2 border-l-red-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              className={`flex-1 lg:flex-none text-left py-3.5 px-4 font-bold tracking-wider uppercase cursor-pointer border-r lg:border-r-0 lg:border-b border-black/10 transition flex items-center space-x-2 ${
+                activeTab === 'wishlist' ? 'bg-red-50 text-gray-900 border-l-2 border-l-red-600' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
               <Heart size={14} />
@@ -313,7 +315,7 @@ export default function Profile({ params, onPageChange }) {
             <button
               onClick={() => setActiveTab('settings')}
               className={`flex-1 lg:flex-none text-left py-3.5 px-4 font-bold tracking-wider uppercase cursor-pointer transition flex items-center space-x-2 ${
-                activeTab === 'settings' ? 'bg-red-50 text-gray-900 border-l-2 border-l-red-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                activeTab === 'settings' ? 'bg-red-50 text-gray-900 border-l-2 border-l-red-600' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
               <User size={14} />
@@ -323,19 +325,19 @@ export default function Profile({ params, onPageChange }) {
         </aside>
 
         {/* Details Panel */}
-        <div className="lg:col-span-9 bg-white border border-gray-200 rounded-md p-6 sm:p-8 min-h-[300px] shadow-sm">
+        <div className="lg:col-span-9 bg-luxury-gray/20 border border-white/5 rounded-md p-6 sm:p-8 min-h-[300px]">
           
           {/* Tab 1: Orders */}
           {activeTab === 'orders' && (
             <div className="space-y-6">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-luxury-text border-b border-gray-200 pb-3">Purchase History</h2>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-white border-b border-white/5 pb-3">Purchase History</h2>
               
               {userOrders.length === 0 ? (
                 <div className="text-center py-12 text-gray-500 space-y-4">
                   <p className="text-xs">No orders recorded under this account.</p>
                   <button
                     onClick={() => onPageChange('shop')}
-                    className="px-6 py-2.5 bg-luxury-text text-white text-xs font-bold uppercase tracking-widest hover:bg-black/80 transition rounded-sm cursor-pointer"
+                    className="px-6 py-2.5 bg-luxury-gold text-luxury-dark text-xs font-bold uppercase tracking-widest hover:bg-luxury-gold-dark transition"
                   >
                     Browse Timepieces
                   </button>
@@ -343,22 +345,26 @@ export default function Profile({ params, onPageChange }) {
               ) : (
                 <div className="space-y-6">
                   {userOrders.map((order) => (
-                    <div key={order.id} className="bg-gray-50 border border-gray-200 rounded p-5 space-y-4">
+                    <div key={order.id} className="bg-luxury-gray border border-white/5 rounded p-5 space-y-4">
                       
                       {/* Order info header */}
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-200 pb-4 text-xs">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/5 pb-4 text-xs">
                         <div>
-                          <p className="font-bold text-luxury-text uppercase tracking-wider font-mono">ORDER REF: {order.id}</p>
+                          <p className="font-bold text-white uppercase tracking-wider font-mono">ORDER REF: {order.id}</p>
                           <p className="text-gray-500 text-[10px] mt-0.5">Placed on {order.date} at {order.time}</p>
                         </div>
                         <div className="flex items-center space-x-3">
                           {/* Status Badge */}
                           <span className={`px-3 py-1 rounded text-[9px] font-bold uppercase tracking-wider border ${
                             order.status === 'Delivered' 
-                              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                              ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
                               : order.status === 'Cancelled'
-                              ? 'border-red-500 bg-red-50 text-red-700'
-                              : 'border-blue-500 bg-blue-50 text-blue-700'
+                              ? 'border-red-500 bg-red-500/10 text-red-400'
+                              : order.status === 'Shipped'
+                              ? 'border-sky-500 bg-sky-500/10 text-sky-400'
+                              : order.status === 'Exchange/Refund Requested'
+                              ? 'border-purple-500 bg-purple-500/10 text-purple-400'
+                              : 'border-yellow-500 bg-yellow-500/10 text-yellow-400'
                           }`}>
                             {order.status}
                           </span>
@@ -367,7 +373,7 @@ export default function Profile({ params, onPageChange }) {
                           {order.status === 'Pending' && (
                             <button
                               onClick={() => handleCancelOrder(order.id)}
-                              className="text-[9px] text-luxury-red hover:text-red-700 font-bold uppercase border border-luxury-red/30 hover:border-luxury-red px-2 py-1 rounded transition cursor-pointer"
+                              className="text-[9px] text-luxury-red hover:text-red-400 font-bold uppercase border border-luxury-red/20 hover:border-luxury-red/50 px-2 py-1 rounded transition cursor-pointer"
                             >
                               Cancel
                             </button>
@@ -377,7 +383,7 @@ export default function Profile({ params, onPageChange }) {
                           {(order.status === 'Paid' || order.status === 'Processing' || order.status === 'Shipped' || order.status === 'Delivered') && (
                             <button
                               onClick={() => handleExchangeRefundClick(order)}
-                              className="text-[9px] text-purple-700 hover:text-purple-900 font-bold uppercase border border-purple-300 hover:border-purple-500 px-2 py-1 rounded transition cursor-pointer bg-purple-50"
+                              className="text-[9px] text-purple-400 hover:text-purple-300 font-bold uppercase border border-purple-500/20 hover:border-purple-500/50 px-2 py-1 rounded transition cursor-pointer bg-purple-500/5"
                             >
                               Exchange / Refund
                             </button>
@@ -391,25 +397,24 @@ export default function Profile({ params, onPageChange }) {
                       {/* Items */}
                       <div className="space-y-3">
                         {order.items.map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-xs">
+                          <div key={idx} className="flex justify-between items-center text-xs text-gray-300">
                             <div className="flex items-center space-x-3">
-                              <div className="h-10 w-10 bg-white rounded border border-gray-200 flex items-center justify-center p-1 overflow-hidden">
-                                <img src={item.image} alt={item.name} onError={(e) => handleImageError(e)} className="w-full h-full object-cover" />
+                              <div className="h-10 w-10 bg-luxury-dark rounded border border-white/5 flex items-center justify-center p-1">
+                                <img src={item.image} alt={item.name} onError={(e) => handleImageError(e)} className="max-h-full max-w-full object-contain" />
                               </div>
-                              <div>
-                                <p className="font-semibold text-luxury-text">{item.name}</p>
-                                <p className="text-[10px] text-gray-500">Qty: {item.quantity}</p>
-                              </div>
+                              <span className="line-clamp-1">{item.name} (×{item.quantity})</span>
                             </div>
-                            <span className="font-bold text-luxury-text">${(item.price * item.quantity).toLocaleString()}</span>
+                            <span className="font-semibold text-white">${(item.price * item.quantity).toLocaleString()}</span>
                           </div>
                         ))}
                       </div>
 
-                      <div className="border-t border-gray-200 pt-3 flex justify-between items-center text-xs text-gray-600">
-                        <span>Total Paid</span>
-                        <span className="text-sm font-extrabold text-luxury-text">${order.total.toLocaleString()}</span>
+                      {/* Totals footer */}
+                      <div className="border-t border-white/5 pt-3 flex justify-between items-center text-xs text-gray-400">
+                        <p><span className="font-semibold text-white">Courier:</span> Free Secure priority courier</p>
+                        <p className="font-bold text-white">Total Charge: <span className="text-luxury-gold">${order.total.toLocaleString()}</span></p>
                       </div>
+
                     </div>
                   ))}
                 </div>
@@ -420,22 +425,27 @@ export default function Profile({ params, onPageChange }) {
           {/* Tab 2: Wishlist */}
           {activeTab === 'wishlist' && (
             <div className="space-y-6">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-luxury-text border-b border-gray-200 pb-3">My Saved Pieces</h2>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-white border-b border-white/5 pb-3">My Saved Pieces</h2>
               
               {wishlistedProducts.length === 0 ? (
                 <div className="text-center py-12 text-gray-500 space-y-4">
-                  <p className="text-xs">No timepieces saved to your wishlist yet.</p>
+                  <p className="text-xs">Your wishlist is currently empty.</p>
                   <button
                     onClick={() => onPageChange('shop')}
-                    className="px-6 py-2.5 bg-luxury-text text-white text-xs font-bold uppercase tracking-widest hover:bg-black/80 transition rounded-sm cursor-pointer"
+                    className="px-6 py-2.5 bg-luxury-gold text-luxury-dark text-xs font-bold uppercase tracking-widest hover:bg-luxury-gold-dark transition"
                   >
-                    Explore Catalogue
+                    Add Items
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {wishlistedProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} onPageChange={onPageChange} />
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onPageChange={onPageChange}
+                      showRemove={true}
+                    />
                   ))}
                 </div>
               )}
@@ -445,111 +455,111 @@ export default function Profile({ params, onPageChange }) {
           {/* Tab 3: Settings */}
           {activeTab === 'settings' && (
             <div className="space-y-6 max-w-xl">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-luxury-text border-b border-gray-200 pb-3">Account Details</h2>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-white border-b border-white/5 pb-3">Account Details</h2>
               
               {settingsMessage && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium rounded">
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium rounded">
                   {settingsMessage}
                 </div>
               )}
 
               <form onSubmit={handleSettingsSubmit} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Full Name</label>
+                  <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Full Name</label>
                   <input
                     type="text"
                     required
                     value={profileName}
                     onChange={(e) => setProfileName(e.target.value)}
-                    className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Email Address</label>
+                  <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Email Address</label>
                   <input
                     type="email"
                     required
                     disabled
                     value={profileEmail}
-                    className="w-full bg-gray-50 border border-gray-300 rounded text-gray-500 text-xs p-3 cursor-not-allowed focus:outline-none"
+                    className="w-full bg-luxury-dark/50 border border-white/10 rounded text-gray-500 text-xs p-3 cursor-not-allowed focus:outline-none"
                   />
                   <span className="text-[9px] text-gray-500 block">Contact support to modify email bindings.</span>
                 </div>
 
-                <h2 className="text-sm font-bold uppercase tracking-widest text-luxury-text border-b border-gray-200 pt-6 pb-3">Default Shipping Address</h2>
+                <h2 className="text-sm font-bold uppercase tracking-widest text-white border-b border-white/5 pt-6 pb-3">Default Shipping Address</h2>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Street Address</label>
+                  <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Street Address</label>
                   <input
                     type="text"
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
                     placeholder="Local Address"
-                    className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">City</label>
+                    <label className="text-[10px] text-black font-bold uppercase tracking-widest block">City</label>
                     <input
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder="Geneva"
-                      className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                      className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">State / Region</label>
+                    <label className="text-[10px] text-black font-bold uppercase tracking-widest block">State / Region</label>
                     <input
                       type="text"
                       value={stateVal}
                       onChange={(e) => setStateVal(e.target.value)}
                       placeholder="Geneva"
-                      className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                      className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Postal Code</label>
+                    <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Postal Code</label>
                     <input
                       type="text"
                       value={postalCode}
                       onChange={(e) => setPostalCode(e.target.value)}
                       placeholder="400001"
-                      className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                      className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Country</label>
+                    <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Country</label>
                     <input
                       type="text"
                       value={country}
                       onChange={(e) => setCountry(e.target.value)}
                       placeholder="India"
-                      className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                      className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Phone Number</label>
+                  <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Phone Number</label>
                   <input
                     type="text"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+91 98765 43210"
-                    className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-luxury-text hover:bg-black/80 text-white font-bold text-xs tracking-widest uppercase transition-colors cursor-pointer rounded-sm shadow-sm"
+                  className="px-6 py-3 bg-white hover:bg-luxury-gold text-luxury-dark font-bold text-xs tracking-widest uppercase transition-colors cursor-pointer"
                 >
                   Save Settings
                 </button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Provider, useDispatch } from 'react-redux';
 import { store } from './store';
 import MainLayout from './layouts/MainLayout';
@@ -6,17 +6,25 @@ import Home from './pages/Home';
 import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
 import CartPage from './pages/CartPage';
-import Checkout from './pages/Checkout';
-import Profile from './pages/Profile';
 import Login from './pages/Login';
-import Admin from './pages/Admin';
-import Static from './pages/Static';
-import Customization from './pages/Customization';
-import Gifting from './pages/Gifting';
 import { fetchProducts, fetchCoupons, fetchUserProfile } from './store/slices/watchSlice';
-import ResetPassword from './pages/ResetPassword';
 
+// Lazy-load secondary / heavy routes to split bundles cleanly
+const Checkout = lazy(() => import('./pages/Checkout'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Admin = lazy(() => import('./pages/Admin'));
+const Static = lazy(() => import('./pages/Static'));
+const Customization = lazy(() => import('./pages/Customization'));
+const Gifting = lazy(() => import('./pages/Gifting'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 
+function PageLoader() {
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center text-luxury-gold">
+      <div className="w-8 h-8 border-2 border-luxury-gold/30 border-t-luxury-gold rounded-full animate-spin" />
+    </div>
+  );
+}
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -30,12 +38,12 @@ function AppContent() {
   }, [dispatch]);
 
   useEffect(() => {
-  const match = window.location.pathname.match(/^\/reset-password\/(.+)$/);
-  if (match) {
-    setCurrentPage('reset-password');
-    setPageParams({ token: match[1] });
-  }
-}, []);
+    const match = window.location.pathname.match(/^\/reset-password\/(.+)$/);
+    if (match) {
+      setCurrentPage('reset-password');
+      setPageParams({ token: match[1] });
+    }
+  }, []);
 
   const handlePageChange = (page, params = null) => {
     if (page === 'home') {
@@ -79,7 +87,9 @@ function AppContent() {
 
   return (
     <MainLayout onPageChange={handlePageChange} currentPage={currentPage}>
-      {renderPage()}
+      <Suspense fallback={<PageLoader />}>
+        {renderPage()}
+      </Suspense>
     </MainLayout>
   );
 }

@@ -1,39 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import jsPDF from 'jspdf';
 import { createRazorpayOrder, verifyRazorpayPayment, validateCoupon, selectCurrentCurrency, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
+import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 
 import confetti from 'canvas-confetti';
 import { CheckCircle2, CreditCard, Landmark, ArrowRight, ShieldCheck, Gift, Check, Tag, X, Loader2 } from 'lucide-react';
-
-export function getExpectedDeliveryDate(zipCode) {
-  if (!zipCode) return null;
-  const cleaned = zipCode.trim();
-  if (cleaned.length === 0) return null;
-
-  let days = 5; // Default delivery days
-  const firstDigit = cleaned.charAt(0);
-  if (['1', '2'].includes(firstDigit)) {
-    days = 3;
-  } else if (['3', '4'].includes(firstDigit)) {
-    days = 4;
-  } else if (['5', '6'].includes(firstDigit)) {
-    days = 5;
-  } else if (['7', '8', '9'].includes(firstDigit)) {
-    days = 6;
-  }
-
-  const deliveryDate = new Date();
-  deliveryDate.setDate(deliveryDate.getDate() + days);
-
-  return deliveryDate.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-}
 
 export default function Checkout({ params, onPageChange }) {
   const dispatch = useDispatch();
@@ -59,6 +31,10 @@ export default function Checkout({ params, onPageChange }) {
     country: currentUser?.shippingAddress?.country || 'India'
   });
   const [processingPayment, setProcessingPayment] = useState(false);
+
+  useEffect(() => {
+    document.title = 'Secure Checkout | KHRONIQ';
+  }, []);
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [giftPackage, setGiftPackage] = useState('standard'); // standard | gift-box | luxury
   const [giftNote, setGiftNote] = useState('');
@@ -232,9 +208,10 @@ export default function Checkout({ params, onPageChange }) {
     rzp.open();
   };
 
-  const handleDownloadInvoice = () => {
+  const handleDownloadInvoice = async () => {
     if (!orderReceipt) return;
 
+    const { default: jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const marginX = 15;
@@ -372,7 +349,7 @@ export default function Checkout({ params, onPageChange }) {
     const pageHeight = doc.internal.pageSize.getHeight();
     doc.setDrawColor(220, 220, 220);
     doc.line(marginX, pageHeight - 18, pageWidth - marginX, pageHeight - 18);
-doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(120, 120, 120);
     doc.text('KHRONIQ Watches  •  support@khroniq.com  •  Thank you for your purchase', pageWidth / 2, pageHeight - 12, { align: 'center' });
@@ -380,62 +357,58 @@ doc.setFont('helvetica', 'normal');
     doc.save(`KHRONIQ-Invoice-${orderReceipt.id}.pdf`);
   };
 
+
+
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
 
       {/* Checkout Progress Stepper */}
-      <div className="flex items-center justify-center space-x-4 border-b border-gray-200 pb-6">
+      <div className="flex items-center justify-center space-x-4 border-b border-white/5 pb-6">
         {isGiftingJourney ? (
           <>
             <div className="flex items-center space-x-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step >= 1 ? 'bg-luxury-text text-white' : 'bg-gray-100 border border-gray-200 text-gray-400'
-              }`}>1</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${step >= 1 ? 'text-luxury-text' : 'text-gray-400'}`}>Gifting</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 1 ? 'bg-luxury-gold text-luxury-dark' : 'bg-luxury-gray text-gray-500'
+                }`}>1</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step >= 1 ? 'text-white' : 'text-gray-500'}`}>Gifting</span>
             </div>
-            <div className="w-12 h-[1px] bg-gray-200" />
+            <div className="w-12 h-[1px] bg-white/10" />
             <div className="flex items-center space-x-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step >= 2 ? 'bg-luxury-text text-white' : 'bg-gray-100 border border-gray-200 text-gray-400'
-              }`}>2</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${step >= 2 ? 'text-luxury-text' : 'text-gray-400'}`}>Shipping</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 2 ? 'bg-luxury-gold text-luxury-dark' : 'bg-luxury-gray text-gray-500'
+                }`}>2</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step >= 2 ? 'text-white' : 'text-gray-500'}`}>Shipping</span>
             </div>
-            <div className="w-12 h-[1px] bg-gray-200" />
+            <div className="w-12 h-[1px] bg-white/10" />
             <div className="flex items-center space-x-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step >= 3 ? 'bg-luxury-text text-white' : 'bg-gray-100 border border-gray-200 text-gray-400'
-              }`}>3</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${step >= 3 ? 'text-luxury-text' : 'text-gray-400'}`}>Payment</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 3 ? 'bg-luxury-gold text-luxury-dark' : 'bg-luxury-gray text-gray-500'
+                }`}>3</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step >= 3 ? 'text-white' : 'text-gray-500'}`}>Payment</span>
             </div>
-            <div className="w-12 h-[1px] bg-gray-200" />
+            <div className="w-12 h-[1px] bg-white/10" />
             <div className="flex items-center space-x-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step === 4 ? 'bg-luxury-text text-white' : 'bg-gray-100 border border-gray-200 text-gray-400'
-              }`}>4</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${step === 4 ? 'text-luxury-text' : 'text-gray-400'}`}>Receipt</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step === 4 ? 'bg-luxury-gold text-luxury-dark' : 'bg-luxury-gray text-gray-500'
+                }`}>4</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step === 4 ? 'text-white' : 'text-gray-500'}`}>Receipt</span>
             </div>
           </>
         ) : (
           <>
             <div className="flex items-center space-x-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step >= 2 ? 'bg-luxury-text text-white' : 'bg-gray-100 border border-gray-200 text-gray-400'
-              }`}>1</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${step >= 2 ? 'text-luxury-text' : 'text-gray-400'}`}>Shipping</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 2 ? 'bg-luxury-gold text-luxury-dark' : 'bg-luxury-gray text-gray-500'
+                }`}>1</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step >= 2 ? 'text-white' : 'text-gray-500'}`}>Shipping</span>
             </div>
-            <div className="w-12 h-[1px] bg-gray-200" />
+            <div className="w-12 h-[1px] bg-white/10" />
             <div className="flex items-center space-x-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step >= 3 ? 'bg-luxury-text text-white' : 'bg-gray-100 border border-gray-200 text-gray-400'
-              }`}>2</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${step >= 3 ? 'text-luxury-text' : 'text-gray-400'}`}>Payment</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 3 ? 'bg-luxury-gold text-luxury-dark' : 'bg-luxury-gray text-gray-500'
+                }`}>2</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step >= 3 ? 'text-white' : 'text-gray-500'}`}>Payment</span>
             </div>
-            <div className="w-12 h-[1px] bg-gray-200" />
+            <div className="w-12 h-[1px] bg-white/10" />
             <div className="flex items-center space-x-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step === 4 ? 'bg-luxury-text text-white' : 'bg-gray-100 border border-gray-200 text-gray-400'
-              }`}>3</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${step === 4 ? 'text-luxury-text' : 'text-gray-400'}`}>Receipt</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step === 4 ? 'bg-luxury-gold text-luxury-dark' : 'bg-luxury-gray text-gray-500'
+                }`}>3</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step === 4 ? 'text-white' : 'text-gray-500'}`}>Receipt</span>
             </div>
           </>
         )}
@@ -448,10 +421,10 @@ doc.setFont('helvetica', 'normal');
           <div className="lg:col-span-7 space-y-5">
 
             {/* Gift Occasion Selector */}
-            <div className="bg-white border border-gray-200 p-5 rounded-md space-y-3 shadow-sm">
-              <div className="flex items-center gap-2 border-b border-gray-200 pb-3">
-                <Gift size={13} className="text-luxury-red" />
-                <h3 className="text-xs font-bold tracking-widest text-luxury-text uppercase">Select Gifting Occasion</h3>
+            <div className="bg-luxury-gray border border-white/5 p-5 rounded-md space-y-3">
+              <div className="flex items-center gap-2 border-b border-white/5 pb-3">
+                <Gift size={13} className="text-luxury-gold" />
+                <h3 className="text-xs font-bold tracking-widest text-white uppercase">Select Gifting Occasion</h3>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
@@ -466,16 +439,16 @@ doc.setFont('helvetica', 'normal');
                     onClick={() => setGiftOccasion(occ.id)}
                     className={`relative p-4 rounded border text-center transition-all duration-200 cursor-pointer ${
                       giftOccasion === occ.id
-                        ? 'border-black bg-black text-white shadow-md'
+                        ? 'border-black bg-gray-50 shadow-md'
                         : 'border-gray-200 bg-white hover:border-gray-400'
                     }`}
                   >
                     {giftOccasion === occ.id && (
-                      <Check size={12} className="absolute top-2 right-2 text-white" strokeWidth={3} />
+                      <Check size={12} className="absolute top-2 right-2 text-black" strokeWidth={3} />
                     )}
                     <span className="text-xl block mb-1">{occ.emoji}</span>
                     <p className={`text-[10px] font-bold tracking-wide uppercase ${
-                      giftOccasion === occ.id ? 'text-white' : 'text-gray-500'
+                      giftOccasion === occ.id ? 'text-black' : 'text-gray-500'
                     }`}>{occ.label}</p>
                   </button>
                 ))}
@@ -483,10 +456,10 @@ doc.setFont('helvetica', 'normal');
             </div>
 
             {/* Standard Gift Packaging (Single vs Couple options only) */}
-            <div className="bg-white border border-gray-200 p-5 rounded-md space-y-4 shadow-sm">
-              <div className="flex items-center gap-2 border-b border-gray-200 pb-3">
-                <Gift size={13} className="text-luxury-red" />
-                <h3 className="text-xs font-bold tracking-widest text-luxury-text uppercase">Standard Gift Packaging</h3>
+            <div className="bg-luxury-gray border border-white/5 p-5 rounded-md space-y-4">
+              <div className="flex items-center gap-2 border-b border-white/5 pb-3">
+                <Gift size={13} className="text-luxury-gold" />
+                <h3 className="text-xs font-bold tracking-widest text-white uppercase">Standard Gift Packaging</h3>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -507,7 +480,7 @@ doc.setFont('helvetica', 'normal');
                       <Check size={12} className="absolute top-2 right-2 text-black" strokeWidth={3} />
                     )}
                     <p className={`text-xs font-bold tracking-wide uppercase ${
-                      packagingType === pkg.id ? 'text-black' : 'text-gray-700'
+                      packagingType === pkg.id ? 'text-black' : 'text-gray-600'
                     }`}>{pkg.label}</p>
                     <p className={`text-[10px] mt-1 leading-normal ${
                       packagingType === pkg.id ? 'text-gray-700' : 'text-gray-400'
@@ -517,16 +490,17 @@ doc.setFont('helvetica', 'normal');
               </div>
 
               {/* Gift Note Input field */}
-              <div className="space-y-2 mt-4 pt-4 border-t border-gray-200">
-                <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Write a Gift Note (Optional)</label>
+              <div className="space-y-2 mt-4 pt-4 border-t border-white/5">
+                <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Write a Gift Note (Optional)</label>
                 <textarea
                   value={giftNote}
                   onChange={(e) => setGiftNote(e.target.value.slice(0, 260))}
                   placeholder={`Dear [Name],\n\nEvery moment you wear this watch, know it carries our love and pride...`}
                   rows={3}
-                  className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black resize-none"
+                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold resize-none"
                   style={{
                     fontFamily: 'Georgia, serif',
+                    color: 'rgba(255,255,255,0.9)',
                   }}
                 />
                 <div className="flex justify-between text-[9px] text-gray-500">
@@ -541,7 +515,7 @@ doc.setFont('helvetica', 'normal');
               <button
                 type="button"
                 onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="w-full py-4 bg-luxury-text text-white font-bold text-xs tracking-widest uppercase hover:bg-black/80 transition flex items-center justify-center space-x-2 cursor-pointer rounded-sm shadow-sm"
+                className="w-full py-4 bg-white text-luxury-dark font-bold text-xs tracking-widest uppercase hover:bg-luxury-gold hover:text-luxury-dark transition flex items-center justify-center space-x-2 cursor-pointer"
               >
                 <span>Continue to Shipping</span>
                 <ArrowRight size={14} />
@@ -560,63 +534,75 @@ doc.setFont('helvetica', 'normal');
       {step === 2 && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Form */}
-          <div className="lg:col-span-7 bg-white border border-gray-200 p-6 sm:p-8 rounded-md space-y-6 shadow-sm">
-            <h2 className="text-sm font-bold tracking-widest text-luxury-text uppercase border-b border-gray-200 pb-3">Delivery Information</h2>
+          <div className="lg:col-span-7 bg-luxury-gray border border-white/5 p-6 sm:p-8 rounded-md space-y-6">
+            <h2 className="text-sm font-bold tracking-widest text-white uppercase border-b border-white/5 pb-3">Delivery Information</h2>
             <form onSubmit={handleShippingSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Recipient Name</label>
+                <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Recipient Name</label>
                 <input
                   type="text"
                   required
                   value={shippingForm.fullName}
                   onChange={(e) => setShippingForm({ ...shippingForm, fullName: e.target.value })}
                   placeholder="John Doe"
-                  className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Local Address</label>
+                <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Local Address</label>
                 <input
                   type="text"
                   required
                   value={shippingForm.streetAddress}
                   onChange={(e) => setShippingForm({ ...shippingForm, streetAddress: e.target.value })}
                   placeholder="120 Luxury Avenue, Suite 4B"
-                  className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">City</label>
+                  <label className="text-[10px] text-black font-bold uppercase tracking-widest block">City</label>
                   <input
                     type="text"
                     required
                     value={shippingForm.city}
                     onChange={(e) => setShippingForm({ ...shippingForm, city: e.target.value })}
                     placeholder="New York"
-                    className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">Postal Code</label>
+                  <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Postal Code</label>
                   <input
                     type="text"
                     required
                     value={shippingForm.zipCode}
                     onChange={(e) => setShippingForm({ ...shippingForm, zipCode: e.target.value })}
                     placeholder="10001"
-                    className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-black font-bold uppercase tracking-widest block">State</label>
+                <input
+                  type="text"
+                  required
+                  value={shippingForm.state}
+                  onChange={(e) => setShippingForm({ ...shippingForm, state: e.target.value })}
+                  placeholder="e.g. Maharashtra, Delhi, Karnataka"
+                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 {/* State */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">
+                  <label className="text-[10px] text-black font-bold uppercase tracking-widest block">
                     State
                   </label>
                   <input
@@ -626,14 +612,14 @@ doc.setFont('helvetica', 'normal');
                     onChange={(e) =>
                       setShippingForm({ ...shippingForm, state: e.target.value })
                     }
-                    placeholder="Maharashtra"
-                    className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black placeholder:text-gray-400"
+                    placeholder="Uttar Pradesh"
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                   />
                 </div>
 
                 {/* Country */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest block">
+                  <label className="text-[10px] text-black font-bold uppercase tracking-widest block">
                     Country
                   </label>
                   <select
@@ -641,7 +627,7 @@ doc.setFont('helvetica', 'normal');
                     onChange={(e) =>
                       setShippingForm({ ...shippingForm, country: e.target.value })
                     }
-                    className="w-full bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black"
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                   >
                     <option value="India">India</option>
                     <option value="United States">United States</option>
@@ -653,22 +639,22 @@ doc.setFont('helvetica', 'normal');
               </div>
 
               {/* Coupon Code */}
-              <div className="space-y-1.5 pt-2 border-t border-gray-200">
-                <label className="text-[10px] text-luxury-text font-bold uppercase tracking-widest flex items-center gap-1.5 pt-3">
-                  <Tag size={11} className="text-luxury-red" />
+              <div className="space-y-1.5 pt-2 border-t border-white/5">
+                <label className="text-[10px] text-black font-bold uppercase tracking-widest flex items-center gap-1.5 pt-3">
+                  <Tag size={11} className="text-luxury-gold" />
                   Coupon Code
                 </label>
 
                 {appliedCoupon ? (
                   <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 rounded p-3">
                     <div>
-                      <p className="text-emerald-700 text-xs font-bold tracking-wide">{appliedCoupon.code}</p>
-                      <p className="text-[10px] text-gray-500 mt-0.5">{appliedCoupon.description}</p>
+                      <p className="text-emerald-400 text-xs font-bold tracking-wide">{appliedCoupon.code}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{appliedCoupon.description}</p>
                     </div>
                     <button
                       type="button"
                       onClick={handleRemoveCoupon}
-                      className="text-gray-700 hover:text-black transition p-1 cursor-pointer"
+                      className="text-black hover:text-black transition p-1 cursor-pointer"
                       aria-label="Remove coupon"
                     >
                       <X size={14} />
@@ -681,20 +667,20 @@ doc.setFont('helvetica', 'normal');
                       value={couponInput}
                       onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError(''); }}
                       placeholder="Enter code"
-                      className="flex-1 bg-white border border-gray-300 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-black uppercase placeholder:text-gray-400"
+                      className="flex-1 bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold uppercase"
                     />
                     <button
                       type="button"
                       onClick={handleApplyCoupon}
                       disabled={couponLoading}
-                      className="px-5 border border-luxury-text bg-transparent text-luxury-text font-bold text-xs tracking-widest uppercase hover:bg-luxury-text hover:text-white transition flex items-center justify-center cursor-pointer disabled:opacity-50 rounded"
+                      className="px-5 border border-black text-black font-bold text-xs tracking-widest uppercase hover:bg-luxury-gold hover:text-black transition flex items-center justify-center cursor-pointer disabled:opacity-50 rounded"
                     >
                       {couponLoading ? <Loader2 size={14} className="animate-spin" /> : 'Apply'}
                     </button>
                   </div>
                 )}
                 {couponError && (
-                  <p className="text-red-500 text-[10px] pt-1">{couponError}</p>
+                  <p className="text-red-400 text-[10px] pt-1">{couponError}</p>
                 )}
               </div>
 
@@ -709,13 +695,13 @@ doc.setFont('helvetica', 'normal');
                     }
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="py-4 px-6 border border-luxury-text/25 text-luxury-text font-bold text-xs tracking-widest uppercase hover:border-luxury-text hover:bg-black/5 transition w-1/3 cursor-pointer rounded-sm"
+                  className="py-4 px-6 border border-white/10 text-white font-bold text-xs tracking-widest uppercase hover:border-white transition w-1/3 cursor-pointer"
                 >
                   Back
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-4 bg-luxury-text text-white font-bold text-xs tracking-widest uppercase hover:bg-black/80 transition flex items-center justify-center space-x-2 cursor-pointer shadow-sm rounded-sm"
+                  className="flex-1 py-4 bg-white text-luxury-dark font-bold text-xs tracking-widest uppercase hover:bg-luxury-gold hover:text-luxury-dark transition flex items-center justify-center space-x-2 cursor-pointer"
                 >
                   <span>Continue to Payment</span>
                   <ArrowRight size={14} />
@@ -734,12 +720,12 @@ doc.setFont('helvetica', 'normal');
       {/* Step 3: Payment via Razorpay */}
       {step === 3 && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-7 bg-white border border-gray-200 p-6 sm:p-8 rounded-md space-y-6 shadow-sm">
-            <h2 className="text-sm font-bold tracking-widest text-luxury-text uppercase border-b border-gray-200 pb-3">Payment Portal</h2>
+          <div className="lg:col-span-7 bg-luxury-gray border border-white/5 p-6 sm:p-8 rounded-md space-y-6">
+            <h2 className="text-sm font-bold tracking-widest text-white uppercase border-b border-white/5 pb-3">Payment Portal</h2>
 
-            <div className="border border-gray-200 rounded-md p-6 bg-gray-50 text-center space-y-4">
-              <ShieldCheck className="mx-auto text-emerald-600" size={36} />
-              <p className="text-gray-700 text-xs max-w-sm mx-auto font-medium leading-relaxed">
+            <div className="border border-white/5 rounded-md p-6 bg-luxury-dark text-center space-y-4">
+              <ShieldCheck className="mx-auto text-luxury-gold" size={32} />
+              <p className="text-gray-300 text-xs max-w-sm mx-auto font-light leading-relaxed">
                 You will be redirected to our secure payment gateway to complete your purchase via Card, UPI, Netbanking, or Wallet.
               </p>
               <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
@@ -752,7 +738,7 @@ doc.setFont('helvetica', 'normal');
                 type="button"
                 onClick={() => setStep(2)}
                 disabled={processingPayment}
-                className="py-4 px-6 border border-luxury-text/25 text-luxury-text font-bold text-xs tracking-widest uppercase hover:border-luxury-text hover:bg-black/5 transition w-1/3 cursor-pointer disabled:opacity-50 rounded-sm"
+                className="py-4 px-6 border border-white/10 text-white font-bold text-xs tracking-widest uppercase hover:border-white transition w-1/3 cursor-pointer disabled:opacity-50"
               >
                 Back
               </button>
@@ -760,8 +746,9 @@ doc.setFont('helvetica', 'normal');
                 type="button"
                 onClick={handleRazorpayPayment}
                 disabled={processingPayment}
-                className="flex-1 py-4 bg-luxury-red hover:bg-red-700 text-white font-bold text-xs tracking-widest uppercase transition flex items-center justify-center space-x-2 cursor-pointer shadow-md rounded-sm disabled:opacity-50"
+                className="flex-1 py-4 bg-luxury-red hover:bg-red-700 text-white font-bold text-xs tracking-widest uppercase transition flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
               >
+                <ShieldCheck size={16} />
                 <span>{processingPayment ? 'Processing...' : `Pay ${formatPrice(total, currentCurrency)}`}</span>
               </button>
             </div>
@@ -775,66 +762,69 @@ doc.setFont('helvetica', 'normal');
         </div>
       )}
 
+
+
+
       {/* Step 4: Success Screen */}
       {step === 4 && orderReceipt && (
-        <div className="bg-white border border-gray-200 rounded-md p-8 sm:p-12 text-center max-w-2xl mx-auto space-y-8 shadow-sm">
+        <div className="bg-luxury-gray border border-white/5 rounded-md p-8 sm:p-12 text-center max-w-2xl mx-auto space-y-8">
 
-          <div className="h-20 w-20 rounded-full bg-emerald-500/10 border border-emerald-500/35 flex items-center justify-center mx-auto text-emerald-600">
+          <div className="h-20 w-20 rounded-full bg-emerald-400/10 border border-emerald-400/35 flex items-center justify-center mx-auto text-emerald-400">
             <CheckCircle2 size={40} />
           </div>
 
           <div className="space-y-3">
-            <span className="text-luxury-red text-xs font-bold tracking-widest uppercase">CONGRATULATIONS</span>
-            <h1 className="text-3xl font-serif font-bold text-luxury-text uppercase tracking-wider">Timepiece Secured</h1>
-            <p className="text-gray-600 text-xs sm:text-sm max-w-md mx-auto font-normal leading-relaxed">
+            <span className="text-luxury-gold text-xs font-bold tracking-widest uppercase">CONGRATULATIONS</span>
+            <h1 className="text-3xl font-serif font-bold text-white uppercase tracking-wider">Timepiece Secured</h1>
+            <p className="text-gray-300 text-xs sm:text-sm max-w-md mx-auto font-light leading-relaxed">
               Your transaction has authorized. A secure courier tracking link and digital certificate of authenticity have been sent to your email.
             </p>
           </div>
 
           {/* Receipt details */}
-          <div className="bg-gray-50 border border-gray-200 p-6 rounded text-left text-xs space-y-4">
-            <div className="flex justify-between items-center border-b border-gray-200 pb-3">
-              <span className="text-gray-500 uppercase tracking-widest font-bold text-[10px]">Order Reference</span>
-              <span className="text-luxury-text font-bold text-sm tracking-wide font-mono">{orderReceipt.id}</span>
+          <div className="bg-luxury-dark/40 border border-white/5 p-6 rounded text-left text-xs space-y-4">
+            <div className="flex justify-between items-center border-b border-white/5 pb-3">
+              <span className="text-gray-400 uppercase tracking-widest font-bold text-[10px]">Order Reference</span>
+              <span className="text-white font-bold text-sm tracking-wide font-mono">{orderReceipt.id}</span>
             </div>
 
             <div className="space-y-2">
               {orderReceipt.items.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center text-gray-700">
+                <div key={idx} className="flex justify-between items-center text-gray-300">
                   <span className="line-clamp-1">{item.name} (x{item.quantity})</span>
-                  <span className="font-semibold text-luxury-text">{formatPrice(item.price * item.quantity, currentCurrency)}</span>
+                  <span className="font-semibold text-white">{formatPrice(item.price * item.quantity, currentCurrency)}</span>
                 </div>
               ))}
             </div>
 
-            <div className="border-t border-gray-200 pt-3 flex justify-between items-center font-bold text-luxury-text">
-              <span className="uppercase tracking-widest text-[10px] text-gray-500">Total Charged</span>
-              <span className="text-sm font-extrabold text-luxury-text">{formatPrice(orderReceipt.total, currentCurrency)}</span>
+            <div className="border-t border-white/5 pt-3 flex justify-between items-center font-bold text-white">
+              <span className="uppercase tracking-widest text-[10px] text-gray-400">Total Charged</span>
+              <span className="text-sm font-extrabold text-luxury-gold">{formatPrice(orderReceipt.total, currentCurrency)}</span>
             </div>
 
-            <div className="border-t border-gray-200 pt-3 space-y-1 font-normal text-gray-600">
-              <p><span className="font-semibold text-luxury-text">Deliver to:</span> {orderReceipt.shippingDetails.fullName}</p>
-              <p><span className="font-semibold text-luxury-text">Address:</span> {orderReceipt.shippingDetails.streetAddress}, {orderReceipt.shippingDetails.city}, {orderReceipt.shippingDetails.zipCode}</p>
-              <p><span className="font-semibold text-luxury-text">Expected Delivery:</span> {getExpectedDeliveryDate(orderReceipt.shippingDetails.zipCode)}</p>
+            <div className="border-t border-white/5 pt-3 space-y-1 font-light text-gray-400">
+              <p><span className="font-semibold text-white">Deliver to:</span> {orderReceipt.shippingDetails.fullName}</p>
+              <p><span className="font-semibold text-white">Address:</span> {orderReceipt.shippingDetails.streetAddress}, {orderReceipt.shippingDetails.city}, {orderReceipt.shippingDetails.zipCode}</p>
+              <p><span className="font-semibold text-white">Expected Delivery:</span> {getExpectedDeliveryDate(orderReceipt.shippingDetails.zipCode)}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
             <button
               onClick={handleDownloadInvoice}
-              className="py-3.5 bg-luxury-text text-white font-bold text-xs tracking-widest uppercase hover:bg-black/80 transition cursor-pointer rounded-sm"
+              className="py-3.5 bg-white text-luxury-dark font-bold text-xs tracking-widest uppercase hover:bg-gray-200 transition cursor-pointer"
             >
               Download Invoice
             </button>
             <button
               onClick={() => onPageChange('profile', { tab: 'orders' })}
-              className="py-3.5 bg-luxury-text text-white font-bold text-xs tracking-widest uppercase hover:bg-black/80 transition cursor-pointer rounded-sm"
+              className="py-3.5 bg-white text-luxury-dark font-bold text-xs tracking-widest uppercase hover:bg-gray-200 transition cursor-pointer"
             >
               Track My Order
             </button>
             <button
               onClick={() => onPageChange('home')}
-              className="py-3.5 bg-transparent border border-luxury-text/25 text-luxury-text font-semibold text-xs tracking-widest uppercase hover:border-luxury-text hover:bg-black/5 transition cursor-pointer rounded-sm"
+              className="py-3.5 bg-transparent border border-white/10 text-white font-semibold text-xs tracking-widest uppercase hover:border-white transition cursor-pointer"
             >
               Return Home
             </button>
@@ -850,15 +840,15 @@ doc.setFont('helvetica', 'normal');
     const currentCurrency = useSelector(selectCurrentCurrency);
     const deliveryDate = getExpectedDeliveryDate(zipCode);
     return (
-      <div className="bg-white border border-gray-200 rounded-md p-6 space-y-4 shadow-sm">
-        <h3 className="text-xs font-bold tracking-widest text-luxury-text uppercase border-b border-gray-200 pb-3">Bag Review</h3>
+      <div className="bg-luxury-gray border border-white/5 rounded-md p-6 space-y-4">
+        <h3 className="text-xs font-bold tracking-widest text-white uppercase border-b border-white/5 pb-3">Bag Review</h3>
 
         {/* Expected Delivery Date Alert Box */}
         {deliveryDate && (
           <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded text-xs">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-700 block mb-0.5">Expected Delivery</span>
-            <p className="text-luxury-text font-semibold">{deliveryDate}</p>
-            <p className="text-[9px] text-gray-500 font-normal mt-0.5">Calculated based on shipping pincode: {zipCode}</p>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-450 block mb-0.5">Expected Delivery</span>
+            <p className="text-white font-semibold">{deliveryDate}</p>
+            <p className="text-[9px] text-gray-500 font-light mt-0.5">Calculated based on shipping pincode: {zipCode}</p>
           </div>
         )}
 
@@ -867,38 +857,38 @@ doc.setFont('helvetica', 'normal');
           {cartItems.map((item) => {
             const itemPrice = item.price !== undefined ? item.price : getDiscountedPrice(item.product);
             return (
-              <div key={item.productId} className="flex items-center space-x-3 pb-3 border-b border-gray-100 last:border-b-0 last:pb-0">
-                <div className="h-12 w-12 bg-gray-50 rounded border border-gray-200 flex-shrink-0 flex items-center justify-center p-0 overflow-hidden">
+              <div key={item.productId} className="flex items-center space-x-3 pb-3 border-b border-white/5 last:border-b-0 last:pb-0">
+                <div className="h-12 w-12 bg-luxury-dark rounded border border-white/5 flex-shrink-0 flex items-center justify-center p-0 overflow-hidden">
                   <img src={item.product.image} alt={item.product.name} onError={(e) => handleImageError(e)} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-luxury-text text-xs font-semibold truncate uppercase tracking-wide">{item.product.name}</h4>
+                  <h4 className="text-white text-xs font-semibold truncate uppercase tracking-wide">{item.product.name}</h4>
                   <p className="text-[10px] text-gray-500">Qty: {item.quantity} × {formatPrice(itemPrice, currentCurrency)}</p>
                 </div>
-                <span className="text-luxury-text text-xs font-bold">{formatPrice(itemPrice * item.quantity, currentCurrency)}</span>
+                <span className="text-white text-xs font-bold">{formatPrice(itemPrice * item.quantity, currentCurrency)}</span>
               </div>
             );
           })}
         </div>
 
-        <div className="border-t border-gray-200 pt-4 space-y-2 text-xs">
-          <div className="flex justify-between text-gray-600">
+        <div className="border-t border-white/5 pt-4 space-y-2 text-xs">
+          <div className="flex justify-between text-gray-300">
             <span>Subtotal</span>
             <span>{formatPrice(subtotal, currentCurrency)}</span>
           </div>
           {discount > 0 && (
-            <div className="flex justify-between text-emerald-600">
+            <div className="flex justify-between text-emerald-400">
               <span>Coupon Discount</span>
               <span>-{formatPrice(discount, currentCurrency)}</span>
             </div>
           )}
-          <div className="flex justify-between text-gray-600">
+          <div className="flex justify-between text-gray-300">
             <span>Courier Delivery</span>
-            <span className="text-emerald-700 uppercase tracking-widest text-[9px] font-bold">Free</span>
+            <span className="text-emerald-400 uppercase tracking-widest text-[9px] font-bold">Free</span>
           </div>
-          <div className="flex justify-between items-center text-sm font-bold text-luxury-text border-t border-gray-200 pt-3">
+          <div className="flex justify-between items-center text-sm font-bold text-white border-t border-white/5 pt-3">
             <span className="uppercase tracking-widest text-[10px]">Grand Total</span>
-            <span className="text-base text-luxury-text font-extrabold">{formatPrice(total, currentCurrency)}</span>
+            <span className="text-base text-luxury-gold font-extrabold">{formatPrice(total, currentCurrency)}</span>
           </div>
         </div>
       </div>
