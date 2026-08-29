@@ -108,10 +108,19 @@ export default function Login({ params, onPageChange }) {
         if (checkRes && checkRes.isAdmin) {
           setIsAdminEmail(true);
           if (adminStep === 'email') {
-            const res = await dispatch(requestAdminCode(cleanEmail));
+            if (!password) {
+              setErrorMsg('Please enter your password.');
+              setLoading(false);
+              return;
+            }
+            const res = await dispatch(requestAdminCode(cleanEmail, password));
             if (res.success) {
               setAdminStep('code');
               setOtpSentMsg(true);
+            } else if (res.message && res.message.includes('60 seconds')) {
+              setAdminStep('code');
+              setOtpSentMsg(true);
+              setErrorMsg('A code was sent recently. Please check your inbox or wait 60s to request a new code.');
             } else {
               setErrorMsg(res.message || 'Failed to send verification code.');
             }
@@ -323,6 +332,18 @@ export default function Login({ params, onPageChange }) {
               placeholder="customer@domain.com"
               className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold disabled:opacity-50"
             />
+            {authMode === 'login' && isAdminEmail && adminStep === 'email' && (
+              <div className="flex justify-between items-center pt-1">
+                <span className="text-[9px] text-luxury-gold font-medium uppercase tracking-wider">Admin Account Detected</span>
+                <button
+                  type="button"
+                  onClick={() => { setAdminStep('code'); setErrorMsg(''); setOtpSentMsg(false); }}
+                  className="text-[9px] text-gray-400 hover:text-white transition uppercase font-semibold cursor-pointer underline"
+                >
+                  Already have a code? Enter code
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Admin Sign-In Code (shown automatically once an admin email is detected and code sent) */}
@@ -348,8 +369,8 @@ export default function Login({ params, onPageChange }) {
             </div>
           )}
 
-          {/* Password (Login & Register Only — hidden once an admin email is detected) */}
-          {authMode !== 'forgot' && !(authMode === 'login' && isAdminEmail) && (
+          {/* Password (Login & Register Only — hidden once admin advances to code verification step) */}
+          {authMode !== 'forgot' && !(authMode === 'login' && isAdminEmail && adminStep === 'code') && (
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label className="text-[10px] text-gray-300 font-bold uppercase tracking-widest block">Password</label>

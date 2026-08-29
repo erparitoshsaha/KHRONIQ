@@ -340,7 +340,7 @@ export default function Customization({ onPageChange, params }) {
                     </div>
                   </div>
                   <div className="p-4 space-y-2">
-                    <p className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.7)' }}>{product.category}</p>
+                    <p className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.7)' }}>{product.category === 'Khronomaster' ? 'Classic' : product.category}</p>
                     <h3 className="font-bold text-sm leading-tight" style={{ color: '#ffffff' }}>{product.name}</h3>
                     <div className="flex items-center justify-between">
                       <span className="font-black" style={{ color: '#ffffff' }}>{formatPrice(product.price)}</span>
@@ -406,7 +406,7 @@ export default function Customization({ onPageChange, params }) {
               />
               <div className="text-center space-y-1">
                 <p className="text-white font-bold text-lg">{selectedProduct.name}</p>
-                <p className="text-gray-400 text-xs">{selectedProduct.category} · {selectedProduct.gender}</p>
+                <p className="text-gray-400 text-xs">{selectedProduct.category === 'Khronomaster' ? 'Classic' : selectedProduct.category} · {selectedProduct.gender}</p>
                 <p className="font-black text-xl mt-2" style={{ color: '#3b82f6' }}>{formatPrice(totalPrice)}</p>
               </div>
             </div>

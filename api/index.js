@@ -78,9 +78,9 @@ app.use(
   })
 );
 
-// 4. Request Body Limit (1MB JSON)
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+// 4. Request Body Limit (10MB JSON & URL-encoded)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // 5. Database Connection Middleware
 const ensureDb = async (req, res, next) => {
@@ -129,7 +129,15 @@ app.get('/api', (req, res) => {
 });
 
 // Production-safe health endpoint
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+  } catch (e) {
+    // Log without crashing
+  }
+
   if (mongoose.connection.readyState === 1) {
     return res.status(200).json({
       status: 'ok',

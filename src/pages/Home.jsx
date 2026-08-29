@@ -499,10 +499,6 @@ const HERO_VIDEOS = [
   '/assets/hero_video_1.mp4',
   '/assets/hero_video_2.mp4',
   '/assets/video1.mp4',
-  '/assets/video4.mp4',
-  '/assets/video3.mp4',
-  '/assets/video2.mp4',
-
 ];
 
 function HeroVideoCycler() {
@@ -522,11 +518,19 @@ function HeroVideoCycler() {
     goToVideo((vidIdx + 1) % HERO_VIDEOS.length);
   }, [vidIdx, goToVideo]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback((e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     goToVideo((vidIdx + 1) % HERO_VIDEOS.length);
   }, [vidIdx, goToVideo]);
 
-  const handlePrev = useCallback(() => {
+  const handlePrev = useCallback((e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     goToVideo((vidIdx - 1 + HERO_VIDEOS.length) % HERO_VIDEOS.length);
   }, [vidIdx, goToVideo]);
 
@@ -551,32 +555,36 @@ function HeroVideoCycler() {
         <source src={HERO_VIDEOS[vidIdx]} type="video/mp4" />
       </video>
 
-      {/* ── Slide Arrows ── */}
+      {/* ── Slide Arrows (Pure normal click/tap controls - No magnetic/gravity/physics effects) ── */}
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+        onClick={handlePrev}
         aria-label="Previous video"
-        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-black/40 backdrop-blur-md border border-white/30 text-white flex items-center justify-center hover:bg-black/70 active:scale-95 transition-all duration-200 cursor-pointer pointer-events-auto touch-manipulation shadow-lg"
+        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-40 w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-black/50 backdrop-blur-md border border-white/30 text-white flex items-center justify-center hover:bg-black/80 active:scale-95 transition-all duration-150 cursor-pointer pointer-events-auto touch-manipulation select-none shadow-xl"
       >
-        <ChevronLeft size={22} />
+        <ChevronLeft size={22} className="stroke-[2.5]" />
       </button>
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); handleNext(); }}
+        onClick={handleNext}
         aria-label="Next video"
-        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-black/40 backdrop-blur-md border border-white/30 text-white flex items-center justify-center hover:bg-black/70 active:scale-95 transition-all duration-200 cursor-pointer pointer-events-auto touch-manipulation shadow-lg"
+        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-40 w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-black/50 backdrop-blur-md border border-white/30 text-white flex items-center justify-center hover:bg-black/80 active:scale-95 transition-all duration-150 cursor-pointer pointer-events-auto touch-manipulation select-none shadow-xl"
       >
-        <ChevronRight size={22} />
+        <ChevronRight size={22} className="stroke-[2.5]" />
       </button>
 
       {/* ── Slide position indicator ── */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex gap-2 pointer-events-auto">
         {HERO_VIDEOS.map((_, i) => (
           <button
             key={i}
-            onClick={() => goToVideo(i)}
+            type="button"
+            onClick={(e) => {
+              if (e) e.stopPropagation();
+              goToVideo(i);
+            }}
             aria-label={`Go to video ${i + 1}`}
-            className="h-1.5 rounded-full transition-all duration-300 cursor-pointer"
+            className="h-1.5 rounded-full transition-all duration-300 cursor-pointer pointer-events-auto"
             style={{
               width: i === vidIdx ? 22 : 8,
               background: i === vidIdx ? '#10b981' : 'rgba(255,255,255,0.4)',
@@ -614,20 +622,6 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages }) {
       fullName: 'Khroniq Midnight Black',
       lifestyleImg: homeImages.hero_slide3_lifestyle || '/assets/lifestyle_black_cafe.jpg',
       productImg: homeImages.hero_slide3_product || '/assets/watch_black_steel.png',
-      lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
-    },
-    {
-      name: 'COBALT BLUE',
-      fullName: 'Khroniq Cobalt Blue',
-      lifestyleImg: homeImages.hero_slide4_lifestyle || '/assets/lifestyle_blue_window.jpg',
-      productImg: homeImages.hero_slide4_product || '/assets/watch_blue_brown.png',
-      lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
-    },
-    {
-      name: 'STERLING SILVER',
-      fullName: 'Khroniq Sterling Silver',
-      lifestyleImg: homeImages.hero_slide5_lifestyle || '/assets/lifestyle_pink_cafe.jpg',
-      productImg: homeImages.hero_slide5_product || '/assets/slide_white_product.png',
       lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
     }
   ];
@@ -1066,7 +1060,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   const collections = [
     {
       num: '01',
-      name: 'KHRONOMASTER',
+      name: 'CLASSIC',
       tagline: 'HIGH-FREQUENCY CHRONOGRAPHS',
       desc: 'Engineered for precision. Built for performance.',
       image:'/assets/watch_green.jpg',
@@ -1075,7 +1069,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
         { label: 'Sapphire Crystal', icon: 'Gem' }
       ],
       dark: false,
-      filter: { category: 'Khronomaster' }
+      filter: { gender: 'men' }
     },
     {
       num: '02',
@@ -1155,16 +1149,16 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-12 gap-8 items-center pointer-events-none"
           style={{ x: contentX, y: contentY }}
         >
-          <div className="col-span-1 sm:col-span-8 space-y-6 text-center sm:text-left pointer-events-auto" style={{ transform: 'translate(-20px, 30px)' }}>
+          <div className="col-span-1 sm:col-span-8 space-y-6 text-center sm:text-left pointer-events-none sm:-translate-x-5 translate-y-4 sm:translate-y-8">
             {/* Badge */}
-            <motion.div initial={{ opacity: 0, y: -26 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }} className="flex justify-center sm:justify-start">
+            <motion.div initial={{ opacity: 0, y: -26 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }} className="flex justify-center sm:justify-start pointer-events-auto">
               <motion.span
-                className="inline-flex items-center border border-luxury-gold/50 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full bg-black/50 backdrop-blur-sm max-w-[85vw]"
+                className="inline-flex items-center justify-center border border-luxury-gold/50 px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-full bg-black/50 backdrop-blur-sm max-w-[90vw] sm:max-w-none"
                 whileHover={{ scale: 1.05, borderColor: 'rgba(197,168,128,0.9)' }} transition={{ duration: 0.15 }}>
                 <img
                   src="/assets/logo_text.png"
                   alt="KHRONIQ"
-                  className="h-8 sm:h-12 max-w-[65vw] sm:max-w-none object-contain"
+                  className="h-6 sm:h-8 md:h-10 lg:h-12 w-auto max-w-[65vw] sm:max-w-xs md:max-w-sm lg:max-w-none object-contain shrink-0"
                   style={{ filter: 'brightness(1.05) saturate(1.1)' }}
                 />
               </motion.span>
@@ -1197,9 +1191,9 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                 style={{ background: 'linear-gradient(135deg, #047857 0%, #065f46 45%, #022c22 100%)', borderColor: '#047857' }}>
                 Explore Timepieces
               </MagBtn>
-              <MagBtn onClick={() => onPageChange('shop', { category: 'Khronomaster' })}
+              <MagBtn onClick={() => onPageChange('shop', { gender: 'men' })}
                 className="px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/25 text-white hover:bg-white/22 text-xs font-bold tracking-widest uppercase transition-colors duration-150 w-full sm:w-auto cursor-pointer">
-                Khronomaster DNA
+                Classic DNA
               </MagBtn>
             </motion.div>
           </div>
@@ -1261,17 +1255,17 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
             </Reveal>
             <SlideReveal delay={0.1}>
               <h2 className="text-4xl sm:text-5xl font-serif font-bold text-luxury-text leading-tight">
-                <span className="text-luxury-gold-dark">Khronomaster</span> Professional
+                <span className="text-luxury-gold-dark">Classic</span> Professional
               </h2>
             </SlideReveal>
             <Reveal dir="left" delay={0.2}>
               <p className="text-luxury-muted text-sm leading-relaxed max-w-md">
-                Engineered with Indian precision, the Khronomaster Professional pushes boundaries with components from the True Knock Group and the legendary Khroniq caliber. Built to inspire confidence for every Indian connoisseur.
+                Engineered with Indian precision, the Classic Professional pushes boundaries with components from the True Knock Group and the legendary Khroniq caliber. Built to inspire confidence for every Indian connoisseur.
               </p>
             </Reveal>
             <Reveal dir="left" delay={0.3}>
               <motion.button
-                onClick={() => onPageChange('shop', { category: 'Khronomaster' })}
+                onClick={() => onPageChange('shop', { gender: 'men' })}
                 className="flex items-center gap-2 text-xs font-black tracking-[0.22em] uppercase text-luxury-text border-b border-luxury-text pb-1 w-fit cursor-pointer"
                 whileHover={{ gap: 16, color: '#000000', borderColor: '#000000' }}
                 transition={{ duration: 0.25 }}

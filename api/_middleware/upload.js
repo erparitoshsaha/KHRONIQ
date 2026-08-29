@@ -10,9 +10,13 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: {
-    folder: 'zenith-watches',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'mp4', 'webm']
+  params: async (req, file) => {
+    const isVideo = file.mimetype && file.mimetype.startsWith('video');
+    return {
+      folder: 'zenith-watches',
+      resource_type: isVideo ? 'video' : 'image',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'mp4', 'webm']
+    };
   }
 });
 
@@ -22,7 +26,7 @@ const imageFileFilter = (req, file, cb) => {
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file format. Only JPEG, PNG, and WEBP images are allowed for product images.'), false);
+    cb(new Error('Invalid file format. Only JPEG, PNG, and WEBP images are allowed.'), false);
   }
 };
 

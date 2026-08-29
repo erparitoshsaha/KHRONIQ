@@ -140,7 +140,7 @@ export default function CartPage({ onPageChange }) {
                     >
                       {item.product.name}
                     </h3>
-                    <p className="text-[10px] text-luxury-muted uppercase tracking-widest mt-1">Category: {item.product.category}</p>
+                    <p className="text-[10px] text-luxury-muted uppercase tracking-widest mt-1">Category: {item.product.category === 'Khronomaster' ? 'Classic' : item.product.category}</p>
                     {item.customization && (
                       <div className="text-[10px] text-luxury-muted space-y-0.5 mt-1 font-sans">
                         {item.customization.dialColor && <div>Dial Color: <span className="font-semibold">{item.customization.dialColor}</span></div>}

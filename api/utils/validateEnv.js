@@ -6,7 +6,7 @@
 export function validateEnv() {
   const isProd = process.env.NODE_ENV === 'production';
 
-  const criticalVars = ['MONGODB_URI'];
+  const criticalVars = ['MONGODB_URI', 'JWT_SECRET'];
   const missingCritical = criticalVars.filter(v => !process.env[v] || process.env[v].trim() === '');
 
   if (missingCritical.length > 0) {
@@ -19,7 +19,6 @@ export function validateEnv() {
   }
 
   const serviceVars = [
-    'JWT_SECRET',
     'RAZORPAY_KEY_ID',
     'RAZORPAY_KEY_SECRET',
     'CLOUDINARY_CLOUD_NAME',

@@ -7,7 +7,11 @@ export const protect = async (req, res, next) => {
     try {
       // Extract token
       token = req.headers.authorization.split(' ')[1];
-      const secret = process.env.JWT_SECRET || 'khroniq-jwt-secret-secure-key-2026';
+      const secret = process.env.JWT_SECRET;
+      if (!secret || secret.trim() === '') {
+        console.error('[SECURITY FATAL] JWT_SECRET is not configured.');
+        return res.status(500).json({ success: false, message: 'Authentication service configuration error.' });
+      }
 
       // Verify token
       const decoded = jwt.verify(token, secret);

@@ -267,7 +267,7 @@ export default function ProductDetail({ params, onPageChange }) {
         {/* Right Column: Order Details */}
         <div className="lg:col-span-6 space-y-6">
           <div className="space-y-2">
-            <span className="text-luxury-gold-dark text-xs font-bold tracking-widest uppercase">{product.category} COLLECTION</span>
+            <span className="text-luxury-gold-dark text-xs font-bold tracking-widest uppercase">{(product.category === 'Khronomaster' ? 'Classic' : product.category)} COLLECTION</span>
             <h1 className="text-3xl sm:text-4xl font-serif font-bold text-luxury-text uppercase tracking-wider">{product.name}</h1>
             
             {/* Review Badge */}

@@ -6,30 +6,34 @@ import { v2 as cloudinary } from 'cloudinary';
 
 const router = express.Router();
 
-// POST /api/admin/media - upload images/videos (field name: files)
-router.post('/', protect, adminOnly, mediaUpload.array('files', 12), async (req, res) => {
-  try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ success: false, message: 'No files uploaded' });
+// POST /api/admin/media - upload images/videos (field name: files or any)
+router.post('/', protect, adminOnly, (req, res, next) => {
+  mediaUpload.any()(req, res, async (err) => {
+    if (err) return next(err);
+
+    try {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ success: false, message: 'No files uploaded' });
+      }
+      const section = req.body.section || 'homepage';
+      const created = [];
+      for (const file of req.files) {
+        const isVideo = file.mimetype && file.mimetype.startsWith('video');
+        const media = await Media.create({
+          url: file.path || file.secure_url || file.url,
+          publicId: file.filename || file.public_id || '',
+          type: isVideo ? 'video' : 'image',
+          section,
+          uploadedBy: req.user?._id
+        });
+        created.push(media);
+      }
+      res.json({ success: true, media: created });
+    } catch (dbErr) {
+      console.error('Media upload error:', dbErr);
+      res.status(500).json({ success: false, message: 'Server error saving uploaded media' });
     }
-    const section = req.body.section || 'homepage';
-    const created = [];
-    for (const file of req.files) {
-      const isVideo = file.mimetype && file.mimetype.startsWith('video');
-      const media = await Media.create({
-        url: file.path,
-        publicId: file.filename || file.public_id || '',
-        type: isVideo ? 'video' : 'image',
-        section,
-        uploadedBy: req.user?._id
-      });
-      created.push(media);
-    }
-    res.json({ success: true, media: created });
-  } catch (err) {
-    console.error('Media upload error:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  });
 });
 
 // GET /api/admin/media - list, optional ?section=...

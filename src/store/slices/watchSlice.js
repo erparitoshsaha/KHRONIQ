@@ -41,7 +41,7 @@ const getMockProducts = () => [
   {
     id: 'mock-2',
     _id: 'mock-2',
-    name: 'Khroniq Khronomaster Black Edition',
+    name: 'Khroniq Classic Black Edition',
     image: '/assets/watch_black_steel.png',
     brand: 'KHRONIQ',
     price: 4800,
@@ -119,7 +119,7 @@ const getMockProducts = () => [
   {
     id: 'mock-5',
     _id: 'mock-5',
-    name: 'Khroniq Khronomaster Open Heart',
+    name: 'Khroniq Classic Open Heart',
     image: '/assets/watch_red.jpg',
     brand: 'KHRONIQ',
     price: 5200,
@@ -560,12 +560,11 @@ export const fetchUserProfile = () => async (dispatch) => {
       dispatch(fetchOrders());
       dispatch(fetchCartFromDb());
       dispatch(fetchWishlistFromDb());
-    } else {
+    } else if (res.status === 401) {
       localStorage.removeItem('khroniq_token');
     }
   } catch (error) {
     console.error('Failed to fetch user profile:', error);
-    localStorage.removeItem('khroniq_token');
   }
 };
 
@@ -647,12 +646,12 @@ export const checkAdminEmail = (email) => async () => {
   }
 };
 
-export const requestAdminCode = (email) => async () => {
+export const requestAdminCode = (email, password) => async () => {
   try {
     const res = await fetch('/api/auth/admin/request-code', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
+      body: JSON.stringify({ email, password })
     });
     const data = await res.json();
     return { success: data.success, message: data.message };

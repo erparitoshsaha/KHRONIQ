@@ -21,17 +21,17 @@ export const apiLimiter = createLimiter({
   message: 'Too many requests from this IP, please try again after 15 minutes.'
 });
 
-// Authentication Limiter (10 attempts per 15 minutes)
+// Authentication Limiter (60 attempts per 15 minutes)
 export const authLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 60,
   message: 'Too many authentication attempts. Please try again after 15 minutes.'
 });
 
-// Admin OTP Limiter (5 attempts per 15 minutes)
+// Admin OTP Limiter (30 attempts per 15 minutes)
 export const otpLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 30,
   message: 'Too many OTP requests or verification attempts. Please try again after 15 minutes.'
 });
 

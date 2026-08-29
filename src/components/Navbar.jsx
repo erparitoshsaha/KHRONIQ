@@ -73,7 +73,6 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
     { label: 'MEN', page: 'shop', filter: { gender: 'men' } },
     { label: 'WOMEN', page: 'shop', filter: { gender: 'women' } },
     { label: 'SHOP ALL', page: 'shop', filter: { shopAll: true } },
-    { label: 'KHRONOMASTER', page: 'shop', filter: { category: 'Khronomaster' } },
     { label: 'CUSTOMIZE', page: 'customization' },
     { label: '🎁 GIFTING', page: 'gifting', megaMenu: true },
   ];
@@ -112,7 +111,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
   return (
     <header className={headerClass}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="relative flex items-center justify-between h-20">
           
           {/* Mobile Menu Button */}
           <div className="flex items-center md:hidden">
@@ -316,7 +315,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
           </nav>
 
           {/* Center Logo */}
-          <div className="flex-1 md:flex-none flex justify-center items-center min-w-0 px-2">
+          <div className="md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 flex-1 md:flex-none flex justify-center items-center min-w-0 px-2 z-20">
             <button 
               onClick={() => {
                 localStorage.setItem('khroniq_is_gifting_journey', 'false');

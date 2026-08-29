@@ -38,7 +38,8 @@ export default function Shop({ onPageChange, filterParams }) {
       setPriceRange(6000);
       setSortOption('featured');
     } else if (filterParams?.category) {
-      setSelectedCategory(filterParams.category);
+      const cat = filterParams.category === 'Khronomaster' ? 'Classic' : filterParams.category;
+      setSelectedCategory(cat);
       setSelectedGender('All');
       setSearchQuery('');
       setSelectedMovement('All');
@@ -72,7 +73,7 @@ export default function Shop({ onPageChange, filterParams }) {
   // Extract unique attribute lists for filters
   const movements = ['All', ...new Set(products.map(p => p.specs.movement))];
   const straps = ['All', ...new Set(products.map(p => p.specs.strap))];
-  const categories = ['All', 'Khronomaster', 'Defy', 'Heritage', 'Elite'];
+  const categories = ['All', 'Classic', 'Defy', 'Heritage', 'Elite'];
 
   // Reset all filters
   const resetFilters = () => {
@@ -88,17 +89,19 @@ export default function Shop({ onPageChange, filterParams }) {
 
   // Filter products logic
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = searchQuery.trim() === '' || 
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch = searchQuery.trim() === '' ||
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+
+    const matchesCategory = selectedCategory === 'All' ||
+      product.category === selectedCategory ||
+      (selectedCategory === 'Classic' && (product.category === 'Khronomaster' || product.category === 'Classic'));
     const matchesMovement = selectedMovement === 'All' || product.specs.movement === selectedMovement;
     const matchesStrap = selectedStrap === 'All' || product.specs.strap === selectedStrap;
     const effectivePrice = getDiscountedPrice(product);
     const matchesPrice = effectivePrice <= priceRange;
-    const matchesGender = selectedGender === 'All' || 
-      product.gender === selectedGender || 
+    const matchesGender = selectedGender === 'All' ||
+      product.gender === selectedGender ||
       product.gender === 'unisex';
 
     return matchesSearch && matchesCategory && matchesMovement && matchesStrap && matchesPrice && matchesGender;

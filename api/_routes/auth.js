@@ -9,7 +9,10 @@ import sendEmail from '../utils/sendEmail.js';
 const router = express.Router();
 
 const generateToken = (user) => {
-  const secret = process.env.JWT_SECRET || 'khroniq-jwt-secret-secure-key-2026';
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.trim() === '') {
+    throw new Error('JWT_SECRET is not configured.');
+  }
   return jwt.sign(
     { id: user.id || user._id, name: user.name, email: user.email, role: user.role },
     secret,
@@ -75,7 +78,7 @@ router.post('/register', authLimiter, async (req, res) => {
 });
 
 // @route   POST /api/auth/login
-// @desc    Authenticate user & get token
+// @desc    Authenticate user & get token (Customers only; Admins must use OTP flow)
 // @access  Public
 router.post('/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
@@ -124,6 +127,15 @@ router.post('/login', authLimiter, async (req, res) => {
           message: `Invalid email or password. ${attemptsRemaining} attempts remaining.`
         });
       }
+    }
+
+    // If the authenticated account is an admin, MUST NOT issue an admin JWT via normal login
+    if (user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        requireOtp: true,
+        message: 'Admin accounts require two-factor OTP verification. Please authenticate via the administrative sign-in flow.'
+      });
     }
 
     // Reset login attempts on successful login
@@ -217,9 +229,12 @@ router.post('/admin-otp/request', otpLimiter, async (req, res) => {
     // Generate cryptographically secure 6-digit OTP
     const rawOtp = crypto.randomInt(100000, 1000000).toString();
     const hashedOtp = crypto.createHash('sha256').update(rawOtp).digest('hex');
+    const expiryDate = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
 
     user.adminOtp = hashedOtp;
-    user.adminOtpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+    user.adminOtpExpires = expiryDate;
+    user.adminLoginCode = hashedOtp;
+    user.adminLoginCodeExpire = expiryDate;
     user.adminOtpAttempts = 0;
     user.adminOtpLastSent = new Date();
     await user.save();
@@ -255,9 +270,10 @@ router.post('/admin-otp/request', otpLimiter, async (req, res) => {
 // @desc    Verify admin 6-digit OTP and issue admin JWT
 // @access  Public (Rate-limited)
 router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
-  const { email, otp } = req.body;
+  const { email, otp, code } = req.body;
+  const candidateCode = otp || code;
 
-  if (!email || !otp) {
+  if (!email || !candidateCode) {
     return res.status(400).json({ success: false, message: 'Email and OTP code are required.' });
   }
 
@@ -265,14 +281,20 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
     const user = await User.findOne({ email: normalizedEmail });
 
-    if (!user || user.role !== 'admin' || !user.adminOtp || !user.adminOtpExpires) {
+    const userOtpHash1 = user?.adminOtp;
+    const userOtpHash2 = user?.adminLoginCode;
+    const userOtpExpires = user?.adminOtpExpires || user?.adminLoginCodeExpire;
+
+    if (!user || user.role !== 'admin' || (!userOtpHash1 && !userOtpHash2) || !userOtpExpires) {
       return res.status(400).json({ success: false, message: 'Invalid or expired verification code.' });
     }
 
     // Check expiration
-    if (user.adminOtpExpires < Date.now()) {
+    if (userOtpExpires < Date.now()) {
       user.adminOtp = undefined;
       user.adminOtpExpires = undefined;
+      user.adminLoginCode = undefined;
+      user.adminLoginCodeExpire = undefined;
       user.adminOtpAttempts = 0;
       await user.save();
       return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new one.' });
@@ -282,6 +304,8 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
     if (user.adminOtpAttempts >= 3) {
       user.adminOtp = undefined;
       user.adminOtpExpires = undefined;
+      user.adminLoginCode = undefined;
+      user.adminLoginCodeExpire = undefined;
       user.adminOtpAttempts = 0;
       await user.save();
       return res.status(423).json({
@@ -291,9 +315,9 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
     }
 
     // Hash candidate OTP and compare
-    const candidateHash = crypto.createHash('sha256').update(otp.trim()).digest('hex');
+    const candidateHash = crypto.createHash('sha256').update(candidateCode.trim()).digest('hex');
 
-    if (candidateHash !== user.adminOtp) {
+    if (candidateHash !== userOtpHash1 && candidateHash !== userOtpHash2) {
       user.adminOtpAttempts = (user.adminOtpAttempts || 0) + 1;
       await user.save();
       const attemptsRemaining = 3 - user.adminOtpAttempts;
@@ -306,6 +330,8 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
     // Successful OTP verification -> Invalidate OTP immediately and generate token
     user.adminOtp = undefined;
     user.adminOtpExpires = undefined;
+    user.adminLoginCode = undefined;
+    user.adminLoginCodeExpire = undefined;
     user.adminOtpAttempts = 0;
     user.loginAttempts = 0;
     user.lockUntil = null;
@@ -332,8 +358,8 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
 // Aliases for compatibility with /admin/request-code and /admin/verify-code
 router.post('/admin/request-code', otpLimiter, async (req, res) => {
   const { email, password } = req.body;
-  if (!email) {
-    return res.status(400).json({ success: false, message: 'Please enter your email.' });
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: 'Please enter both email and password.' });
   }
   try {
     const normalizedEmail = email.toLowerCase().trim();
@@ -343,11 +369,25 @@ router.post('/admin/request-code', otpLimiter, async (req, res) => {
       return res.json({ success: true, message: 'If that email belongs to an admin account, a code has been sent.' });
     }
 
-    if (password) {
-      const isMatch = await user.comparePassword(password);
-      if (!isMatch) {
-        return res.json({ success: true, message: 'If that email belongs to an admin account, a code has been sent.' });
+    // Check account lockout
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const remainingSeconds = Math.ceil((user.lockUntil - Date.now()) / 1000);
+      return res.status(423).json({
+        success: false,
+        message: `Too many failed attempts. Account locked. Please try again in ${remainingSeconds} seconds.`,
+        remainingSeconds
+      });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
+      if (user.loginAttempts >= 5) {
+        user.lockUntil = new Date(Date.now() + 60 * 1000);
+        user.loginAttempts = 0;
       }
+      await user.save();
+      return res.json({ success: true, message: 'If that email belongs to an admin account, a code has been sent.' });
     }
 
     if (user.adminOtpLastSent && Date.now() - user.adminOtpLastSent.getTime() < 60 * 1000) {
@@ -422,10 +462,11 @@ router.post('/admin/verify-code', otpLimiter, async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
     const user = await User.findOne({ email: normalizedEmail, role: 'admin' });
 
-    const userOtpHash = user?.adminOtp || user?.adminLoginCode;
+    const userOtpHash1 = user?.adminOtp;
+    const userOtpHash2 = user?.adminLoginCode;
     const userOtpExpires = user?.adminOtpExpires || user?.adminLoginCodeExpire;
 
-    if (!user || !userOtpHash || !userOtpExpires) {
+    if (!user || (!userOtpHash1 && !userOtpHash2) || !userOtpExpires) {
       return res.status(401).json({ success: false, message: 'Invalid or expired code.' });
     }
 
@@ -434,6 +475,7 @@ router.post('/admin/verify-code', otpLimiter, async (req, res) => {
       user.adminOtpExpires = undefined;
       user.adminLoginCode = undefined;
       user.adminLoginCodeExpire = undefined;
+      user.adminOtpAttempts = 0;
       await user.save();
       return res.status(401).json({ success: false, message: 'This code has expired. Please request a new one.' });
     }
@@ -443,12 +485,13 @@ router.post('/admin/verify-code', otpLimiter, async (req, res) => {
       user.adminOtpExpires = undefined;
       user.adminLoginCode = undefined;
       user.adminLoginCodeExpire = undefined;
+      user.adminOtpAttempts = 0;
       await user.save();
       return res.status(423).json({ success: false, message: 'Maximum verification attempts exceeded. Code invalidated.' });
     }
 
     const hashedCandidate = crypto.createHash('sha256').update(candidateCode.trim()).digest('hex');
-    if (hashedCandidate !== userOtpHash) {
+    if (hashedCandidate !== userOtpHash1 && hashedCandidate !== userOtpHash2) {
       user.adminOtpAttempts = (user.adminOtpAttempts || 0) + 1;
       await user.save();
       return res.status(401).json({ success: false, message: `Invalid code. ${3 - user.adminOtpAttempts} attempt(s) remaining.` });

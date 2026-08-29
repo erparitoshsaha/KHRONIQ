@@ -61,47 +61,6 @@ const DIAL_COLOR_PRESETS = [
   { name: 'Beige Dial', hex: '#f5f5dc' }
 ];
 
-const compressImage = (file) => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const MAX_HEIGHT = 800;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/png', 0.7));
-      };
-      img.onerror = () => {
-        resolve(event.target.result);
-      };
-    };
-    reader.onerror = () => {
-      resolve('');
-    };
-  });
-};
-
 export default function Admin({ onPageChange }) {
   const dispatch = useDispatch();
   const products = useSelector(state => state.watch.products);
@@ -188,10 +147,23 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
     const file = e.target.files[0];
     if (!file) return;
     try {
-      const compressedBase64 = await compressImage(file);
-      setTempStrapImage(compressedBase64);
+      const formData = new FormData();
+      formData.append('image', file);
+      const token = localStorage.getItem('khroniq_token');
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success && data.imageUrl) {
+        setTempStrapImage(data.imageUrl);
+      } else {
+        alert(data.message || 'Failed to upload strap image');
+      }
     } catch (err) {
-      console.error('Strap image compression error:', err);
+      console.error('Strap image upload error:', err);
+      alert(err.message || 'Failed to upload strap image');
     }
   };
 
@@ -399,12 +371,12 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
   const HOMEPAGE_SECTIONS = [
     { key: 'gender_men', label: "Shop by Gender — Men's Banner" },
     { key: 'gender_women', label: "Shop by Gender — Women's Banner" },
-    { key: 'collection_khronomaster', label: 'Collection Tile — Khronomaster' },
+    { key: 'collection_khronomaster', label: 'Collection Tile — Classic' },
     { key: 'collection_defy', label: 'Collection Tile — Defy' },
     { key: 'collection_heritage', label: 'Collection Tile — Elite & Heritage' },
-    { key: 'khronomaster_professional', label: 'Khronomaster Professional — Hero Image' },
-    { key: 'dive_deeper_tile1', label: 'Khronomaster Professional — Tile 1 (Emerald Green)' },
-    { key: 'dive_deeper_tile2', label: 'Khronomaster Professional — Tile 2 (Crimson Red)' },
+    { key: 'khronomaster_professional', label: 'Classic Professional — Hero Image' },
+    { key: 'dive_deeper_tile1', label: 'Classic Professional — Tile 1 (Emerald Green)' },
+    { key: 'dive_deeper_tile2', label: 'Classic Professional — Tile 2 (Crimson Red)' },
     { key: 'khroniq_updates', label: 'Khroniq Updates — Drawer / Header Banner' },
     { key: 'hero_slide1_lifestyle', label: 'Hero Slide 1 — Crimson Red (Lifestyle)' },
     { key: 'hero_slide1_product', label: 'Hero Slide 1 — Crimson Red (Watch)' },
@@ -444,18 +416,16 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
 
     setUploadingMedia(true);
     try {
-      const compressedBase64 = await compressImage(file);
+      const formData = new FormData();
+      formData.append('files', file);
+      formData.append('section', sectionKey);
+      const token = localStorage.getItem('khroniq_token');
       const res = await fetch('/api/admin/media', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
+          Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
-          url: compressedBase64,
-          section: sectionKey,
-          type: 'image'
-        })
+        body: formData
       });
       const data = await res.json();
       if (data.success && data.media?.[0]) {
@@ -465,7 +435,7 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
       }
     } catch (err) {
       console.error('Section image upload error:', err);
-      alert('Failed to upload image.');
+      alert(err.message || 'Failed to upload image.');
     } finally {
       setUploadingMedia(false);
     }
@@ -483,15 +453,15 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
     if (!file) return;
 
     try {
-      const compressedBase64 = await compressImage(file);
+      const formData = new FormData();
+      formData.append('image', file);
       const token = localStorage.getItem('khroniq_token');
       const res = await fetch('/api/upload', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ image: compressedBase64 })
+        body: formData
       });
       const data = await res.json();
 
@@ -513,7 +483,7 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
       }
     } catch (err) {
       console.error('Strap image upload error:', err);
-      alert('Failed to upload strap image');
+      alert(err.message || 'Failed to upload strap image');
     }
   };
 
@@ -825,6 +795,16 @@ const handleEditBlogImageUpload = async (e) => {
 
   // Validation checking for security
   if (!currentUser || currentUser.role !== 'admin') {
+    const hasToken = typeof window !== 'undefined' && localStorage.getItem('khroniq_token');
+    if (hasToken && !currentUser) {
+      return (
+        <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-4 text-luxury-gold">
+          <div className="w-8 h-8 border-2 border-luxury-gold/30 border-t-luxury-gold rounded-full animate-spin" />
+          <p className="text-xs text-gray-400 uppercase tracking-widest">Verifying Admin Session...</p>
+        </div>
+      );
+    }
+
     return (
       <div className="max-w-md mx-auto text-center py-20 bg-luxury-gray border border-white/5 rounded p-8 space-y-6">
         <ShieldAlert className="mx-auto text-luxury-red animate-bounce" size={48} />
@@ -890,15 +870,15 @@ const handleImageUpload = async (e) => {
 
   setUploadingImage(true);
   try {
-    const compressedBase64 = await compressImage(file);
+    const formData = new FormData();
+    formData.append('image', file);
     const token = localStorage.getItem('khroniq_token');
     const res = await fetch('/api/upload', {
       method: 'POST',
       headers: { 
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}` 
       },
-      body: JSON.stringify({ image: compressedBase64 })
+      body: formData
     });
     const data = await res.json();
 
@@ -909,7 +889,7 @@ const handleImageUpload = async (e) => {
     }
   } catch (error) {
     console.error('Image upload error:', error);
-    alert('Failed to upload image');
+    alert(error.message || 'Failed to upload image');
   } finally {
     setUploadingImage(false);
   }
@@ -921,15 +901,15 @@ const handleEditImageUpload = async (e) => {
 
   setUploadingImage(true);
   try {
-    const compressedBase64 = await compressImage(file);
+    const formData = new FormData();
+    formData.append('image', file);
     const token = localStorage.getItem('khroniq_token');
     const res = await fetch('/api/upload', {
       method: 'POST',
       headers: { 
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}` 
       },
-      body: JSON.stringify({ image: compressedBase64 })
+      body: formData
     });
     const data = await res.json();
 
@@ -940,7 +920,7 @@ const handleEditImageUpload = async (e) => {
     }
   } catch (error) {
     console.error('Image upload error:', error);
-    alert('Failed to upload image');
+    alert(error.message || 'Failed to upload image');
   } finally {
     setUploadingImage(false);
   }
@@ -1408,7 +1388,7 @@ const handleEditImageUpload = async (e) => {
                     value={newProduct.name}
                     onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                     className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
-                    placeholder="Khroniq Khronomaster Sport"
+                    placeholder="Khroniq Classic Sport"
                   />
                 </div>
 
@@ -1553,7 +1533,7 @@ const handleEditImageUpload = async (e) => {
                     onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
                     className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
                   >
-                    <option value="Khronomaster">Khronomaster</option>
+                    <option value="Khronomaster">Classic</option>
                     <option value="Defy">Defy</option>
                     <option value="Heritage">Heritage</option>
                     <option value="Elite">Elite</option>
@@ -1618,7 +1598,7 @@ const handleEditImageUpload = async (e) => {
                       { key: 'waterResistance',label: 'Water Resistance', ph: '50m' },
                       { key: 'glass',          label: 'Dial Glass',      ph: 'Sapphire Crystal' },
                       { key: 'watchFunction',  label: 'Function',        ph: 'Hours, Minutes, Seconds' },
-                      { key: 'collection',     label: 'Collection',      ph: 'Khronomaster' },
+                      { key: 'collection',     label: 'Collection',      ph: 'Classic' },
                       { key: 'warrantyDetails',label: 'Warranty Details', ph: 'Manufacturer Warranty' },
                     ].map(({ key, label, ph }) => (
                       <div key={key} className="space-y-1">
@@ -2148,7 +2128,7 @@ const handleEditImageUpload = async (e) => {
                       onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
                       className="w-full bg-luxury-dark border border-white/10 rounded text-white p-2.5"
                     >
-                      <option value="Khronomaster">Khronomaster</option>
+                      <option value="Khronomaster">Classic</option>
                       <option value="Defy">Defy</option>
                       <option value="Heritage">Heritage</option>
                       <option value="Elite">Elite</option>
@@ -2212,7 +2192,7 @@ const handleEditImageUpload = async (e) => {
                         { key: 'waterResistance', label: 'Water Resistance', ph: '50m' },
                         { key: 'glass',           label: 'Dial Glass',       ph: 'Sapphire Crystal' },
                         { key: 'watchFunction',   label: 'Function',         ph: 'Hours, Minutes, Seconds' },
-                        { key: 'collection',      label: 'Collection',       ph: 'Khronomaster' },
+                        { key: 'collection',      label: 'Collection',       ph: 'Classic' },
                         { key: 'warrantyDetails', label: 'Warranty Details', ph: 'Manufacturer Warranty' },
                       ].map(({ key, label, ph }) => (
                         <div key={key} className="space-y-1">

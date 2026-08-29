@@ -31,6 +31,29 @@ export function errorHandler(err, req, res, next) {
     message = `Invalid input: ${errors.join(', ')}`;
   }
 
+  // Handle Multer upload errors
+  if (err.name === 'MulterError') {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      statusCode = 413;
+      message = 'File size exceeds the allowed limit (10 MB for images, 50 MB for videos).';
+    } else {
+      statusCode = 400;
+      message = err.message || 'File upload error.';
+    }
+  }
+
+  // Handle file format rejection errors
+  if (err.message && err.message.includes('Invalid file format')) {
+    statusCode = 400;
+    message = err.message;
+  }
+
+  // Handle Express body-parser entity too large
+  if (err.type === 'entity.too.large' || err.status === 413) {
+    statusCode = 413;
+    message = 'Request entity too large. Please upload files directly using form data.';
+  }
+
   // Handle JWT errors
   if (err.name === 'JsonWebTokenError') {
     statusCode = 401;
