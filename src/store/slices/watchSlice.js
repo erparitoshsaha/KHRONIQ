@@ -646,12 +646,12 @@ export const checkAdminEmail = (email) => async () => {
   }
 };
 
-export const requestAdminCode = (email, password) => async () => {
+export const requestAdminCode = (email) => async () => {
   try {
     const res = await fetch('/api/auth/admin/request-code', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email })
     });
     const data = await res.json();
     return { success: data.success, message: data.message };

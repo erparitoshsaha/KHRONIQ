@@ -95,6 +95,15 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
+    // If the account is an admin, MUST NOT issue an admin JWT via normal login
+    if (user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        requireOtp: true,
+        message: 'Admin accounts require two-factor OTP verification. Please authenticate via the administrative sign-in flow.'
+      });
+    }
+
     // Check if account is currently locked
     if (user.lockUntil && user.lockUntil > Date.now()) {
       const remainingSeconds = Math.ceil((user.lockUntil - Date.now()) / 1000);
@@ -127,15 +136,6 @@ router.post('/login', authLimiter, async (req, res) => {
           message: `Invalid email or password. ${attemptsRemaining} attempts remaining.`
         });
       }
-    }
-
-    // If the authenticated account is an admin, MUST NOT issue an admin JWT via normal login
-    if (user.role === 'admin') {
-      return res.status(403).json({
-        success: false,
-        requireOtp: true,
-        message: 'Admin accounts require two-factor OTP verification. Please authenticate via the administrative sign-in flow.'
-      });
     }
 
     // Reset login attempts on successful login
@@ -191,27 +191,19 @@ router.post('/check-admin', authLimiter, async (req, res) => {
 // @desc    Generate and email a 6-digit cryptographically secure OTP for admin verification
 // @access  Public (Rate-limited)
 router.post('/admin-otp/request', otpLimiter, async (req, res) => {
-  const { email, password } = req.body;
+  const { email } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Email and password are required.' });
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email is required.' });
   }
 
   try {
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail });
+    const user = await User.findOne({ email: normalizedEmail, role: 'admin' });
 
     // Validate user credentials and admin role
-    if (!user || user.role !== 'admin') {
+    if (!user) {
       // Return generic response to avoid admin email enumeration
-      return res.json({
-        success: true,
-        message: 'If the credentials are valid, a secure verification code has been dispatched.'
-      });
-    }
-
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
       return res.json({
         success: true,
         message: 'If the credentials are valid, a secure verification code has been dispatched.'
@@ -357,36 +349,15 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
 
 // Aliases for compatibility with /admin/request-code and /admin/verify-code
 router.post('/admin/request-code', otpLimiter, async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Please enter both email and password.' });
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Please enter your email.' });
   }
   try {
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail });
+    const user = await User.findOne({ email: normalizedEmail, role: 'admin' });
 
-    if (!user || user.role !== 'admin') {
-      return res.json({ success: true, message: 'If that email belongs to an admin account, a code has been sent.' });
-    }
-
-    // Check account lockout
-    if (user.lockUntil && user.lockUntil > Date.now()) {
-      const remainingSeconds = Math.ceil((user.lockUntil - Date.now()) / 1000);
-      return res.status(423).json({
-        success: false,
-        message: `Too many failed attempts. Account locked. Please try again in ${remainingSeconds} seconds.`,
-        remainingSeconds
-      });
-    }
-
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      user.loginAttempts = (user.loginAttempts || 0) + 1;
-      if (user.loginAttempts >= 5) {
-        user.lockUntil = new Date(Date.now() + 60 * 1000);
-        user.loginAttempts = 0;
-      }
-      await user.save();
+    if (!user) {
       return res.json({ success: true, message: 'If that email belongs to an admin account, a code has been sent.' });
     }
 

@@ -108,12 +108,7 @@ export default function Login({ params, onPageChange }) {
         if (checkRes && checkRes.isAdmin) {
           setIsAdminEmail(true);
           if (adminStep === 'email') {
-            if (!password) {
-              setErrorMsg('Please enter your password.');
-              setLoading(false);
-              return;
-            }
-            const res = await dispatch(requestAdminCode(cleanEmail, password));
+            const res = await dispatch(requestAdminCode(cleanEmail));
             if (res.success) {
               setAdminStep('code');
               setOtpSentMsg(true);
@@ -369,8 +364,8 @@ export default function Login({ params, onPageChange }) {
             </div>
           )}
 
-          {/* Password (Login & Register Only — hidden once admin advances to code verification step) */}
-          {authMode !== 'forgot' && !(authMode === 'login' && isAdminEmail && adminStep === 'code') && (
+          {/* Password (Login & Register Only — hidden once an admin email is detected) */}
+          {authMode !== 'forgot' && !(authMode === 'login' && isAdminEmail) && (
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label className="text-[10px] text-gray-300 font-bold uppercase tracking-widest block">Password</label>
