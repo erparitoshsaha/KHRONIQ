@@ -56,20 +56,34 @@ app.use(
 );
 
 // 3. Explicit CORS Whitelisting
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
+const staticAllowedOrigins = [
+  'https://www.khroniq.com',
+  'https://khroniq.com',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000'
-].filter(Boolean);
+];
+
+const envOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map(url => url.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([...staticAllowedOrigins, ...envOrigins]));
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server) or matching allowed origins
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+      if (!origin) {
         return callback(null, true);
       }
+
+      const normalizedOrigin = origin.trim().replace(/\/$/, '');
+      if (allowedOrigins.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
+
       return callback(new Error('CORS policy does not allow access from this origin.'));
     },
     credentials: true,
