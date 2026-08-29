@@ -1,9 +1,42 @@
 import express from 'express';
+import crypto from 'crypto';
 import Product from '../_models/Product.js';
 import Order from '../_models/Order.js';
 import { protect, adminOnly } from '../_middleware/auth.js';
 
 const router = express.Router();
+
+const generateUniqueSerialNo = async (excludeId = null) => {
+  let serialNo;
+  let isUnique = false;
+  let attempts = 0;
+  while (!isUnique && attempts < 20) {
+    attempts++;
+    const randomHex = crypto.randomBytes(3).toString('hex').toUpperCase();
+    serialNo = `KHQ-${new Date().getFullYear()}-${randomHex}`;
+    const query = { serialNo };
+    if (excludeId) query._id = { $ne: excludeId };
+    const existing = await Product.findOne(query);
+    if (!existing) isUnique = true;
+  }
+  return serialNo;
+};
+
+const generateUniqueClaimCode = async (excludeId = null) => {
+  let uniqueCode;
+  let isUnique = false;
+  let attempts = 0;
+  while (!isUnique && attempts < 20) {
+    attempts++;
+    const randomHex = crypto.randomBytes(5).toString('hex').toUpperCase();
+    uniqueCode = `CLM-${randomHex}`;
+    const query = { uniqueCode };
+    if (excludeId) query._id = { $ne: excludeId };
+    const existing = await Product.findOne(query);
+    if (!existing) isUnique = true;
+  }
+  return uniqueCode;
+};
 
 // @route   GET /api/products
 // @desc    Get all products
@@ -22,10 +55,36 @@ router.get('/', async (req, res) => {
 // @desc    Create a product
 // @access  Private/Admin
 router.post('/', protect, adminOnly, async (req, res) => {
-const { name, price, stock, category, gender, description, image, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths } = req.body;
+  const { name, modelNo, serialNo, uniqueCode, price, stock, category, gender, description, image, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths, customizationOptions } = req.body;
   try {
+    const rawSerial = typeof serialNo === 'string' ? serialNo.trim() : '';
+    const rawCode = typeof uniqueCode === 'string' ? uniqueCode.trim() : '';
+
+    let finalSerialNo = rawSerial;
+    if (finalSerialNo) {
+      const existingSerial = await Product.findOne({ serialNo: finalSerialNo });
+      if (existingSerial) {
+        return res.status(400).json({ success: false, message: `Serial No. "${finalSerialNo}" is already in use by another timepiece.` });
+      }
+    } else {
+      finalSerialNo = await generateUniqueSerialNo();
+    }
+
+    let finalUniqueCode = rawCode;
+    if (finalUniqueCode) {
+      const existingCode = await Product.findOne({ uniqueCode: finalUniqueCode });
+      if (existingCode) {
+        return res.status(400).json({ success: false, message: `Unique Code "${finalUniqueCode}" is already in use by another timepiece.` });
+      }
+    } else {
+      finalUniqueCode = await generateUniqueClaimCode();
+    }
+
     const product = new Product({
       name,
+      modelNo: modelNo || '',
+      serialNo: finalSerialNo,
+      uniqueCode: finalUniqueCode,
       price: Number(price),
       stock: Number(stock),
       warrantyMonths: warrantyMonths !== undefined ? Number(warrantyMonths) : 6,
@@ -43,8 +102,8 @@ const { name, price, stock, category, gender, description, image, specs, customi
       customizable: customizable || false,
       allowStrapCustomization: allowStrapCustomization !== undefined ? allowStrapCustomization : true,
       allowCaseCustomization: allowCaseCustomization !== undefined ? allowCaseCustomization : true,
-        allowDialCustomization: allowDialCustomization !== undefined ? allowDialCustomization : true,
-      customizationOptions: req.body.customizationOptions,
+      allowDialCustomization: allowDialCustomization !== undefined ? allowDialCustomization : true,
+      customizationOptions: customizationOptions || req.body.customizationOptions,
       reviews: []
     });
 
@@ -60,7 +119,7 @@ const { name, price, stock, category, gender, description, image, specs, customi
 // @desc    Update a product
 // @access  Private/Admin
 router.put('/:id', protect, adminOnly, async (req, res) => {
-const { name, price, stock, category, gender, description, image, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths } = req.body;
+  const { name, modelNo, serialNo, uniqueCode, price, stock, category, gender, description, image, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths, customizationOptions } = req.body;
   try {
     const product = await Product.findById(req.params.id);
 
@@ -69,6 +128,36 @@ const { name, price, stock, category, gender, description, image, specs, customi
     }
 
     product.name = name !== undefined ? name : product.name;
+    if (modelNo !== undefined) product.modelNo = modelNo;
+
+    if (serialNo !== undefined) {
+      const cleanSerial = typeof serialNo === 'string' ? serialNo.trim() : '';
+      if (cleanSerial && cleanSerial !== product.serialNo) {
+        const existingSerial = await Product.findOne({
+          _id: { $ne: req.params.id },
+          serialNo: cleanSerial
+        });
+        if (existingSerial) {
+          return res.status(400).json({ success: false, message: `Serial No. "${cleanSerial}" is already in use by another timepiece.` });
+        }
+        product.serialNo = cleanSerial;
+      }
+    }
+
+    if (uniqueCode !== undefined) {
+      const cleanCode = typeof uniqueCode === 'string' ? uniqueCode.trim() : '';
+      if (cleanCode && cleanCode !== product.uniqueCode) {
+        const existingCode = await Product.findOne({
+          _id: { $ne: req.params.id },
+          uniqueCode: cleanCode
+        });
+        if (existingCode) {
+          return res.status(400).json({ success: false, message: `Unique Code "${cleanCode}" is already in use by another timepiece.` });
+        }
+        product.uniqueCode = cleanCode;
+      }
+    }
+
     product.price = price !== undefined ? Number(price) : product.price;
     product.stock = stock !== undefined ? Number(stock) : product.stock;
     product.warrantyMonths = warrantyMonths !== undefined ? Number(warrantyMonths) : product.warrantyMonths;
@@ -90,7 +179,10 @@ const { name, price, stock, category, gender, description, image, specs, customi
     if (customizable !== undefined) product.customizable = customizable;
     if (allowStrapCustomization !== undefined) product.allowStrapCustomization = allowStrapCustomization;
     if (allowCaseCustomization !== undefined) product.allowCaseCustomization = allowCaseCustomization;
-    if (req.body.customizationOptions !== undefined) {
+    if (allowDialCustomization !== undefined) product.allowDialCustomization = allowDialCustomization;
+    if (customizationOptions !== undefined) {
+      product.customizationOptions = customizationOptions;
+    } else if (req.body.customizationOptions !== undefined) {
       product.customizationOptions = req.body.customizationOptions;
     }
 

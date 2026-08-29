@@ -81,6 +81,9 @@ export default function Admin({ onPageChange }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: '',
+    modelNo: '',
+    serialNo: '',
+    uniqueCode: '',
     price: '',
     stock: '',
     discountPercent: 0,
@@ -950,7 +953,7 @@ const handleEditImageUpload = async (e) => {
       alert('Product created successfully!');
       setShowAddForm(false);
       setNewProduct({
-        name: '', price: '', stock: '', discountPercent: 0, badge: '', badgeMode: 'none',unitCodes: [],  warrantyMonths: 12, category: 'Khronomaster', description: '',
+        name: '', modelNo: '', serialNo: '', uniqueCode: '', price: '', stock: '', discountPercent: 0, badge: '', badgeMode: 'none',unitCodes: [],  warrantyMonths: 12, category: 'Khronomaster', description: '',
         image: '',
         specs: { movement: 'Automatic', case: '40mm', strap: 'Leather', waterResistance: '50m', glass: 'Sapphire', dialColor: 'Black', caseMaterial: 'Stainless Steel', watchFunction: 'Hours, Minutes, Seconds', warrantyDetails: 'Manufacturer Warranty', collection: 'Khronomaster', warrantyPeriod: '2 Years' },
         customizable: true,
@@ -975,6 +978,9 @@ const handleEditImageUpload = async (e) => {
     setEditingId(product.id);
     setEditForm({ 
       ...product, 
+      modelNo: product.modelNo || '',
+      serialNo: product.serialNo || '',
+      uniqueCode: product.uniqueCode || '',
       discountPercent: product.discountPercent ?? 0,
       badge: product.badge ?? '',
       badgeMode: ['New', 'Limited Edition', 'Bestseller'].includes(product.badge) ? product.badge : (product.badge ? 'custom' : 'none'),
@@ -1389,6 +1395,39 @@ const handleEditImageUpload = async (e) => {
                     onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                     className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
                     placeholder="Khroniq Classic Sport"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Model No.</label>
+                  <input
+                    type="text"
+                    value={newProduct.modelNo || ''}
+                    onChange={(e) => setNewProduct({ ...newProduct, modelNo: e.target.value })}
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
+                    placeholder="KHQ-CLS-01"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Serial No. (Optional)</label>
+                  <input
+                    type="text"
+                    value={newProduct.serialNo || ''}
+                    onChange={(e) => setNewProduct({ ...newProduct, serialNo: e.target.value })}
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
+                    placeholder="Auto-generated if left blank"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Unique Code (Optional)</label>
+                  <input
+                    type="text"
+                    value={newProduct.uniqueCode || ''}
+                    onChange={(e) => setNewProduct({ ...newProduct, uniqueCode: e.target.value })}
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
+                    placeholder="Auto-generated if left blank"
                   />
                 </div>
 
@@ -1952,15 +1991,50 @@ const handleEditImageUpload = async (e) => {
                 </div>
 
                 <form onSubmit={handleUpdateProduct} className="space-y-4 text-xs">
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Watch Name</label>
-                    <input
-                      type="text"
-                      required
-                      value={editForm.name}
-                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                      className="w-full bg-luxury-dark border border-white/10 rounded text-white p-2.5"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Watch Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        className="w-full bg-luxury-dark border border-white/10 rounded text-white p-2.5"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Model No.</label>
+                      <input
+                        type="text"
+                        value={editForm.modelNo || ''}
+                        onChange={(e) => setEditForm({ ...editForm, modelNo: e.target.value })}
+                        className="w-full bg-luxury-dark border border-white/10 rounded text-white p-2.5"
+                        placeholder="KHQ-CLS-01"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Serial No.</label>
+                      <input
+                        type="text"
+                        value={editForm.serialNo || ''}
+                        onChange={(e) => setEditForm({ ...editForm, serialNo: e.target.value })}
+                        className="w-full bg-luxury-dark border border-white/10 rounded text-white p-2.5"
+                        placeholder="KHQ-2026-XXXXXX"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Unique Code</label>
+                      <input
+                        type="text"
+                        value={editForm.uniqueCode || ''}
+                        onChange={(e) => setEditForm({ ...editForm, uniqueCode: e.target.value })}
+                        className="w-full bg-luxury-dark border border-white/10 rounded text-white p-2.5"
+                        placeholder="CLM-XXXXXXXXXX"
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">

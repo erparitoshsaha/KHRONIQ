@@ -17,6 +17,9 @@ reviewSchema.virtual('id').get(function() {
 
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  modelNo: { type: String, default: '' },
+  serialNo: { type: String, default: '' },
+  uniqueCode: { type: String, default: '' },
   image: { type: String, required: true },
   brand: { type: String, default: 'KHRONIQ' },
   price: { type: Number, required: true },
