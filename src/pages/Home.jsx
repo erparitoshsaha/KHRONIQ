@@ -122,7 +122,7 @@ function Marquee({ items, speed = 20, reverse = false }) {
       <motion.div className="flex gap-14 whitespace-nowrap"
         animate={{ x: reverse ? ['-50%', '0%'] : ['0%', '-50%'] }}
         transition={{ duration: speed, repeat: Infinity, ease: 'linear' }}>
-        {[...items, ...items].map((item, i) => (
+        {[...items, ...items, ...items, ...items].map((item, i) => (
           <span key={i} className="text-[11px] font-bold tracking-[0.22em] uppercase text-luxury-muted flex items-center gap-3">
             <Star size={7} fill="currentColor" className="text-black/30" />{item}
           </span>
@@ -1099,7 +1099,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     }
   ];
 
-  const marqueeA = ['Swadeshi Luxury', 'Indian Engineered', 'Make In India Pride', 'Sapphire Crystal', 'High-Beat Caliber', 'In-House Assembly'];
+  const marqueeA = ['Premium & Luxury', 'Indian Engineered', '1 Year Premium Warranty'];
   const marqueeB = ['True Knock Group Product', 'Limited Edition Masterpiece', 'Khroniq Caliber Craftsmanship', 'Excellence Redefined', 'State-of-the-Art Indian Manufacture', 'Precision Made in India'];
   const stats = [
     { raw: '100', suffix: '%', label: 'Swadeshi Design' },

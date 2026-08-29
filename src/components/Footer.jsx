@@ -23,11 +23,11 @@ const NAV_COLS = [
   {
     title: 'Collections',
     links: [
-      { label: 'Classic',      page: 'shop', args: { gender: 'men' } },
-      { label: 'Defy',         page: 'shop', args: { category: 'Defy' } },
-      { label: 'Heritage',     page: 'shop', args: { category: 'Heritage' } },
-      { label: 'Elite',        page: 'shop', args: { category: 'Elite' } },
-      { label: 'Femina',       page: 'shop', args: { gender: 'women' } },
+      { label: 'Classic', page: 'shop', args: { gender: 'men' } },
+      { label: 'Defy', page: 'shop', args: { category: 'Defy' } },
+      { label: 'Heritage', page: 'shop', args: { category: 'Heritage' } },
+      { label: 'Elite', page: 'shop', args: { category: 'Elite' } },
+      { label: 'Femina', page: 'shop', args: { gender: 'women' } },
     ],
   },
   {
@@ -66,9 +66,9 @@ const NAV_COLS = [
   },
 ];
 const BADGES = [
-  { icon: ShieldCheck, label: 'INDIAN GUARANTEE', sub: 'Premium Warranty' },
+  { icon: ShieldCheck, label: 'Exquisite Design', sub: 'Premium Warranty' },
   { icon: Award, label: 'MASTER CRAFTSMANSHIP', sub: 'Hand-finished movements' },
-  { icon: Gem, label: 'CERTIFIED SWADESHI', sub: 'Crafted with Indian Pride' },
+  { icon: Gem, label: 'CERTIFIED', sub: 'Crafted with Pride' },
 ];
 
 const SOCIALS = [
@@ -159,7 +159,7 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
               </h2>
 
               <p style={{ fontSize: '0.82rem', lineHeight: 1.85, color: '#ffffff', maxWidth: '520px' }}>
-                Crafted with Swadeshi pride, KHRONIQ designs exceptional timepieces for those who dare to dream.
+                Crafted with pride, KHRONIQ designs exceptional timepieces for those who dare to dream.
                 Every second counts — make it extraordinary.
               </p>
 
@@ -331,7 +331,7 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
                 <strong className="text-gray-300">Product Representation:</strong> All images featured are subject to availability. While we strive to show accurate details, technical specifications and current pricing are not at times reflected in hand-finished components may occasionally cause out.
               </p>
               <p>
-                <strong className="text-gray-300">Warranty Coverage:</strong> Our 3-Year Premium Swadeshi Warranty is valid only for watches purchased directly from our official portal or authorized concierge boutique service. Watches obtained from unverified sources do not qualify for official servicing.
+                <strong className="text-gray-300">Warranty Coverage:</strong> Our 1-Year Premium Warranty is valid only for watches purchased directly from our official portal or authorized concierge boutique service. Watches obtained from unverified sources do not qualify for official servicing.
               </p>
             </div>
             <div>
