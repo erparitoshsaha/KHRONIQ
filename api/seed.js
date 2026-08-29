@@ -2,6 +2,7 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import Blog from './_models/Blog.js';
 import Product from './_models/Product.js';
+import User from './_models/User.js';
 import connectDB from './utils/db.js';
 
 async function seed() {
@@ -32,6 +33,32 @@ async function seed() {
       console.log('Successfully seeded initial blogs.');
     } else {
       console.log(`Blogs collection already contains ${blogCount} documents. Skipping blog seed.`);
+    }
+
+    // 2. Safe Admin Seeding from Environment Variables (ONLY if no admin exists)
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (adminEmail && adminPassword) {
+      const existingAdmin = await User.findOne({ role: 'admin' });
+      if (!existingAdmin) {
+        const normalizedEmail = adminEmail.toLowerCase().trim();
+        const userExists = await User.findOne({ email: normalizedEmail });
+        if (!userExists) {
+          const newAdmin = new User({
+            name: 'Administrator',
+            email: normalizedEmail,
+            password: adminPassword, // will be hashed by pre-save hook
+            role: 'admin'
+          });
+          await newAdmin.save();
+          console.log(`Initial admin user created successfully for ${normalizedEmail}.`);
+        } else {
+          console.log(`User ${normalizedEmail} already exists. Skipping admin seed.`);
+        }
+      } else {
+        console.log('Administrator account already exists. Skipping admin seed.');
+      }
     }
 
     console.log('Seeding process finished.');
