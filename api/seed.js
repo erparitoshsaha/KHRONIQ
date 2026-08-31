@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Blog from './_models/Blog.js';
 import Product from './_models/Product.js';
 import connectDB from './utils/db.js';
+import { seedDefaultFiltersSafe } from './_routes/filters.js';
 
 async function seed() {
   try {
@@ -33,6 +34,10 @@ async function seed() {
     } else {
       console.log(`Blogs collection already contains ${blogCount} documents. Skipping blog seed.`);
     }
+
+    // 2. Seed Default Filter Categories & Options if missing
+    await seedDefaultFiltersSafe();
+    console.log('Verified & seeded default filter categories.');
 
     console.log('Seeding process finished.');
     process.exit(0);

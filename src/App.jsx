@@ -7,7 +7,7 @@ import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
 import CartPage from './pages/CartPage';
 import Login from './pages/Login';
-import { fetchProducts, fetchCoupons, fetchUserProfile } from './store/slices/watchSlice';
+import { fetchProducts, fetchCoupons, fetchUserProfile, fetchFilters, fetchFooterSections } from './store/slices/watchSlice';
 
 // Lazy-load secondary / heavy routes to split bundles cleanly
 const Checkout = lazy(() => import('./pages/Checkout'));
@@ -35,6 +35,8 @@ function AppContent() {
     dispatch(fetchProducts());
     dispatch(fetchCoupons());
     dispatch(fetchUserProfile());
+    dispatch(fetchFilters());
+    dispatch(fetchFooterSections());
   }, [dispatch]);
 
   useEffect(() => {

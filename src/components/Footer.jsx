@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import { ShieldCheck, ArrowRight, Clock, Award, Gem } from 'lucide-react';
 import LogoMark from './LogoMark';
+import { DEFAULT_FOOTER_SECTIONS } from '../store/slices/watchSlice';
 
 /* ─── tiny hook: fires once when element enters viewport ─── */
 function useInView(threshold = 0.15) {
@@ -19,17 +21,7 @@ function useInView(threshold = 0.15) {
   return [ref, visible];
 }
 
-const NAV_COLS = [
-  {
-    title: 'Collections',
-    links: [
-      { label: 'Classic', page: 'shop', args: { gender: 'men' } },
-      { label: 'Defy', page: 'shop', args: { category: 'Defy' } },
-      { label: 'Heritage', page: 'shop', args: { category: 'Heritage' } },
-      { label: 'Elite', page: 'shop', args: { category: 'Elite' } },
-      { label: 'Femina', page: 'shop', args: { gender: 'women' } },
-    ],
-  },
+const STATIC_NAV_COLS = [
   {
     title: 'Legal',
     links: [
@@ -96,6 +88,38 @@ const SOCIALS = [
 export default function Footer({ onPageChange, onWarrantyOpen }) {
   const [heroRef, heroVisible] = useInView(0.1);
   const [bodyRef, bodyVisible] = useInView(0.05);
+
+  const filters = useSelector(state => state.watch.filters || []);
+  const footerSections = useSelector(state => state.watch.footerSections || DEFAULT_FOOTER_SECTIONS);
+
+  const collectionCat = filters.find(c => c.slug === 'collection');
+  const collectionLinks = (collectionCat?.options && collectionCat.options.length > 0)
+    ? collectionCat.options.filter(opt => opt.isActive).map(opt => ({
+        label: opt.name,
+        page: 'shop',
+        args: { category: opt.value || opt.slug || opt.name }
+      }))
+    : [
+        { label: 'Deevaaz', page: 'shop', args: { category: 'deevaaz' } },
+        { label: 'Classic', page: 'shop', args: { category: 'classic' } }
+      ];
+
+  const activeSections = (footerSections && footerSections.length > 0)
+    ? footerSections.filter(sec => sec.isActive)
+    : DEFAULT_FOOTER_SECTIONS;
+
+  const navCols = activeSections.map(sec => {
+    if (sec.type === 'dynamic_collection' || sec.slug === 'collections') {
+      return {
+        title: sec.title || 'Collections',
+        links: collectionLinks
+      };
+    }
+    return {
+      title: sec.title,
+      links: (sec.links || []).filter(l => l.isActive)
+    };
+  });
 
   return (
     <footer style={{ backgroundColor: '#000000' }}
@@ -198,7 +222,7 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
         style={{ borderBottom: '1px solid rgba(4,120,87,0.1)' }}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 py-14">
 
-          {NAV_COLS.map(({ title, links }, ci) => (
+          {navCols.map(({ title, links }, ci) => (
             <div key={title} style={{
               opacity: bodyVisible ? 1 : 0,
               transform: bodyVisible ? 'translateY(0)' : 'translateY(24px)',

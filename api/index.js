@@ -28,6 +28,8 @@ import warrantyRoutes from './_routes/warranty.js';
 import blogRoutes from './_routes/blogs.js';
 import contactRoutes from './_routes/contact.js';
 import newsletterRoutes from './_routes/newsletter.js';
+import filterRoutes, { seedDefaultFiltersSafe } from './_routes/filters.js';
+import footerRoutes, { seedDefaultFooterSafe } from './_routes/footer.js';
 
 // 1. Validate environment configuration on boot
 validateEnv();
@@ -136,6 +138,8 @@ app.use('/api/warranty', warrantyRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/filters', filterRoutes);
+app.use('/api/footer', footerRoutes);
 
 // Base Endpoint
 app.get('/api', (req, res) => {
@@ -173,7 +177,13 @@ const PORT = process.env.PORT || 5000;
 // Listen when running directly on VPS or local Node process
 if (!process.env.VERCEL) {
   connectDB()
-    .then(() => {
+    .then(async () => {
+      try {
+        await seedDefaultFiltersSafe();
+        await seedDefaultFooterSafe();
+      } catch (err) {
+        console.error('Initial check error:', err.message);
+      }
       app.listen(PORT, () => {
         console.log(`KHRONIQ API Server running on port ${PORT}`);
       });

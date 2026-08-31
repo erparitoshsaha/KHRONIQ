@@ -18,12 +18,32 @@ import {
   deleteBlog,
   updateBlog,
   fetchOrders,
-  getDiscountedPrice
+  getDiscountedPrice,
+  fetchAdminFilters,
+  createFilterCategory,
+  updateFilterCategory,
+  deleteFilterCategory,
+  createFilterOption,
+  updateFilterOption,
+  deleteFilterOption,
+  seedDefaultFilters,
+  fetchAdminFooterSections,
+  seedDefaultFooter,
+  createFooterSection,
+  updateFooterSection,
+  deleteFooterSection,
+  createFooterLink,
+  updateFooterLink,
+  deleteFooterLink,
+  moveFooterLink,
+  moveAllFooterLinks
 } from '../store/slices/watchSlice';
 import { 
   BarChart3, Plus, Edit, Trash2, Check, X, Tag, Star, 
   Package, AlertTriangle, ShieldAlert, ArrowLeft, ArrowUpRight,
-  CheckCircle2, LogOut, Newspaper, ImagePlus, BookOpen, Gift, Download
+  CheckCircle2, LogOut, Newspaper, ImagePlus, BookOpen, Gift, Download,
+  SlidersHorizontal,
+  LayoutTemplate
 } from 'lucide-react';
 
 const PRESET_STRAPS = [
@@ -69,13 +89,76 @@ export default function Admin({ onPageChange }) {
   const currentUser = useSelector(state => state.watch.currentUser);
   const currentCurrency = useSelector(selectCurrentCurrency);
   const blogs = useSelector(state => state.watch.blogs || []);
+  const adminFilters = useSelector(state => state.watch.adminFilters || []);
+
+  // Active Admin Sub-Tab
+  const [activeTab, setActiveTab] = useState('analytics'); // analytics | products | orders | coupons | reviews | updates | blogs
+
+  // Filter Management State
+  const [selectedCatForOptions, setSelectedCatForOptions] = useState(null);
+  const [showAddCatModal, setShowAddCatModal] = useState(false);
+  const [newCatForm, setNewCatForm] = useState({ name: '', slug: '', type: 'multi', order: 0, isActive: true });
+  const [editingCat, setEditingCat] = useState(null);
+
+  const [showAddOptModal, setShowAddOptModal] = useState(false);
+  const [newOptForm, setNewOptForm] = useState({ name: '', slug: '', value: '', order: 0, isActive: true });
+  const [editingOpt, setEditingOpt] = useState(null);
+  const [filterActionMsg, setFilterActionMsg] = useState(null);
+
+  const adminFooterSections = useSelector(state => state.watch.adminFooterSections || []);
+
+  // Footer Management State
+  const [selectedSecForLinks, setSelectedSecForLinks] = useState(null);
+  const [showAddSecModal, setShowAddSecModal] = useState(false);
+  const [newSecForm, setNewSecForm] = useState({ title: '', order: 0, isActive: true });
+  const [editingSec, setEditingSec] = useState(null);
+
+  const [showAddLinkModal, setShowAddLinkModal] = useState(false);
+  const [newLinkForm, setNewLinkForm] = useState({
+    label: '',
+    linkType: 'static',
+    page: 'static',
+    url: '',
+    argsView: 'contact',
+    action: '',
+    order: 0,
+    isActive: true
+  });
+  const [editingLink, setEditingLink] = useState(null);
+  const [footerActionMsg, setFooterActionMsg] = useState(null);
+  const [movingLink, setMovingLink] = useState(null);
+  const [deleteSecPrompt, setDeleteSecPrompt] = useState(null);
+
+  const dynamicCollectionOptions = (() => {
+    const colCat = adminFilters.find(c => c.slug === 'collection');
+    if (colCat && colCat.options && colCat.options.length > 0) {
+      return colCat.options.filter(o => o.isActive).map(o => ({ label: o.name, value: o.name }));
+    }
+    return [
+      { label: 'Deevaaz', value: 'Deevaaz' },
+      { label: 'Classic', value: 'Classic' }
+    ];
+  })();
+
+  useEffect(() => {
+    dispatch(fetchAdminFilters());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (activeTab === 'filters') {
+      dispatch(fetchAdminFilters());
+    }
+  }, [activeTab, dispatch]);
+
+  useEffect(() => {
+    if (activeTab === 'footer') {
+      dispatch(fetchAdminFooterSections());
+    }
+  }, [activeTab, dispatch]);
 
   useEffect(() => {
     document.title = 'Master Atelier Dashboard | KHRONIQ';
   }, []);
-
-  // Active Admin Sub-Tab
-  const [activeTab, setActiveTab] = useState('analytics'); // analytics | products | orders | coupons | reviews | updates | blogs
 
   // Add Product Form State
   const [showAddForm, setShowAddForm] = useState(false);
@@ -91,12 +174,12 @@ export default function Admin({ onPageChange }) {
     unitCodes: [],
     badgeMode: 'none',
     warrantyMonths: 6,
-    category: 'Khronomaster',
+    category: 'Classic',
     gender: 'unisex',
     description: '',
     image: '', // default copy
     specs: {
-      movement: 'Automatic Chronometer',
+      movement: 'Automatic',
       case: '40mm',
       caseMaterial: 'Stainless Steel',
       strap: 'Leather strap',
@@ -1139,6 +1222,8 @@ const handleEditImageUpload = async (e) => {
           { key: 'coupons', label: 'Coupon Builder', icon: Tag },
           { key: 'reviews', label: 'Reviews Manager', icon: Star },
           
+          { key: 'filters', label: 'Catalog Filters', icon: SlidersHorizontal },
+          { key: 'footer', label: 'Footer Management', icon: LayoutTemplate },
           { key: 'updates', label: 'Brand Updates', icon: Newspaper },
           { key: 'media', label: 'Homepage Media', icon: ImagePlus },
           { key: 'blogs', label: 'Blogs Editorial', icon: BookOpen },
@@ -1170,6 +1255,1940 @@ const handleEditImageUpload = async (e) => {
           );
         })}
       </div>
+
+
+                  {/* ─── TAB CONTENT: CATALOG FILTERS ───────────────────────────── */}
+      {activeTab === 'filters' && (
+        <div className="space-y-6">
+          {/* Header Banner */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-luxury-gray border border-white/10 p-6 rounded-md">
+            <div>
+              <h3 className="font-serif text-lg font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                <SlidersHorizontal size={18} className="text-luxury-gold" />
+                <span>{selectedCatForOptions ? `${selectedCatForOptions.name} Options` : 'Catalog Filters'}</span>
+              </h3>
+              <p className="text-gray-400 text-xs mt-1">
+                {selectedCatForOptions 
+                  ? `Managing filter options for ${selectedCatForOptions.name}. Any changes synchronize with the customer catalog.` 
+                  : 'Manage customer-facing filter categories (Gender, Collection, Movement, Strap, Dial, Case) and options.'}
+              </p>
+            </div>
+            <div className="flex items-center space-x-3">
+              {selectedCatForOptions ? (
+                <>
+                  <button
+                    onClick={() => setSelectedCatForOptions(null)}
+                    className="px-4 py-2 bg-neutral-900 border border-neutral-600 hover:border-white text-white font-bold text-xs uppercase tracking-wider transition rounded shadow-sm hover:bg-neutral-800 flex items-center space-x-1.5 cursor-pointer"
+                    style={{ backgroundColor: '#171717', color: '#ffffff', borderColor: '#525252' }}
+                  >
+                    <ArrowLeft size={14} style={{ color: '#ffffff' }} />
+                    <span>Back to All Categories</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setNewOptForm({ 
+                        name: '', 
+                        order: (selectedCatForOptions.options?.length || 0) + 1, 
+                        isActive: true 
+                      });
+                      setShowAddOptModal(true);
+                    }}
+                    className="px-4 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] text-xs font-black uppercase tracking-wider transition rounded shadow flex items-center space-x-1.5 cursor-pointer border border-[#d4af37]"
+                    style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                  >
+                    <Plus size={14} style={{ strokeWidth: 3, color: '#000000' }} />
+                    <span>Add Option</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={async () => {
+                      const res = await dispatch(seedDefaultFilters());
+                      if (res.success) {
+                        setFilterActionMsg({ type: 'success', text: 'Default filter categories verified and active.' });
+                      } else {
+                        setFilterActionMsg({ type: 'error', text: res.message || 'Seeding failed.' });
+                      }
+                      setTimeout(() => setFilterActionMsg(null), 4000);
+                    }}
+                    className="px-4 py-2 bg-neutral-900 border border-neutral-600 hover:border-white text-white font-bold text-xs uppercase tracking-wider transition rounded shadow-sm hover:bg-neutral-800 cursor-pointer"
+                    style={{ backgroundColor: '#171717', color: '#ffffff', borderColor: '#525252' }}
+                  >
+                    Verify / Seed Defaults
+                  </button>
+                  <button
+                    onClick={() => {
+                      setNewCatForm({ name: '', order: adminFilters.length + 1, isActive: true });
+                      setShowAddCatModal(true);
+                    }}
+                    className="px-4 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] text-xs font-black uppercase tracking-wider transition rounded shadow flex items-center space-x-1.5 cursor-pointer border border-[#d4af37]"
+                    style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                  >
+                    <Plus size={14} style={{ strokeWidth: 3, color: '#000000' }} />
+                    <span>Add New Category</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Feedback Message Notification */}
+          {filterActionMsg && (
+            <div className={`p-4 rounded border text-xs font-bold flex items-center justify-between transition-all ${
+              filterActionMsg.type === 'success' 
+                ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300' 
+                : 'bg-red-950/90 border-red-500 text-red-300'
+            }`}
+            style={{
+              backgroundColor: filterActionMsg.type === 'success' ? '#022c22' : '#450a0a',
+              borderColor: filterActionMsg.type === 'success' ? '#10b981' : '#ef4444',
+              color: filterActionMsg.type === 'success' ? '#6ee7b7' : '#fca5a5'
+            }}>
+              <span>{filterActionMsg.text}</span>
+              <button onClick={() => setFilterActionMsg(null)} className="cursor-pointer text-white/60 hover:text-white">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          {/* ─── VIEW 1: MANAGE OPTIONS VIEW ───────────────────────────── */}
+          {selectedCatForOptions ? (
+            <div className="space-y-4">
+              <div className="bg-luxury-gray border border-white/10 rounded-md overflow-hidden shadow-lg">
+                <div className="px-6 py-4 bg-black/40 border-b border-white/10 flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-white text-xs font-bold uppercase tracking-widest">{selectedCatForOptions.name} Options</span>
+                    <span className="text-[10px] text-gray-400">({(selectedCatForOptions.options || []).length} total)</span>
+                  </div>
+                  <span className="text-[10px] text-luxury-gold font-bold uppercase tracking-wider">
+                    Click 'Edit' to rename, or 'Disable' to hide from customers
+                  </span>
+                </div>
+
+                <table className="w-full text-left text-xs text-gray-300">
+                  <thead className="bg-black/20 text-[10px] font-bold uppercase tracking-widest text-gray-400 border-b border-white/10">
+                    <tr>
+                      <th className="p-4">Option Name</th>
+                      <th className="p-4 text-center">Display Order</th>
+                      <th className="p-4 text-center">Status</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {(!selectedCatForOptions.options || selectedCatForOptions.options.length === 0) ? (
+                      <tr>
+                        <td colSpan={4} className="p-12 text-center text-gray-500 italic space-y-2">
+                          <p>No options found for this category.</p>
+                          <button
+                            onClick={() => {
+                              setNewOptForm({ name: '', order: 1, isActive: true });
+                              setShowAddOptModal(true);
+                            }}
+                            className="px-4 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] rounded text-xs font-extrabold cursor-pointer transition shadow border border-[#d4af37]"
+                            style={{ backgroundColor: '#d4af37', color: '#000000' }}
+                          >
+                            + Add the first option
+                          </button>
+                        </td>
+                      </tr>
+                    ) : (
+                      selectedCatForOptions.options.map((opt) => (
+                        <tr key={opt.id || opt._id} className="hover:bg-white/[0.02] transition">
+                          <td className="p-4 font-bold text-white text-sm">
+                            {opt.name}
+                          </td>
+                          <td className="p-4 text-center font-mono font-bold text-white">
+                            {opt.order || 0}
+                          </td>
+                          <td className="p-4 text-center">
+                            <span 
+                              className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-sm"
+                              style={{
+                                backgroundColor: opt.isActive ? '#022c22' : '#171717',
+                                color: opt.isActive ? '#6ee7b7' : '#a3a3a3',
+                                borderColor: opt.isActive ? '#10b981' : '#525252'
+                              }}
+                            >
+                              {opt.isActive ? 'Active' : 'Disabled'}
+                            </span>
+                          </td>
+                          <td className="p-4 text-right space-x-2">
+                            <button
+                              onClick={() => {
+                                setEditingOpt({
+                                  catId: selectedCatForOptions.id || selectedCatForOptions._id,
+                                  optId: opt.id || opt._id,
+                                  name: opt.name,
+                                  order: opt.order || 0,
+                                  isActive: opt.isActive
+                                });
+                              }}
+                              className="px-3.5 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-600 hover:border-white rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                              style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={async () => {
+                                const catId = selectedCatForOptions.id || selectedCatForOptions._id;
+                                const optId = opt.id || opt._id;
+                                const res = await dispatch(updateFilterOption(catId, optId, { isActive: !opt.isActive }));
+                                if (res.success) {
+                                  const updatedCats = await dispatch(fetchAdminFilters());
+                                  if (updatedCats.categories) {
+                                    const refreshed = updatedCats.categories.find(c => (c.id || c._id) === catId);
+                                    if (refreshed) setSelectedCatForOptions(refreshed);
+                                  }
+                                  setFilterActionMsg({
+                                    type: 'success',
+                                    text: `Option "${opt.name}" is now ${!opt.isActive ? 'Active' : 'Disabled'}.`
+                                  });
+                                  setTimeout(() => setFilterActionMsg(null), 3000);
+                                }
+                              }}
+                              className="px-3.5 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm border"
+                              style={{
+                                backgroundColor: opt.isActive ? '#451a03' : '#022c22',
+                                color: opt.isActive ? '#fcd34d' : '#6ee7b7',
+                                borderColor: opt.isActive ? '#f59e0b' : '#10b981',
+                              }}
+                            >
+                              {opt.isActive ? 'Disable' : 'Enable'}
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (window.confirm(`Are you sure you want to delete the "${opt.name}" option?\n(Existing products using this attribute will not be deleted)`)) {
+                                  const catId = selectedCatForOptions.id || selectedCatForOptions._id;
+                                  const optId = opt.id || opt._id;
+                                  const res = await dispatch(deleteFilterOption(catId, optId));
+                                  if (res.success) {
+                                    const updatedCats = await dispatch(fetchAdminFilters());
+                                    if (updatedCats.categories) {
+                                      const refreshed = updatedCats.categories.find(c => (c.id || c._id) === catId);
+                                      if (refreshed) setSelectedCatForOptions(refreshed);
+                                    }
+                                    setFilterActionMsg({ type: 'success', text: `Option "${opt.name}" deleted.` });
+                                    setTimeout(() => setFilterActionMsg(null), 3000);
+                                  } else {
+                                    setFilterActionMsg({ type: 'error', text: res.message || 'Failed to delete option.' });
+                                  }
+                                }
+                              }}
+                              className="px-3.5 py-1.5 bg-red-950/90 border border-red-500 text-red-300 hover:bg-red-900 rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                              style={{ backgroundColor: '#450a0a', color: '#fca5a5', borderColor: '#ef4444' }}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            /* ─── VIEW 2: ALL CATEGORIES DASHBOARD ───────────────────────────── */
+            <div className="space-y-4">
+              <div className="bg-luxury-gray border border-white/10 rounded-md overflow-hidden shadow-lg">
+                <div className="px-6 py-4 bg-black/40 border-b border-white/10 flex justify-between items-center">
+                  <span className="text-white text-xs font-bold uppercase tracking-widest">Active Catalog Filter Categories</span>
+                  <span className="text-[10px] text-gray-400">Total Categories: {adminFilters.length}</span>
+                </div>
+
+                <table className="w-full text-left text-xs text-gray-300">
+                  <thead className="bg-black/20 text-[10px] font-bold uppercase tracking-widest text-gray-400 border-b border-white/10">
+                    <tr>
+                      <th className="p-4">Category Name</th>
+                      <th className="p-4">Options Summary</th>
+                      <th className="p-4 text-center">Display Order</th>
+                      <th className="p-4 text-center">Status</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {adminFilters.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="p-12 text-center text-gray-400 space-y-4">
+                          <p className="text-sm">No filter categories loaded from database.</p>
+                          <button
+                            onClick={async () => {
+                              const res = await dispatch(seedDefaultFilters());
+                              if (res.success) {
+                                setFilterActionMsg({ type: 'success', text: 'Default categories initialized.' });
+                              }
+                            }}
+                            className="px-5 py-2.5 bg-[#d4af37] text-black hover:bg-[#e5c158] text-xs font-black uppercase tracking-wider rounded cursor-pointer transition shadow border border-[#d4af37]"
+                            style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                          >
+                            Initialize Default Categories
+                          </button>
+                        </td>
+                      </tr>
+                    ) : (
+                      adminFilters.map((cat) => {
+                        const totalOpts = (cat.options || []).length;
+                        const activeOpts = (cat.options || []).filter(o => o.isActive).length;
+                        const previewNames = (cat.options || [])
+                          .slice(0, 3)
+                          .map(o => o.name)
+                          .join(', ');
+
+                        return (
+                          <tr key={cat.id || cat._id} className="hover:bg-white/[0.02] transition">
+                            <td className="p-4">
+                              <div className="font-bold text-white text-sm">{cat.name}</div>
+                              <div className="text-[10px] text-gray-400 mt-0.5">
+                                {totalOpts} option{totalOpts !== 1 ? 's' : ''} configured
+                              </div>
+                            </td>
+                            <td className="p-4 text-gray-400 text-xs max-w-xs truncate">
+                              {previewNames ? (
+                                <span>
+                                  {previewNames}
+                                  {totalOpts > 3 ? `, +${totalOpts - 3} more` : ''}
+                                </span>
+                              ) : (
+                                <span className="italic text-gray-500">No options yet</span>
+                              )}
+                            </td>
+                            <td className="p-4 text-center font-mono font-bold text-white">
+                              {cat.order || 0}
+                            </td>
+                            <td className="p-4 text-center">
+                              <span 
+                                className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-sm"
+                                style={{
+                                  backgroundColor: cat.isActive ? '#022c22' : '#171717',
+                                  color: cat.isActive ? '#6ee7b7' : '#a3a3a3',
+                                  borderColor: cat.isActive ? '#10b981' : '#525252'
+                                }}
+                              >
+                                {cat.isActive ? 'Active' : 'Disabled'}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right space-x-2">
+                              <button
+                                onClick={() => setSelectedCatForOptions(cat)}
+                                className="px-3.5 py-1.5 bg-[#d4af37] text-black hover:bg-[#e5c158] rounded text-[11px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm border border-[#d4af37]"
+                                style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                              >
+                                Manage Options
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingCat({
+                                    id: cat.id || cat._id,
+                                    name: cat.name,
+                                    order: cat.order || 0,
+                                    isActive: cat.isActive
+                                  });
+                                }}
+                                className="px-3.5 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-600 hover:border-white rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                                style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const res = await dispatch(updateFilterCategory(cat.id || cat._id, { isActive: !cat.isActive }));
+                                  if (res.success) {
+                                    setFilterActionMsg({
+                                      type: 'success',
+                                      text: `Category "${cat.name}" is now ${!cat.isActive ? 'Active' : 'Disabled'}.`
+                                    });
+                                    setTimeout(() => setFilterActionMsg(null), 3000);
+                                  }
+                                }}
+                                className="px-3.5 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm border"
+                                style={{
+                                  backgroundColor: cat.isActive ? '#451a03' : '#022c22',
+                                  color: cat.isActive ? '#fcd34d' : '#6ee7b7',
+                                  borderColor: cat.isActive ? '#f59e0b' : '#10b981',
+                                }}
+                              >
+                                {cat.isActive ? 'Disable' : 'Enable'}
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm(`Are you sure you want to delete the "${cat.name}" filter category?\n(Existing products will not be deleted)`)) {
+                                    const res = await dispatch(deleteFilterCategory(cat.id || cat._id));
+                                    if (res.success) {
+                                      setFilterActionMsg({ type: 'success', text: `Category "${cat.name}" deleted.` });
+                                      setTimeout(() => setFilterActionMsg(null), 3000);
+                                    } else {
+                                      setFilterActionMsg({ type: 'error', text: res.message || 'Failed to delete category.' });
+                                    }
+                                  }
+                                }}
+                                className="px-3.5 py-1.5 bg-red-950/90 border border-red-500 text-red-300 hover:bg-red-900 rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                                style={{ backgroundColor: '#450a0a', color: '#fca5a5', borderColor: '#ef4444' }}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MODAL: ADD FILTER CATEGORY ───────────────────────────── */}
+          {showAddCatModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-luxury-dark border border-white/10 p-6 rounded-md w-full max-w-md space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                  <h3 className="text-white text-sm font-bold uppercase tracking-wider">Add New Filter Category</h3>
+                  <button onClick={() => setShowAddCatModal(false)} className="text-gray-400 hover:text-white cursor-pointer">
+                    <X size={16} />
+                  </button>
+                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!newCatForm.name.trim()) return;
+                    const res = await dispatch(createFilterCategory(newCatForm));
+                    if (res.success) {
+                      setShowAddCatModal(false);
+                      setFilterActionMsg({ type: 'success', text: `Category "${newCatForm.name}" created successfully.` });
+                      setTimeout(() => setFilterActionMsg(null), 4000);
+                    } else {
+                      setFilterActionMsg({ type: 'error', text: res.message || 'Failed to create filter category.' });
+                      setTimeout(() => setFilterActionMsg(null), 5000);
+                    }
+                  }}
+                  className="space-y-4 text-xs"
+                >
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Category Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g., Material, Bezel, Collection"
+                      value={newCatForm.name}
+                      onChange={(e) => setNewCatForm({ ...newCatForm, name: e.target.value })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Display Order</label>
+                    <input
+                      type="number"
+                      value={newCatForm.order}
+                      onChange={(e) => setNewCatForm({ ...newCatForm, order: Number(e.target.value) })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="newCatActive"
+                      checked={newCatForm.isActive}
+                      onChange={(e) => setNewCatForm({ ...newCatForm, isActive: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                    />
+                    <label htmlFor="newCatActive" className="text-gray-300 text-xs cursor-pointer select-none">
+                      Active (Visible on Customer Catalog)
+                    </label>
+                  </div>
+                  <div className="flex justify-end space-x-3 pt-3 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddCatModal(false)}
+                      className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                      style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                    >
+                      Create Category
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MODAL: EDIT FILTER CATEGORY ───────────────────────────── */}
+          {editingCat && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-luxury-dark border border-white/10 p-6 rounded-md w-full max-w-md space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                  <h3 className="text-white text-sm font-bold uppercase tracking-wider">Edit Category</h3>
+                  <button onClick={() => setEditingCat(null)} className="text-gray-400 hover:text-white cursor-pointer">
+                    <X size={16} />
+                  </button>
+                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!editingCat.name.trim()) return;
+                    const res = await dispatch(updateFilterCategory(editingCat.id, editingCat));
+                    if (res.success) {
+                      setEditingCat(null);
+                      setFilterActionMsg({ type: 'success', text: 'Category updated successfully.' });
+                      setTimeout(() => setFilterActionMsg(null), 3000);
+                    } else {
+                      setFilterActionMsg({ type: 'error', text: res.message || 'Failed to update category.' });
+                      setTimeout(() => setFilterActionMsg(null), 5000);
+                    }
+                  }}
+                  className="space-y-4 text-xs"
+                >
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Category Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingCat.name}
+                      onChange={(e) => setEditingCat({ ...editingCat, name: e.target.value })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Display Order</label>
+                    <input
+                      type="number"
+                      value={editingCat.order}
+                      onChange={(e) => setEditingCat({ ...editingCat, order: Number(e.target.value) })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="editCatActive"
+                      checked={editingCat.isActive}
+                      onChange={(e) => setEditingCat({ ...editingCat, isActive: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                    />
+                    <label htmlFor="editCatActive" className="text-gray-300 text-xs cursor-pointer select-none">
+                      Active (Visible on Customer Catalog)
+                    </label>
+                  </div>
+                  <div className="flex justify-end space-x-3 pt-3 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setEditingCat(null)}
+                      className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                      style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MODAL: ADD OPTION ───────────────────────────── */}
+          {showAddOptModal && selectedCatForOptions && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-luxury-dark border border-white/10 p-6 rounded-md w-full max-w-md space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                  <h3 className="text-white text-sm font-bold uppercase tracking-wider">
+                    Add Option to {selectedCatForOptions.name}
+                  </h3>
+                  <button onClick={() => setShowAddOptModal(false)} className="text-gray-400 hover:text-white cursor-pointer">
+                    <X size={16} />
+                  </button>
+                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!newOptForm.name.trim()) return;
+                    const catId = selectedCatForOptions.id || selectedCatForOptions._id;
+                    const res = await dispatch(createFilterOption(catId, newOptForm));
+                    if (res.success) {
+                      setShowAddOptModal(false);
+                      const updatedCats = await dispatch(fetchAdminFilters());
+                      if (updatedCats.categories) {
+                        const refreshed = updatedCats.categories.find(c => (c.id || c._id) === catId);
+                        if (refreshed) setSelectedCatForOptions(refreshed);
+                      }
+                      setFilterActionMsg({ type: 'success', text: `Option "${newOptForm.name}" added successfully.` });
+                      setTimeout(() => setFilterActionMsg(null), 3000);
+                    } else {
+                      setFilterActionMsg({ type: 'error', text: res.message || 'Failed to add option.' });
+                      setTimeout(() => setFilterActionMsg(null), 5000);
+                    }
+                  }}
+                  className="space-y-4 text-xs"
+                >
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Option Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g., Automatic, Leather Strap, Deevaaz, Heritage"
+                      value={newOptForm.name}
+                      onChange={(e) => setNewOptForm({ ...newOptForm, name: e.target.value })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Display Order</label>
+                    <input
+                      type="number"
+                      value={newOptForm.order}
+                      onChange={(e) => setNewOptForm({ ...newOptForm, order: Number(e.target.value) })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="newOptActive"
+                      checked={newOptForm.isActive}
+                      onChange={(e) => setNewOptForm({ ...newOptForm, isActive: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                    />
+                    <label htmlFor="newOptActive" className="text-gray-300 text-xs cursor-pointer select-none">
+                      Active (Visible in Filter Sidebar)
+                    </label>
+                  </div>
+                  <div className="flex justify-end space-x-3 pt-3 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddOptModal(false)}
+                      className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                      style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                    >
+                      Add Option
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MODAL: EDIT OPTION ───────────────────────────── */}
+          {editingOpt && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-luxury-dark border border-white/10 p-6 rounded-md w-full max-w-md space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                  <h3 className="text-white text-sm font-bold uppercase tracking-wider">Edit Filter Option</h3>
+                  <button onClick={() => setEditingOpt(null)} className="text-gray-400 hover:text-white cursor-pointer">
+                    <X size={16} />
+                  </button>
+                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!editingOpt.name.trim()) return;
+                    const res = await dispatch(updateFilterOption(editingOpt.catId, editingOpt.optId, editingOpt));
+                    if (res.success) {
+                      setEditingOpt(null);
+                      const updatedCats = await dispatch(fetchAdminFilters());
+                      if (updatedCats.categories) {
+                        const refreshed = updatedCats.categories.find(c => (c.id || c._id) === editingOpt.catId);
+                        if (refreshed) setSelectedCatForOptions(refreshed);
+                      }
+                      setFilterActionMsg({ type: 'success', text: 'Option updated successfully.' });
+                      setTimeout(() => setFilterActionMsg(null), 3000);
+                    } else {
+                      setFilterActionMsg({ type: 'error', text: res.message || 'Failed to update option.' });
+                      setTimeout(() => setFilterActionMsg(null), 5000);
+                    }
+                  }}
+                  className="space-y-4 text-xs"
+                >
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Option Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingOpt.name}
+                      onChange={(e) => setEditingOpt({ ...editingOpt, name: e.target.value })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Display Order</label>
+                    <input
+                      type="number"
+                      value={editingOpt.order}
+                      onChange={(e) => setEditingOpt({ ...editingOpt, order: Number(e.target.value) })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="editOptActive"
+                      checked={editingOpt.isActive}
+                      onChange={(e) => setEditingOpt({ ...editingOpt, isActive: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                    />
+                    <label htmlFor="editOptActive" className="text-gray-300 text-xs cursor-pointer select-none">
+                      Active (Visible in Filter Sidebar)
+                    </label>
+                  </div>
+                  <div className="flex justify-end space-x-3 pt-3 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setEditingOpt(null)}
+                      className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                      style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
+
+      
+      {/* ─── TAB CONTENT: FOOTER MANAGEMENT ───────────────────────────── */}
+      {activeTab === 'footer' && (
+        <div className="space-y-6">
+          {/* Header Banner */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-luxury-gray border border-white/10 p-6 rounded-md">
+            <div>
+              <h3 className="font-serif text-lg font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                <LayoutTemplate size={18} className="text-luxury-gold" />
+                <span>{selectedSecForLinks ? `${selectedSecForLinks.title} Links` : 'Footer Management'}</span>
+              </h3>
+              <p className="text-gray-400 text-xs mt-1">
+                {selectedSecForLinks 
+                  ? `Managing footer links for ${selectedSecForLinks.title}. Changes synchronize live with the customer website.` 
+                  : 'Manage customer-facing footer navigation sections and custom links. Dynamic Collections section automatically stays synchronized with Catalog Filters.'}
+              </p>
+            </div>
+            <div className="flex items-center space-x-3">
+              {selectedSecForLinks ? (
+                <>
+                  <button
+                    onClick={() => setSelectedSecForLinks(null)}
+                    className="px-4 py-2 bg-neutral-900 border border-neutral-600 hover:border-white text-white font-bold text-xs uppercase tracking-wider transition rounded shadow-sm hover:bg-neutral-800 flex items-center space-x-1.5 cursor-pointer"
+                    style={{ backgroundColor: '#171717', color: '#ffffff', borderColor: '#525252' }}
+                  >
+                    <ArrowLeft size={14} style={{ color: '#ffffff' }} />
+                    <span>Back to All Sections</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setNewLinkForm({ 
+                        label: '', 
+                        linkType: 'static',
+                        page: 'static', 
+                        url: '',
+                        argsView: 'contact',
+                        action: '',
+                        order: (selectedSecForLinks.links?.length || 0) + 1, 
+                        isActive: true 
+                      });
+                      setShowAddLinkModal(true);
+                    }}
+                    className="px-4 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] text-xs font-black uppercase tracking-wider transition rounded shadow flex items-center space-x-1.5 cursor-pointer border border-[#d4af37]"
+                    style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                  >
+                    <Plus size={14} style={{ strokeWidth: 3, color: '#000000' }} />
+                    <span>Add Link</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={async () => {
+                      const res = await dispatch(seedDefaultFooter());
+                      if (res.success) {
+                        setFooterActionMsg({ type: 'success', text: 'Default footer sections verified and active.' });
+                      } else {
+                        setFooterActionMsg({ type: 'error', text: res.message || 'Seeding failed.' });
+                      }
+                      setTimeout(() => setFooterActionMsg(null), 4000);
+                    }}
+                    className="px-4 py-2 bg-neutral-900 border border-neutral-600 hover:border-white text-white font-bold text-xs uppercase tracking-wider transition rounded shadow-sm hover:bg-neutral-800 cursor-pointer"
+                    style={{ backgroundColor: '#171717', color: '#ffffff', borderColor: '#525252' }}
+                  >
+                    Verify / Seed Defaults
+                  </button>
+                  <button
+                    onClick={() => {
+                      setNewSecForm({ title: '', order: adminFooterSections.length + 1, isActive: true });
+                      setShowAddSecModal(true);
+                    }}
+                    className="px-4 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] text-xs font-black uppercase tracking-wider transition rounded shadow flex items-center space-x-1.5 cursor-pointer border border-[#d4af37]"
+                    style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                  >
+                    <Plus size={14} style={{ strokeWidth: 3, color: '#000000' }} />
+                    <span>Add Custom Section</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Feedback Message Notification */}
+          {footerActionMsg && (
+            <div className={`p-4 rounded border text-xs font-bold flex items-center justify-between transition-all ${
+              footerActionMsg.type === 'success' 
+                ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300' 
+                : 'bg-red-950/90 border-red-500 text-red-300'
+            }`}
+            style={{
+              backgroundColor: footerActionMsg.type === 'success' ? '#022c22' : '#450a0a',
+              borderColor: footerActionMsg.type === 'success' ? '#10b981' : '#ef4444',
+              color: footerActionMsg.type === 'success' ? '#6ee7b7' : '#fca5a5'
+            }}>
+              <span>{footerActionMsg.text}</span>
+              <button onClick={() => setFooterActionMsg(null)} className="cursor-pointer text-white/60 hover:text-white">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          {/* ─── VIEW 1: MANAGE LINKS VIEW ───────────────────────────── */}
+          {selectedSecForLinks ? (
+            <div className="space-y-4">
+              <div className="bg-luxury-gray border border-white/10 rounded-md overflow-hidden shadow-lg">
+                <div className="px-6 py-4 bg-black/40 border-b border-white/10 flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-white text-xs font-bold uppercase tracking-widest">{selectedSecForLinks.title} Links</span>
+                    <span className="text-[10px] text-gray-400">({(selectedSecForLinks.links || []).length} total)</span>
+                  </div>
+                  <span className="text-[10px] text-luxury-gold font-bold uppercase tracking-wider">
+                    Click 'Edit' to change destination/label, or 'Disable' to hide from customers
+                  </span>
+                </div>
+
+                <table className="w-full text-left text-xs text-gray-300">
+                  <thead className="bg-black/20 text-[10px] font-bold uppercase tracking-widest text-gray-400 border-b border-white/10">
+                    <tr>
+                      <th className="p-4">Link Label</th>
+                      <th className="p-4">Destination / Type</th>
+                      <th className="p-4 text-center">Display Order</th>
+                      <th className="p-4 text-center">Status</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {(!selectedSecForLinks.links || selectedSecForLinks.links.length === 0) ? (
+                      <tr>
+                        <td colSpan={5} className="p-12 text-center text-gray-500 italic space-y-2">
+                          <p>No links found for this section.</p>
+                          <button
+                            onClick={() => {
+                              setNewLinkForm({ 
+                                label: '', 
+                                linkType: 'static',
+                                page: 'static', 
+                                url: '',
+                                argsView: 'contact',
+                                action: '',
+                                order: 1, 
+                                isActive: true 
+                              });
+                              setShowAddLinkModal(true);
+                            }}
+                            className="px-4 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] rounded text-xs font-extrabold cursor-pointer transition shadow border border-[#d4af37]"
+                            style={{ backgroundColor: '#d4af37', color: '#000000' }}
+                          >
+                            + Add the first link
+                          </button>
+                        </td>
+                      </tr>
+                    ) : (
+                      selectedSecForLinks.links.map((link) => {
+                        const linkId = link.id || link._id;
+                        let destLabel = 'Static: ' + (link.args?.view || 'view');
+                        if (link.action === 'warranty' || link.label === 'Register My Watch') {
+                          destLabel = 'Action: Warranty Registration';
+                        } else if (link.page === 'shop') {
+                          destLabel = 'Shop: ' + (link.args?.category || 'catalog');
+                        } else if (link.url) {
+                          destLabel = link.url;
+                        }
+
+                        return (
+                          <tr key={linkId} className="hover:bg-white/[0.02] transition">
+                            <td className="p-4 font-bold text-white text-sm">
+                              {link.label}
+                            </td>
+                            <td className="p-4 text-gray-400 text-xs font-mono">
+                              <span className="px-2 py-0.5 rounded bg-black/40 border border-white/10 text-[11px] text-gray-300">
+                                {destLabel}
+                              </span>
+                            </td>
+                            <td className="p-4 text-center font-mono font-bold text-white">
+                              {link.order || 0}
+                            </td>
+                            <td className="p-4 text-center">
+                              <span 
+                                className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-sm"
+                                style={{
+                                  backgroundColor: link.isActive ? '#022c22' : '#171717',
+                                  color: link.isActive ? '#6ee7b7' : '#a3a3a3',
+                                  borderColor: link.isActive ? '#10b981' : '#525252'
+                                }}
+                              >
+                                {link.isActive ? 'Active' : 'Disabled'}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right space-x-2">
+                              <button
+                                onClick={() => {
+                                  const secId = selectedSecForLinks.id || selectedSecForLinks._id;
+                                  const availableDests = adminFooterSections.filter(
+                                    s => s.type !== 'dynamic_collection' && s.slug !== 'collections' && (s.id || s._id) !== secId
+                                  );
+                                  const defaultDest = availableDests.length > 0 ? (availableDests[0].id || availableDests[0]._id) : '';
+                                  setMovingLink({
+                                    secId,
+                                    linkId,
+                                    label: link.label,
+                                    destSecId: defaultDest
+                                  });
+                                }}
+                                className="px-3.5 py-1.5 bg-[#1e293b] hover:bg-[#334155] text-cyan-300 border border-cyan-500/50 hover:border-cyan-400 rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                                style={{ backgroundColor: '#1e293b', color: '#67e8f9', borderColor: '#06b6d4' }}
+                              >
+                                Move
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const secId = selectedSecForLinks.id || selectedSecForLinks._id;
+                                  let lType = 'static';
+                                  if (link.action === 'warranty') lType = 'warranty';
+                                  else if (link.page === 'shop') lType = 'shop';
+                                  else if (link.url) lType = 'custom';
+
+                                  setEditingLink({
+                                    secId,
+                                    linkId,
+                                    label: link.label,
+                                    linkType: lType,
+                                    page: link.page || 'static',
+                                    url: link.url || '',
+                                    argsView: link.args?.view || 'contact',
+                                    action: link.action || '',
+                                    order: link.order || 0,
+                                    isActive: link.isActive
+                                  });
+                                }}
+                                className="px-3.5 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-600 hover:border-white rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                                style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const secId = selectedSecForLinks.id || selectedSecForLinks._id;
+                                  const res = await dispatch(updateFooterLink(secId, linkId, { isActive: !link.isActive }));
+                                  if (res.success) {
+                                    const updatedSecs = await dispatch(fetchAdminFooterSections());
+                                    if (updatedSecs.sections) {
+                                      const refreshed = updatedSecs.sections.find(s => (s.id || s._id) === secId);
+                                      if (refreshed) setSelectedSecForLinks(refreshed);
+                                    }
+                                    setFooterActionMsg({
+                                      type: 'success',
+                                      text: `Link "${link.label}" is now ${!link.isActive ? 'Active' : 'Disabled'}.`
+                                    });
+                                    setTimeout(() => setFooterActionMsg(null), 3000);
+                                  }
+                                }}
+                                className="px-3.5 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm border"
+                                style={{
+                                  backgroundColor: link.isActive ? '#451a03' : '#022c22',
+                                  color: link.isActive ? '#fcd34d' : '#6ee7b7',
+                                  borderColor: link.isActive ? '#f59e0b' : '#10b981',
+                                }}
+                              >
+                                {link.isActive ? 'Disable' : 'Enable'}
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm(`Are you sure you want to delete the "${link.label}" link?`)) {
+                                    const secId = selectedSecForLinks.id || selectedSecForLinks._id;
+                                    const res = await dispatch(deleteFooterLink(secId, linkId));
+                                    if (res.success) {
+                                      const updatedSecs = await dispatch(fetchAdminFooterSections());
+                                      if (updatedSecs.sections) {
+                                        const refreshed = updatedSecs.sections.find(s => (s.id || s._id) === secId);
+                                        if (refreshed) setSelectedSecForLinks(refreshed);
+                                      }
+                                      setFooterActionMsg({ type: 'success', text: `Link "${link.label}" deleted.` });
+                                      setTimeout(() => setFooterActionMsg(null), 3000);
+                                    } else {
+                                      setFooterActionMsg({ type: 'error', text: res.message || 'Failed to delete link.' });
+                                    }
+                                  }
+                                }}
+                                className="px-3.5 py-1.5 bg-red-950/90 border border-red-500 text-red-300 hover:bg-red-900 rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                                style={{ backgroundColor: '#450a0a', color: '#fca5a5', borderColor: '#ef4444' }}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            /* ─── VIEW 2: ALL SECTIONS DASHBOARD ───────────────────────────── */
+            <div className="space-y-4">
+              <div className="bg-luxury-gray border border-white/10 rounded-md overflow-hidden shadow-lg">
+                <div className="px-6 py-4 bg-black/40 border-b border-white/10 flex justify-between items-center">
+                  <span className="text-white text-xs font-bold uppercase tracking-widest">Active Footer Navigation Sections</span>
+                  <span className="text-[10px] text-gray-400">Total Sections: {adminFooterSections.length}</span>
+                </div>
+
+                <table className="w-full text-left text-xs text-gray-300">
+                  <thead className="bg-black/20 text-[10px] font-bold uppercase tracking-widest text-gray-400 border-b border-white/10">
+                    <tr>
+                      <th className="p-4">Section Title</th>
+                      <th className="p-4">Section Type</th>
+                      <th className="p-4 text-center">Display Order</th>
+                      <th className="p-4 text-center">Status</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {adminFooterSections.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="p-12 text-center text-gray-400 space-y-4">
+                          <p className="text-sm">No footer sections loaded from database.</p>
+                          <button
+                            onClick={async () => {
+                              const res = await dispatch(seedDefaultFooter());
+                              if (res.success) {
+                                setFooterActionMsg({ type: 'success', text: 'Default footer sections initialized.' });
+                              }
+                            }}
+                            className="px-5 py-2.5 bg-[#d4af37] text-black hover:bg-[#e5c158] text-xs font-black uppercase tracking-wider rounded cursor-pointer transition shadow border border-[#d4af37]"
+                            style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                          >
+                            Initialize Default Footer Sections
+                          </button>
+                        </td>
+                      </tr>
+                    ) : (
+                      adminFooterSections.map((sec) => {
+                        const isDynamic = sec.type === 'dynamic_collection' || sec.slug === 'collections';
+                        const totalLinks = (sec.links || []).length;
+                        const secId = sec.id || sec._id;
+
+                        return (
+                          <tr key={secId} className="hover:bg-white/[0.02] transition">
+                            <td className="p-4">
+                              <div className="font-bold text-white text-sm">{sec.title}</div>
+                              <div className="text-[10px] text-gray-400 mt-0.5">
+                                {isDynamic 
+                                  ? 'Automatically synchronizes with active Catalog Filter Collections' 
+                                  : `${totalLinks} link${totalLinks !== 1 ? 's' : ''} configured`}
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              {isDynamic ? (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider bg-amber-950/80 border border-amber-500 text-amber-300">
+                                  Dynamic Catalog Collection
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-neutral-800 border border-neutral-600 text-neutral-300">
+                                  Custom Section
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-4 text-center font-mono font-bold text-white">
+                              {sec.order || 0}
+                            </td>
+                            <td className="p-4 text-center">
+                              <span 
+                                className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-sm"
+                                style={{
+                                  backgroundColor: sec.isActive ? '#022c22' : '#171717',
+                                  color: sec.isActive ? '#6ee7b7' : '#a3a3a3',
+                                  borderColor: sec.isActive ? '#10b981' : '#525252'
+                                }}
+                              >
+                                {sec.isActive ? 'Active' : 'Disabled'}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right space-x-2">
+                              {isDynamic ? (
+                                <>
+                                  <button
+                                    onClick={() => setActiveTab('filters')}
+                                    className="px-3.5 py-1.5 bg-[#d4af37] text-black hover:bg-[#e5c158] rounded text-[11px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm border border-[#d4af37]"
+                                    style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                                  >
+                                    Manage Collections
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingSec({
+                                        id: secId,
+                                        title: sec.title,
+                                        order: sec.order || 0,
+                                        isActive: sec.isActive
+                                      });
+                                    }}
+                                    className="px-3.5 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-600 hover:border-white rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                                    style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      const res = await dispatch(updateFooterSection(secId, { isActive: !sec.isActive }));
+                                      if (res.success) {
+                                        setFooterActionMsg({
+                                          type: 'success',
+                                          text: `Section "${sec.title}" is now ${!sec.isActive ? 'Active' : 'Disabled'}.`
+                                        });
+                                        setTimeout(() => setFooterActionMsg(null), 3000);
+                                      }
+                                    }}
+                                    className="px-3.5 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm border"
+                                    style={{
+                                      backgroundColor: sec.isActive ? '#451a03' : '#022c22',
+                                      color: sec.isActive ? '#fcd34d' : '#6ee7b7',
+                                      borderColor: sec.isActive ? '#f59e0b' : '#10b981',
+                                    }}
+                                  >
+                                    {sec.isActive ? 'Disable' : 'Enable'}
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => setSelectedSecForLinks(sec)}
+                                    className="px-3.5 py-1.5 bg-[#d4af37] text-black hover:bg-[#e5c158] rounded text-[11px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm border border-[#d4af37]"
+                                    style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                                  >
+                                    Manage Links
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingSec({
+                                        id: secId,
+                                        title: sec.title,
+                                        order: sec.order || 0,
+                                        isActive: sec.isActive
+                                      });
+                                    }}
+                                    className="px-3.5 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-600 hover:border-white rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                                    style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      const res = await dispatch(updateFooterSection(secId, { isActive: !sec.isActive }));
+                                      if (res.success) {
+                                        setFooterActionMsg({
+                                          type: 'success',
+                                          text: `Section "${sec.title}" is now ${!sec.isActive ? 'Active' : 'Disabled'}.`
+                                        });
+                                        setTimeout(() => setFooterActionMsg(null), 3000);
+                                      }
+                                    }}
+                                    className="px-3.5 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm border"
+                                    style={{
+                                      backgroundColor: sec.isActive ? '#451a03' : '#022c22',
+                                      color: sec.isActive ? '#fcd34d' : '#6ee7b7',
+                                      borderColor: sec.isActive ? '#f59e0b' : '#10b981',
+                                    }}
+                                  >
+                                    {sec.isActive ? 'Disable' : 'Enable'}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const linksCount = (sec.links || []).length;
+                                      if (linksCount > 0) {
+                                        const eligibleDests = adminFooterSections.filter(
+                                          s => s.type !== 'dynamic_collection' && s.slug !== 'collections' && (s.id || s._id) !== secId
+                                        );
+                                        setDeleteSecPrompt({
+                                          secId,
+                                          title: sec.title,
+                                          linksCount,
+                                          eligibleDests,
+                                          destSecId: eligibleDests.length > 0 ? (eligibleDests[0].id || eligibleDests[0]._id) : ''
+                                        });
+                                      } else {
+                                        if (window.confirm(`Are you sure you want to delete the "${sec.title}" footer section?`)) {
+                                          dispatch(deleteFooterSection(secId)).then(res => {
+                                            if (res.success) {
+                                              setFooterActionMsg({ type: 'success', text: `Section "${sec.title}" deleted.` });
+                                            } else {
+                                              setFooterActionMsg({ type: 'error', text: res.message || 'Failed to delete section.' });
+                                            }
+                                            setTimeout(() => setFooterActionMsg(null), 3000);
+                                          });
+                                        }
+                                      }
+                                    }}
+                                    className="px-3.5 py-1.5 bg-red-950/90 border border-red-500 text-red-300 hover:bg-red-900 rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                                    style={{ backgroundColor: '#450a0a', color: '#fca5a5', borderColor: '#ef4444' }}
+                                  >
+                                    Delete
+                                  </button>
+                                </>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MODAL: ADD FOOTER SECTION ───────────────────────────── */}
+          {showAddSecModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-luxury-dark border border-white/10 p-6 rounded-md w-full max-w-md space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                  <h3 className="text-white text-sm font-bold uppercase tracking-wider">Add Custom Footer Section</h3>
+                  <button onClick={() => setShowAddSecModal(false)} className="text-gray-400 hover:text-white cursor-pointer">
+                    <X size={16} />
+                  </button>
+                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!newSecForm.title.trim()) return;
+                    const res = await dispatch(createFooterSection(newSecForm));
+                    if (res.success) {
+                      setShowAddSecModal(false);
+                      setFooterActionMsg({ type: 'success', text: `Section "${newSecForm.title}" created successfully.` });
+                      setTimeout(() => setFooterActionMsg(null), 4000);
+                    } else {
+                      setFooterActionMsg({ type: 'error', text: res.message || 'Failed to create footer section.' });
+                      setTimeout(() => setFooterActionMsg(null), 5000);
+                    }
+                  }}
+                  className="space-y-4 text-xs"
+                >
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Section Title *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g., Customer Care, About KHRONIQ"
+                      value={newSecForm.title}
+                      onChange={(e) => setNewSecForm({ ...newSecForm, title: e.target.value })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Display Order</label>
+                    <input
+                      type="number"
+                      value={newSecForm.order}
+                      onChange={(e) => setNewSecForm({ ...newSecForm, order: Number(e.target.value) })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="newSecActive"
+                      checked={newSecForm.isActive}
+                      onChange={(e) => setNewSecForm({ ...newSecForm, isActive: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                    />
+                    <label htmlFor="newSecActive" className="text-gray-300 text-xs cursor-pointer select-none">
+                      Active (Visible on Customer Footer)
+                    </label>
+                  </div>
+                  <div className="flex justify-end space-x-3 pt-3 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSecModal(false)}
+                      className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                      style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                    >
+                      Create Section
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MODAL: EDIT FOOTER SECTION ───────────────────────────── */}
+          {editingSec && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-luxury-dark border border-white/10 p-6 rounded-md w-full max-w-md space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                  <h3 className="text-white text-sm font-bold uppercase tracking-wider">Edit Footer Section</h3>
+                  <button onClick={() => setEditingSec(null)} className="text-gray-400 hover:text-white cursor-pointer">
+                    <X size={16} />
+                  </button>
+                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!editingSec.title.trim()) return;
+                    const res = await dispatch(updateFooterSection(editingSec.id, editingSec));
+                    if (res.success) {
+                      setEditingSec(null);
+                      setFooterActionMsg({ type: 'success', text: 'Footer section updated successfully.' });
+                      setTimeout(() => setFooterActionMsg(null), 3000);
+                    } else {
+                      setFooterActionMsg({ type: 'error', text: res.message || 'Failed to update section.' });
+                      setTimeout(() => setFooterActionMsg(null), 5000);
+                    }
+                  }}
+                  className="space-y-4 text-xs"
+                >
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Section Title *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingSec.title}
+                      onChange={(e) => setEditingSec({ ...editingSec, title: e.target.value })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Display Order</label>
+                    <input
+                      type="number"
+                      value={editingSec.order}
+                      onChange={(e) => setEditingSec({ ...editingSec, order: Number(e.target.value) })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="editSecActive"
+                      checked={editingSec.isActive}
+                      onChange={(e) => setEditingSec({ ...editingSec, isActive: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                    />
+                    <label htmlFor="editSecActive" className="text-gray-300 text-xs cursor-pointer select-none">
+                      Active (Visible on Customer Footer)
+                    </label>
+                  </div>
+                  <div className="flex justify-end space-x-3 pt-3 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setEditingSec(null)}
+                      className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                      style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MODAL: ADD FOOTER LINK ───────────────────────────── */}
+          {showAddLinkModal && selectedSecForLinks && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-luxury-dark border border-white/10 p-6 rounded-md w-full max-w-md space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                  <h3 className="text-white text-sm font-bold uppercase tracking-wider">
+                    Add Link to {selectedSecForLinks.title}
+                  </h3>
+                  <button onClick={() => setShowAddLinkModal(false)} className="text-gray-400 hover:text-white cursor-pointer">
+                    <X size={16} />
+                  </button>
+                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!newLinkForm.label.trim()) return;
+
+                    const secId = selectedSecForLinks.id || selectedSecForLinks._id;
+                    const payload = {
+                      label: newLinkForm.label.trim(),
+                      order: Number(newLinkForm.order) || 0,
+                      isActive: Boolean(newLinkForm.isActive)
+                    };
+
+                    if (newLinkForm.linkType === 'warranty') {
+                      payload.action = 'warranty';
+                      payload.page = 'static';
+                    } else if (newLinkForm.linkType === 'shop') {
+                      payload.page = 'shop';
+                      payload.args = { category: newLinkForm.url || 'all' };
+                    } else if (newLinkForm.linkType === 'custom') {
+                      payload.url = newLinkForm.url.trim();
+                      payload.page = 'custom';
+                    } else {
+                      payload.page = 'static';
+                      payload.args = { view: newLinkForm.argsView || 'contact' };
+                    }
+
+                    const res = await dispatch(createFooterLink(secId, payload));
+                    if (res.success) {
+                      setShowAddLinkModal(false);
+                      const updatedSecs = await dispatch(fetchAdminFooterSections());
+                      if (updatedSecs.sections) {
+                        const refreshed = updatedSecs.sections.find(s => (s.id || s._id) === secId);
+                        if (refreshed) setSelectedSecForLinks(refreshed);
+                      }
+                      setFooterActionMsg({ type: 'success', text: `Link "${newLinkForm.label}" added successfully.` });
+                      setTimeout(() => setFooterActionMsg(null), 3000);
+                    } else {
+                      setFooterActionMsg({ type: 'error', text: res.message || 'Failed to add link.' });
+                      setTimeout(() => setFooterActionMsg(null), 5000);
+                    }
+                  }}
+                  className="space-y-4 text-xs"
+                >
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Link Label *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g., Shipping Policy, Contact Us"
+                      value={newLinkForm.label}
+                      onChange={(e) => setNewLinkForm({ ...newLinkForm, label: e.target.value })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Link Type / Destination</label>
+                    <select
+                      value={newLinkForm.linkType}
+                      onChange={(e) => setNewLinkForm({ ...newLinkForm, linkType: e.target.value })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    >
+                      <option value="static">Static Policy / Info Page</option>
+                      <option value="warranty">Watch Warranty Registration Action</option>
+                      <option value="shop">Shop Category Page</option>
+                      <option value="custom">Custom URL / External Link</option>
+                    </select>
+                  </div>
+
+                  {newLinkForm.linkType === 'static' && (
+                    <div className="space-y-1">
+                      <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Target Page View</label>
+                      <select
+                        value={newLinkForm.argsView}
+                        onChange={(e) => setNewLinkForm({ ...newLinkForm, argsView: e.target.value })}
+                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      >
+                        <option value="contact">Contact & Appointment</option>
+                        <option value="about">About & Heritage</option>
+                        <option value="privacy">Privacy Policy</option>
+                        <option value="shipping">Shipping Policy</option>
+                        <option value="warranty">Warranty Policy</option>
+                        <option value="refund">Refund Policy</option>
+                        <option value="exchange">Replacement Policy</option>
+                        <option value="cancellation">Cancellation Policy</option>
+                        <option value="repair">Repair & Service</option>
+                        <option value="blogs">Blogs & Editorial</option>
+                        <option value="faq">FAQ</option>
+                        <option value="gifting">Gifting Policy</option>
+                        <option value="cod">COD Policy</option>
+                        <option value="cookie">Cookie Policy</option>
+                        <option value="community">Community Guidelines</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {(newLinkForm.linkType === 'custom' || newLinkForm.linkType === 'shop') && (
+                    <div className="space-y-1">
+                      <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">
+                        {newLinkForm.linkType === 'shop' ? 'Shop Category Filter' : 'Custom URL'}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={newLinkForm.linkType === 'shop' ? 'e.g., deevaaz, classic, all' : 'e.g., https://instagram.com/...'}
+                        value={newLinkForm.url}
+                        onChange={(e) => setNewLinkForm({ ...newLinkForm, url: e.target.value })}
+                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Display Order</label>
+                    <input
+                      type="number"
+                      value={newLinkForm.order}
+                      onChange={(e) => setNewLinkForm({ ...newLinkForm, order: Number(e.target.value) })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="newLinkActive"
+                      checked={newLinkForm.isActive}
+                      onChange={(e) => setNewLinkForm({ ...newLinkForm, isActive: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                    />
+                    <label htmlFor="newLinkActive" className="text-gray-300 text-xs cursor-pointer select-none">
+                      Active (Visible in Footer)
+                    </label>
+                  </div>
+
+                  <div className="flex justify-end space-x-3 pt-3 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddLinkModal(false)}
+                      className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                      style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                    >
+                      Add Link
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MODAL: EDIT FOOTER LINK ───────────────────────────── */}
+          {editingLink && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-luxury-dark border border-white/10 p-6 rounded-md w-full max-w-md space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                  <h3 className="text-white text-sm font-bold uppercase tracking-wider">Edit Footer Link</h3>
+                  <button onClick={() => setEditingLink(null)} className="text-gray-400 hover:text-white cursor-pointer">
+                    <X size={16} />
+                  </button>
+                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!editingLink.label.trim()) return;
+
+                    const payload = {
+                      label: editingLink.label.trim(),
+                      order: Number(editingLink.order) || 0,
+                      isActive: Boolean(editingLink.isActive)
+                    };
+
+                    if (editingLink.linkType === 'warranty') {
+                      payload.action = 'warranty';
+                      payload.page = 'static';
+                      payload.url = '';
+                      payload.args = null;
+                    } else if (editingLink.linkType === 'shop') {
+                      payload.page = 'shop';
+                      payload.args = { category: editingLink.url || 'all' };
+                      payload.action = '';
+                    } else if (editingLink.linkType === 'custom') {
+                      payload.url = editingLink.url.trim();
+                      payload.page = 'custom';
+                      payload.action = '';
+                    } else {
+                      payload.page = 'static';
+                      payload.args = { view: editingLink.argsView || 'contact' };
+                      payload.action = '';
+                    }
+
+                    const res = await dispatch(updateFooterLink(editingLink.secId, editingLink.linkId, payload));
+                    if (res.success) {
+                      setEditingLink(null);
+                      const updatedSecs = await dispatch(fetchAdminFooterSections());
+                      if (updatedSecs.sections) {
+                        const refreshed = updatedSecs.sections.find(s => (s.id || s._id) === editingLink.secId);
+                        if (refreshed) setSelectedSecForLinks(refreshed);
+                      }
+                      setFooterActionMsg({ type: 'success', text: 'Link updated successfully.' });
+                      setTimeout(() => setFooterActionMsg(null), 3000);
+                    } else {
+                      setFooterActionMsg({ type: 'error', text: res.message || 'Failed to update link.' });
+                      setTimeout(() => setFooterActionMsg(null), 5000);
+                    }
+                  }}
+                  className="space-y-4 text-xs"
+                >
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Link Label *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingLink.label}
+                      onChange={(e) => setEditingLink({ ...editingLink, label: e.target.value })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Link Type / Destination</label>
+                    <select
+                      value={editingLink.linkType}
+                      onChange={(e) => setEditingLink({ ...editingLink, linkType: e.target.value })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    >
+                      <option value="static">Static Policy / Info Page</option>
+                      <option value="warranty">Watch Warranty Registration Action</option>
+                      <option value="shop">Shop Category Page</option>
+                      <option value="custom">Custom URL / External Link</option>
+                    </select>
+                  </div>
+
+                  {editingLink.linkType === 'static' && (
+                    <div className="space-y-1">
+                      <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Target Page View</label>
+                      <select
+                        value={editingLink.argsView}
+                        onChange={(e) => setEditingLink({ ...editingLink, argsView: e.target.value })}
+                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      >
+                        <option value="contact">Contact & Appointment</option>
+                        <option value="about">About & Heritage</option>
+                        <option value="privacy">Privacy Policy</option>
+                        <option value="shipping">Shipping Policy</option>
+                        <option value="warranty">Warranty Policy</option>
+                        <option value="refund">Refund Policy</option>
+                        <option value="exchange">Replacement Policy</option>
+                        <option value="cancellation">Cancellation Policy</option>
+                        <option value="repair">Repair & Service</option>
+                        <option value="blogs">Blogs & Editorial</option>
+                        <option value="faq">FAQ</option>
+                        <option value="gifting">Gifting Policy</option>
+                        <option value="cod">COD Policy</option>
+                        <option value="cookie">Cookie Policy</option>
+                        <option value="community">Community Guidelines</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {(editingLink.linkType === 'custom' || editingLink.linkType === 'shop') && (
+                    <div className="space-y-1">
+                      <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">
+                        {editingLink.linkType === 'shop' ? 'Shop Category Filter' : 'Custom URL'}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={editingLink.linkType === 'shop' ? 'e.g., deevaaz, classic, all' : 'e.g., https://instagram.com/...'}
+                        value={editingLink.url}
+                        onChange={(e) => setEditingLink({ ...editingLink, url: e.target.value })}
+                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Display Order</label>
+                    <input
+                      type="number"
+                      value={editingLink.order}
+                      onChange={(e) => setEditingLink({ ...editingLink, order: Number(e.target.value) })}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="editLinkActive"
+                      checked={editingLink.isActive}
+                      onChange={(e) => setEditingLink({ ...editingLink, isActive: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                    />
+                    <label htmlFor="editLinkActive" className="text-gray-300 text-xs cursor-pointer select-none">
+                      Active (Visible in Footer)
+                    </label>
+                  </div>
+
+                  <div className="flex justify-end space-x-3 pt-3 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setEditingLink(null)}
+                      className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                      style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
+
+
+      
+          {/* ─── MODAL: MOVE FOOTER LINK ───────────────────────────── */}
+          {movingLink && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-luxury-dark border border-white/10 p-6 rounded-md w-full max-w-md space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                  <h3 className="text-white text-sm font-bold uppercase tracking-wider">Move Footer Link</h3>
+                  <button onClick={() => setMovingLink(null)} className="text-gray-400 hover:text-white cursor-pointer">
+                    <X size={16} />
+                  </button>
+                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!movingLink.destSecId) {
+                      setFooterActionMsg({ type: 'error', text: 'Please select a destination section.' });
+                      return;
+                    }
+                    const res = await dispatch(moveFooterLink(movingLink.secId, movingLink.linkId, movingLink.destSecId));
+                    if (res.success) {
+                      const updatedSecs = await dispatch(fetchAdminFooterSections());
+                      if (updatedSecs.sections && selectedSecForLinks) {
+                        const currentSecId = selectedSecForLinks.id || selectedSecForLinks._id;
+                        const refreshed = updatedSecs.sections.find(s => (s.id || s._id) === currentSecId);
+                        if (refreshed) setSelectedSecForLinks(refreshed);
+                      }
+                      setMovingLink(null);
+                      setFooterActionMsg({
+                        type: 'success',
+                        text: res.message || `Link "${movingLink.label}" moved successfully.`
+                      });
+                      setTimeout(() => setFooterActionMsg(null), 4000);
+                    } else {
+                      setFooterActionMsg({ type: 'error', text: res.message || 'Failed to move footer link.' });
+                      setTimeout(() => setFooterActionMsg(null), 5000);
+                    }
+                  }}
+                  className="space-y-4 text-xs"
+                >
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Link to Move</label>
+                    <div className="px-3 py-2 bg-neutral-900 border border-white/20 rounded text-white font-bold">
+                      {movingLink.label}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Destination Section *</label>
+                    {adminFooterSections.filter(
+                      s => s.type !== 'dynamic_collection' && s.slug !== 'collections' && (s.id || s._id) !== movingLink.secId
+                    ).length === 0 ? (
+                      <div className="p-3 bg-red-950/60 border border-red-500 text-red-300 text-xs rounded">
+                        No other eligible custom sections available. Create another section first to move this link.
+                      </div>
+                    ) : (
+                      <select
+                        value={movingLink.destSecId}
+                        onChange={(e) => setMovingLink({ ...movingLink, destSecId: e.target.value })}
+                        required
+                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold cursor-pointer"
+                      >
+                        {adminFooterSections
+                          .filter(s => s.type !== 'dynamic_collection' && s.slug !== 'collections' && (s.id || s._id) !== movingLink.secId)
+                          .map(destSec => {
+                            const dId = destSec.id || destSec._id;
+                            return (
+                              <option key={dId} value={dId}>
+                                {destSec.title} ({destSec.links?.length || 0} existing links)
+                              </option>
+                            );
+                          })}
+                      </select>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-gray-400">
+                    The link will be safely removed from the current section and appended to the selected destination section.
+                  </p>
+
+                  <div className="flex justify-end space-x-3 pt-3 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setMovingLink(null)}
+                      className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                      style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!movingLink.destSecId}
+                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] disabled:opacity-50 rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                    >
+                      Move Link
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MODAL: SECTION DELETION SAFETY ───────────────────────────── */}
+          {deleteSecPrompt && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-luxury-dark border border-amber-500/40 p-6 rounded-md w-full max-w-lg space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                  <h3 className="text-white text-sm font-bold uppercase tracking-wider flex items-center space-x-2 text-amber-400">
+                    <AlertTriangle size={16} />
+                    <span>Section Deletion Safety Confirmation</span>
+                  </h3>
+                  <button onClick={() => setDeleteSecPrompt(null)} className="text-gray-400 hover:text-white cursor-pointer">
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="space-y-3 text-xs text-gray-300">
+                  <p className="font-semibold text-white">
+                    The section <span className="text-luxury-gold font-bold">"{deleteSecPrompt.title}"</span> contains <span className="text-white font-bold">{deleteSecPrompt.linksCount} custom link{deleteSecPrompt.linksCount !== 1 ? 's' : ''}</span>.
+                  </p>
+                  <p className="text-gray-400">
+                    To prevent accidental loss of footer links, choose whether to move all links to another section or delete them with the section:
+                  </p>
+
+                  {deleteSecPrompt.eligibleDests && deleteSecPrompt.eligibleDests.length > 0 && (
+                    <div className="p-4 bg-black/40 border border-white/10 rounded space-y-3">
+                      <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">
+                        Option 1: Move links to another section
+                      </label>
+                      <select
+                        value={deleteSecPrompt.destSecId}
+                        onChange={(e) => setDeleteSecPrompt({ ...deleteSecPrompt, destSecId: e.target.value })}
+                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold cursor-pointer"
+                      >
+                        {deleteSecPrompt.eligibleDests.map(d => {
+                          const dId = d.id || d._id;
+                          return (
+                            <option key={dId} value={dId}>
+                              {d.title} ({d.links?.length || 0} existing links)
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!deleteSecPrompt.destSecId) return;
+                          const moveRes = await dispatch(moveAllFooterLinks(deleteSecPrompt.secId, deleteSecPrompt.destSecId));
+                          if (moveRes.success) {
+                            const delRes = await dispatch(deleteFooterSection(deleteSecPrompt.secId));
+                            if (delRes.success) {
+                              setDeleteSecPrompt(null);
+                              setFooterActionMsg({
+                                type: 'success',
+                                text: `Links moved safely and section "${deleteSecPrompt.title}" deleted.`
+                              });
+                              setTimeout(() => setFooterActionMsg(null), 4000);
+                            }
+                          } else {
+                            setFooterActionMsg({ type: 'error', text: moveRes.message || 'Failed to move links.' });
+                          }
+                        }}
+                        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-bold uppercase tracking-wider cursor-pointer shadow transition border border-blue-400"
+                      >
+                        Move Links & Delete Section
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="p-4 bg-red-950/40 border border-red-500/40 rounded space-y-2">
+                    <label className="text-red-300 uppercase tracking-wider text-[10px] font-bold block">
+                      Option 2: Delete section and all its links
+                    </label>
+                    <p className="text-[11px] text-red-200/80">
+                      All {deleteSecPrompt.linksCount} links inside this section will be permanently deleted from the database.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const delRes = await dispatch(deleteFooterSection(deleteSecPrompt.secId));
+                        if (delRes.success) {
+                          setDeleteSecPrompt(null);
+                          setFooterActionMsg({
+                            type: 'success',
+                            text: `Section "${deleteSecPrompt.title}" and its links were deleted.`
+                          });
+                          setTimeout(() => setFooterActionMsg(null), 3000);
+                        } else {
+                          setFooterActionMsg({ type: 'error', text: delRes.message || 'Failed to delete section.' });
+                        }
+                      }}
+                      className="w-full px-4 py-2 bg-red-900/80 hover:bg-red-800 border border-red-500 text-red-200 rounded text-xs font-bold uppercase tracking-wider cursor-pointer shadow transition"
+                    >
+                      Delete Section & All Links
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setDeleteSecPrompt(null)}
+                    className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                    style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
 
       {/* --- TAB CONTENT: ANALYTICS --- */}
       {activeTab === 'analytics' && (
@@ -1572,10 +3591,12 @@ const handleEditImageUpload = async (e) => {
                     onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
                     className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
                   >
-                    <option value="Khronomaster">Classic</option>
-                    <option value="Defy">Defy</option>
-                    <option value="Heritage">Heritage</option>
-                    <option value="Elite">Elite</option>
+                    {dynamicCollectionOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                    {newProduct.category && !dynamicCollectionOptions.some(o => o.value.toLowerCase() === String(newProduct.category).toLowerCase()) && (
+                      <option value={newProduct.category}>{newProduct.category}</option>
+                    )}
                   </select>
                 </div>
 
@@ -2202,10 +4223,12 @@ const handleEditImageUpload = async (e) => {
                       onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
                       className="w-full bg-luxury-dark border border-white/10 rounded text-white p-2.5"
                     >
-                      <option value="Khronomaster">Classic</option>
-                      <option value="Defy">Defy</option>
-                      <option value="Heritage">Heritage</option>
-                      <option value="Elite">Elite</option>
+                      {dynamicCollectionOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                      {editForm.category && !dynamicCollectionOptions.some(o => o.value.toLowerCase() === String(editForm.category).toLowerCase()) && (
+                        <option value={editForm.category}>{editForm.category}</option>
+                      )}
                     </select>
                   </div>
 

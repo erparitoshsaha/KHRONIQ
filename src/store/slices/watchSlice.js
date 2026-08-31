@@ -286,6 +286,156 @@ const getMockProducts = () => [
   }
 ].map(p => ({ ...p, price: p.price * 83, discountPercent: p.discountPercent || 0 }));
 
+const DEFAULT_FILTER_CATEGORIES = [
+  {
+    id: 'cat-gender',
+    _id: 'cat-gender',
+    name: 'Gender',
+    slug: 'gender',
+    type: 'multi',
+    order: 1,
+    isActive: true,
+    options: [
+      { id: 'opt-men', _id: 'opt-men', name: "Men's Watches", slug: 'men', value: 'men', order: 1, isActive: true },
+      { id: 'opt-women', _id: 'opt-women', name: "Women's Watches", slug: 'women', value: 'women', order: 2, isActive: true }
+    ]
+  },
+  {
+    id: 'cat-collection',
+    _id: 'cat-collection',
+    name: 'Collection',
+    slug: 'collection',
+    type: 'multi',
+    order: 2,
+    isActive: true,
+    options: [
+      { id: 'opt-deevaaz', _id: 'opt-deevaaz', name: 'Deevaaz', slug: 'deevaaz', value: 'deevaaz', order: 1, isActive: true },
+      { id: 'opt-classic', _id: 'opt-classic', name: 'Classic', slug: 'classic', value: 'classic', order: 2, isActive: true }
+    ]
+  },
+  {
+    id: 'cat-movement',
+    _id: 'cat-movement',
+    name: 'Movement',
+    slug: 'movement',
+    type: 'multi',
+    order: 3,
+    isActive: true,
+    options: [
+      { id: 'opt-auto', _id: 'opt-auto', name: 'Automatic', slug: 'automatic', value: 'automatic', order: 1, isActive: true },
+      { id: 'opt-dig', _id: 'opt-dig', name: 'Digital', slug: 'digital', value: 'digital', order: 2, isActive: true },
+      { id: 'opt-qtz', _id: 'opt-qtz', name: 'Quartz', slug: 'quartz', value: 'quartz', order: 3, isActive: true }
+    ]
+  },
+  {
+    id: 'cat-strap',
+    _id: 'cat-strap',
+    name: 'Strap',
+    slug: 'strap',
+    type: 'multi',
+    order: 4,
+    isActive: true,
+    options: [
+      { id: 'opt-leather', _id: 'opt-leather', name: 'Leather Strap', slug: 'leather-strap', value: 'leather-strap', order: 1, isActive: true },
+      { id: 'opt-chain', _id: 'opt-chain', name: 'Chain Strap', slug: 'chain-strap', value: 'chain-strap', order: 2, isActive: true },
+      { id: 'opt-steel', _id: 'opt-steel', name: 'Stainless Steel', slug: 'stainless-steel', value: 'stainless-steel', order: 3, isActive: true },
+      { id: 'opt-alloy', _id: 'opt-alloy', name: 'Brass/Alloy', slug: 'brass-alloy', value: 'brass-alloy', order: 4, isActive: true }
+    ]
+  },
+  {
+    id: 'cat-dial',
+    _id: 'cat-dial',
+    name: 'Dial',
+    slug: 'dial',
+    type: 'multi',
+    order: 5,
+    isActive: true,
+    options: [
+      { id: 'opt-analog', _id: 'opt-analog', name: 'Analog', slug: 'analog', value: 'analog', order: 1, isActive: true },
+      { id: 'opt-digital', _id: 'opt-digital', name: 'Digital', slug: 'digital', value: 'digital', order: 2, isActive: true },
+      { id: 'opt-diganalog', _id: 'opt-diganalog', name: 'Digital Analog', slug: 'digital-analog', value: 'digital-analog', order: 3, isActive: true }
+    ]
+  },
+  {
+    id: 'cat-case',
+    _id: 'cat-case',
+    name: 'Case',
+    slug: 'case',
+    type: 'multi',
+    order: 6,
+    isActive: true,
+    options: [
+      { id: 'opt-casesteel', _id: 'opt-casesteel', name: 'Stainless Steel', slug: 'stainless-steel', value: 'stainless-steel', order: 1, isActive: true },
+      { id: 'opt-casealloy', _id: 'opt-casealloy', name: 'Brass/Alloy', slug: 'brass-alloy', value: 'brass-alloy', order: 2, isActive: true }
+    ]
+  }
+];
+
+export const DEFAULT_FOOTER_SECTIONS = [
+  {
+    id: 'sec-collections',
+    _id: 'sec-collections',
+    title: 'Collections',
+    slug: 'collections',
+    type: 'dynamic_collection',
+    order: 1,
+    isActive: true,
+    links: []
+  },
+  {
+    id: 'sec-legal',
+    _id: 'sec-legal',
+    title: 'Legal',
+    slug: 'legal',
+    type: 'custom',
+    order: 2,
+    isActive: true,
+    links: [
+      { id: 'link-appt', _id: 'link-appt', label: 'Book an Appointment', page: 'static', args: { view: 'contact' }, order: 1, isActive: true },
+      { id: 'link-reg', _id: 'link-reg', label: 'Register My Watch', action: 'warranty', order: 2, isActive: true },
+      { id: 'link-boutique', _id: 'link-boutique', label: 'Boutique Contact', page: 'static', args: { view: 'contact' }, order: 3, isActive: true }
+    ]
+  },
+  {
+    id: 'sec-policies',
+    _id: 'sec-policies',
+    title: 'Policies',
+    slug: 'policies',
+    type: 'custom',
+    order: 3,
+    isActive: true,
+    links: [
+      { id: 'link-priv', _id: 'link-priv', label: 'Privacy Policy', page: 'static', args: { view: 'privacy' }, order: 1, isActive: true },
+      { id: 'link-cod', _id: 'link-cod', label: 'COD Policy', page: 'static', args: { view: 'cod' }, order: 2, isActive: true },
+      { id: 'link-cookie', _id: 'link-cookie', label: 'Cookie Policy', page: 'static', args: { view: 'cookie' }, order: 3, isActive: true },
+      { id: 'link-gift', _id: 'link-gift', label: 'Gifting Policy', page: 'static', args: { view: 'gifting' }, order: 4, isActive: true },
+      { id: 'link-repair', _id: 'link-repair', label: 'Repair & Service', page: 'static', args: { view: 'repair' }, order: 5, isActive: true },
+      { id: 'link-comm', _id: 'link-comm', label: 'Community Guidelines', page: 'static', args: { view: 'community' }, order: 6, isActive: true },
+      { id: 'link-canc', _id: 'link-canc', label: 'Cancellation Policy', page: 'static', args: { view: 'cancellation' }, order: 7, isActive: true },
+      { id: 'link-repl', _id: 'link-repl', label: 'Replacement Policy', page: 'static', args: { view: 'exchange' }, order: 8, isActive: true },
+      { id: 'link-ref', _id: 'link-ref', label: 'Refund Policy', page: 'static', args: { view: 'refund' }, order: 9, isActive: true },
+      { id: 'link-warr', _id: 'link-warr', label: 'Warranty Policy', page: 'static', args: { view: 'warranty' }, order: 10, isActive: true },
+      { id: 'link-ship', _id: 'link-ship', label: 'Shipping Policy', page: 'static', args: { view: 'shipping' }, order: 11, isActive: true }
+    ]
+  },
+  {
+    id: 'sec-brand',
+    _id: 'sec-brand',
+    title: 'The Brand',
+    slug: 'the-brand',
+    type: 'custom',
+    order: 4,
+    isActive: true,
+    links: [
+      { id: 'link-hist', _id: 'link-hist', label: 'Our History', page: 'static', args: { view: 'about' }, order: 1, isActive: true },
+      { id: 'link-manuf', _id: 'link-manuf', label: 'The Manufacture', page: 'static', args: { view: 'about' }, order: 2, isActive: true },
+      { id: 'link-sust', _id: 'link-sust', label: 'Sustainability', page: 'static', args: { view: 'about' }, order: 3, isActive: true },
+      { id: 'link-blogs', _id: 'link-blogs', label: 'Blogs & Editorial', page: 'static', args: { view: 'blogs' }, order: 4, isActive: true },
+      { id: 'link-faq', _id: 'link-faq', label: 'FAQ', page: 'static', args: { view: 'faq' }, order: 5, isActive: true }
+    ]
+  }
+];
+
 const initialState = {
   products: getMockProducts(),
   cart: loadSaved('khroniq_cart', []),
@@ -313,7 +463,9 @@ const initialState = {
       category: "Guides",
       date: "2026-07-05"
     }
-  ]
+  ],
+  filters: DEFAULT_FILTER_CATEGORIES,
+  adminFilters: DEFAULT_FILTER_CATEGORIES
 };
 
 // Helper for standard API headers
@@ -401,6 +553,18 @@ const watchSlice = createSlice({
     },
     setBlogsAction: (state, action) => {
       state.blogs = action.payload;
+    },
+    setFiltersAction: (state, action) => {
+      state.filters = action.payload;
+    },
+    setAdminFiltersAction: (state, action) => {
+      state.adminFilters = action.payload;
+    },
+    setFooterSectionsAction: (state, action) => {
+      state.footerSections = action.payload;
+    },
+    setAdminFooterSectionsAction: (state, action) => {
+      state.adminFooterSections = action.payload;
     }
   }
 });
@@ -419,7 +583,11 @@ export const {
   setCartAction,
   setWishlistAction,
   setCurrencyAction,
-  setBlogsAction
+  setBlogsAction,
+  setFiltersAction,
+  setAdminFiltersAction,
+  setFooterSectionsAction,
+  setAdminFooterSectionsAction
 } = watchSlice.actions;
 
 export const selectCurrentCurrency = state => state.watch.currentCurrency || 'INR';
@@ -1259,6 +1427,383 @@ export const updateBlog = (blogId, blogData) => async (dispatch) => {
     }
   } catch (error) {
     return { success: false, message: 'Failed to update blog.' };
+  }
+};
+
+// ─── Filter System Async Thunks ───────────────────────────────────────
+
+// Helper to safely parse JSON response or return error message
+const parseApiResponse = async (res, defaultErrMsg) => {
+  try {
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return await res.json();
+    }
+    return { success: false, message: res.ok ? defaultErrMsg : `Server error (${res.status})` };
+  } catch (err) {
+    return { success: false, message: defaultErrMsg };
+  }
+};
+
+export const fetchFilters = () => async (dispatch) => {
+  try {
+    const res = await fetch('/api/filters');
+    const data = await parseApiResponse(res, 'Failed to fetch filters');
+    if (data.success) {
+      dispatch(setFiltersAction(data.categories || []));
+      return { success: true, categories: data.categories };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    console.error('fetchFilters error:', error);
+    return { success: false, message: 'Failed to fetch filters' };
+  }
+};
+
+export const fetchAdminFilters = () => async (dispatch) => {
+  try {
+    const res = await fetch('/api/filters/admin', {
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to fetch admin filters');
+    if (data.success) {
+      dispatch(setAdminFiltersAction(data.categories || []));
+      return { success: true, categories: data.categories };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    console.error('fetchAdminFilters error:', error);
+    return { success: false, message: 'Failed to fetch admin filters' };
+  }
+};
+
+export const seedDefaultFilters = () => async (dispatch) => {
+  try {
+    const res = await fetch('/api/filters/seed-defaults', {
+      method: 'POST',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to seed default filters.');
+    if (data.success) {
+      dispatch(fetchAdminFilters());
+      dispatch(fetchFilters());
+      return { success: true, message: data.message };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to seed default filters.' };
+  }
+};
+
+export const createFilterCategory = (categoryData) => async (dispatch) => {
+  try {
+    const res = await fetch('/api/filters/categories', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(categoryData)
+    });
+    const data = await parseApiResponse(res, 'Failed to create filter category.');
+    if (data.success) {
+      dispatch(fetchAdminFilters());
+      dispatch(fetchFilters());
+      return { success: true, category: data.category };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to create filter category.' };
+  }
+};
+
+export const updateFilterCategory = (categoryId, categoryData) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/filters/categories/${categoryId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(categoryData)
+    });
+    const data = await parseApiResponse(res, 'Failed to update filter category.');
+    if (data.success) {
+      dispatch(fetchAdminFilters());
+      dispatch(fetchFilters());
+      return { success: true, category: data.category };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to update filter category.' };
+  }
+};
+
+export const deleteFilterCategory = (categoryId) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/filters/categories/${categoryId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to delete filter category.');
+    if (data.success) {
+      dispatch(fetchAdminFilters());
+      dispatch(fetchFilters());
+      return { success: true };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to delete filter category.' };
+  }
+};
+
+export const createFilterOption = (categoryId, optionData) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/filters/categories/${categoryId}/options`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(optionData)
+    });
+    const data = await parseApiResponse(res, 'Failed to create filter option.');
+    if (data.success) {
+      dispatch(fetchAdminFilters());
+      dispatch(fetchFilters());
+      return { success: true, category: data.category };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to create filter option.' };
+  }
+};
+
+export const updateFilterOption = (categoryId, optionId, optionData) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/filters/categories/${categoryId}/options/${optionId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(optionData)
+    });
+    const data = await parseApiResponse(res, 'Failed to update filter option.');
+    if (data.success) {
+      dispatch(fetchAdminFilters());
+      dispatch(fetchFilters());
+      return { success: true, category: data.category };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to update filter option.' };
+  }
+};
+
+export const deleteFilterOption = (categoryId, optionId) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/filters/categories/${categoryId}/options/${optionId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to delete filter option.');
+    if (data.success) {
+      dispatch(fetchAdminFilters());
+      dispatch(fetchFilters());
+      return { success: true };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to delete filter option.' };
+  }
+};
+
+
+// ─── FOOTER MANAGEMENT ASYNC THUNKS ─────────────────────────────────────────
+export const fetchFooterSections = () => async (dispatch) => {
+  try {
+    const res = await fetch('/api/footer');
+    const data = await parseApiResponse(res, 'Failed to fetch public footer.');
+    if (data.success && data.sections) {
+      dispatch(setFooterSectionsAction(data.sections));
+      return { success: true, sections: data.sections };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to fetch public footer.' };
+  }
+};
+
+export const fetchAdminFooterSections = () => async (dispatch) => {
+  try {
+    const res = await fetch('/api/footer/admin', {
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to fetch admin footer sections.');
+    if (data.success && data.sections) {
+      dispatch(setAdminFooterSectionsAction(data.sections));
+      return { success: true, sections: data.sections };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to fetch admin footer sections.' };
+  }
+};
+
+export const seedDefaultFooter = () => async (dispatch) => {
+  try {
+    const res = await fetch('/api/footer/seed-defaults', {
+      method: 'POST',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to seed default footer.');
+    if (data.success) {
+      await dispatch(fetchAdminFooterSections());
+      await dispatch(fetchFooterSections());
+      return { success: true, message: data.message };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to seed default footer.' };
+  }
+};
+
+export const createFooterSection = (sectionData) => async (dispatch) => {
+  try {
+    const res = await fetch('/api/footer/sections', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(sectionData)
+    });
+    const data = await parseApiResponse(res, 'Failed to create footer section.');
+    if (data.success) {
+      await dispatch(fetchAdminFooterSections());
+      await dispatch(fetchFooterSections());
+      return { success: true, section: data.section };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to create footer section.' };
+  }
+};
+
+export const updateFooterSection = (sectionId, sectionData) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/footer/sections/${sectionId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(sectionData)
+    });
+    const data = await parseApiResponse(res, 'Failed to update footer section.');
+    if (data.success) {
+      await dispatch(fetchAdminFooterSections());
+      await dispatch(fetchFooterSections());
+      return { success: true, section: data.section };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to update footer section.' };
+  }
+};
+
+export const deleteFooterSection = (sectionId) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/footer/sections/${sectionId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to delete footer section.');
+    if (data.success) {
+      await dispatch(fetchAdminFooterSections());
+      await dispatch(fetchFooterSections());
+      return { success: true };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to delete footer section.' };
+  }
+};
+
+export const createFooterLink = (sectionId, linkData) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/footer/sections/${sectionId}/links`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(linkData)
+    });
+    const data = await parseApiResponse(res, 'Failed to add footer link.');
+    if (data.success) {
+      await dispatch(fetchAdminFooterSections());
+      await dispatch(fetchFooterSections());
+      return { success: true, section: data.section };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to add footer link.' };
+  }
+};
+
+export const updateFooterLink = (sectionId, linkId, linkData) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/footer/sections/${sectionId}/links/${linkId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(linkData)
+    });
+    const data = await parseApiResponse(res, 'Failed to update footer link.');
+    if (data.success) {
+      await dispatch(fetchAdminFooterSections());
+      await dispatch(fetchFooterSections());
+      return { success: true, section: data.section };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to update footer link.' };
+  }
+};
+
+export const deleteFooterLink = (sectionId, linkId) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/footer/sections/${sectionId}/links/${linkId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to delete footer link.');
+    if (data.success) {
+      await dispatch(fetchAdminFooterSections());
+      await dispatch(fetchFooterSections());
+      return { success: true, section: data.section };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to delete footer link.' };
+  }
+};
+
+export const moveFooterLink = (sourceSectionId, linkId, targetSectionId) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/footer/sections/${sourceSectionId}/links/${linkId}/move`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ targetSectionId })
+    });
+    const data = await parseApiResponse(res, 'Failed to move footer link.');
+    if (data.success) {
+      await dispatch(fetchAdminFooterSections());
+      await dispatch(fetchFooterSections());
+      return { success: true, message: data.message, targetSection: data.targetSection, sourceSection: data.sourceSection };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to move footer link.' };
+  }
+};
+
+export const moveAllFooterLinks = (sourceSectionId, targetSectionId) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/footer/sections/${sourceSectionId}/move-all-links`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ targetSectionId })
+    });
+    const data = await parseApiResponse(res, 'Failed to move all footer links.');
+    if (data.success) {
+      await dispatch(fetchAdminFooterSections());
+      await dispatch(fetchFooterSections());
+      return { success: true, message: data.message };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to move all footer links.' };
   }
 };
 
