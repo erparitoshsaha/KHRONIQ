@@ -1,3 +1,7 @@
+import AdminSession from '../_models/AdminSession.js';
+import LoginActivity from '../_models/LoginActivity.js';
+import { parseUserAgent, extractClientIp, getCoarseLocation } from '../utils/deviceDetector.js';
+import { adminOnly } from '../_middleware/auth.js';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -8,17 +12,87 @@ import sendEmail from '../utils/sendEmail.js';
 
 const router = express.Router();
 
-const generateToken = (user) => {
+const generateToken = (user, sessionId = null) => {
   const secret = process.env.JWT_SECRET;
   if (!secret || secret.trim() === '') {
     throw new Error('JWT_SECRET is not configured.');
   }
-  return jwt.sign(
-    { id: user.id || user._id, name: user.name, email: user.email, role: user.role },
-    secret,
-    { expiresIn: '30d' }
-  );
+  const payload = {
+    id: user.id || user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role
+  };
+  if (sessionId) {
+    payload.sessionId = sessionId;
+  }
+  return jwt.sign(payload, secret, { expiresIn: '30d' });
 };
+
+async function createAdminLoginSession(req, user, loginMethod = 'Password + OTP') {
+  const ip = extractClientIp(req);
+  const { deviceType, browser, os } = parseUserAgent(req.headers['user-agent']);
+  const location = getCoarseLocation(ip);
+  const sessionId = crypto.randomUUID();
+
+  const session = await AdminSession.create({
+    sessionId,
+    userId: user.id || user._id,
+    email: user.email,
+    deviceType,
+    browser,
+    os,
+    userAgent: req.headers['user-agent'] || '',
+    ip,
+    location,
+    loginMethod,
+    createdAt: new Date(),
+    lastActiveAt: new Date(),
+    isRevoked: false
+  });
+
+  await LoginActivity.create({
+    userId: user.id || user._id,
+    email: user.email,
+    status: 'successful',
+    sessionId,
+    deviceType,
+    browser,
+    os,
+    userAgent: req.headers['user-agent'] || '',
+    ip,
+    location,
+    loginMethod,
+    timestamp: new Date()
+  });
+
+  return sessionId;
+}
+
+async function recordFailedLoginAttempt(req, user, email, failureReason, loginMethod = 'Password + OTP') {
+  try {
+    const ip = extractClientIp(req);
+    const { deviceType, browser, os } = parseUserAgent(req.headers['user-agent']);
+    const location = getCoarseLocation(ip);
+
+    await LoginActivity.create({
+      userId: user ? (user.id || user._id) : null,
+      email: String(email || '').toLowerCase().trim(),
+      status: 'failed',
+      failureReason: failureReason || 'Authentication failed',
+      deviceType,
+      browser,
+      os,
+      userAgent: req.headers['user-agent'] || '',
+      ip,
+      location,
+      loginMethod,
+      timestamp: new Date()
+    });
+  } catch (err) {
+    console.error('Failed to log failed activity:', err);
+  }
+}
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
@@ -278,6 +352,7 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
     const userOtpExpires = user?.adminOtpExpires || user?.adminLoginCodeExpire;
 
     if (!user || user.role !== 'admin' || (!userOtpHash1 && !userOtpHash2) || !userOtpExpires) {
+      await recordFailedLoginAttempt(req, user, normalizedEmail, 'Invalid or expired verification code', 'Password + OTP');
       return res.status(400).json({ success: false, message: 'Invalid or expired verification code.' });
     }
 
@@ -289,6 +364,7 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
       user.adminLoginCodeExpire = undefined;
       user.adminOtpAttempts = 0;
       await user.save();
+      await recordFailedLoginAttempt(req, user, normalizedEmail, 'Verification code expired', 'Password + OTP');
       return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new one.' });
     }
 
@@ -300,6 +376,7 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
       user.adminLoginCodeExpire = undefined;
       user.adminOtpAttempts = 0;
       await user.save();
+      await recordFailedLoginAttempt(req, user, normalizedEmail, 'Maximum verification attempts exceeded', 'Password + OTP');
       return res.status(423).json({
         success: false,
         message: 'Maximum verification attempts exceeded. Code invalidated. Please request a new one.'
@@ -312,6 +389,7 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
     if (candidateHash !== userOtpHash1 && candidateHash !== userOtpHash2) {
       user.adminOtpAttempts = (user.adminOtpAttempts || 0) + 1;
       await user.save();
+      await recordFailedLoginAttempt(req, user, normalizedEmail, 'Invalid verification code', 'Password + OTP');
       const attemptsRemaining = 3 - user.adminOtpAttempts;
       return res.status(400).json({
         success: false,
@@ -329,11 +407,13 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
     user.lockUntil = null;
     await user.save();
 
-    const token = generateToken(user);
+    const sessionId = await createAdminLoginSession(req, user, 'Password + OTP');
+    const token = generateToken(user, sessionId);
 
     res.json({
       success: true,
       token,
+      sessionId,
       user: {
         id: user.id,
         name: user.name,
@@ -438,6 +518,7 @@ router.post('/admin/verify-code', otpLimiter, async (req, res) => {
     const userOtpExpires = user?.adminOtpExpires || user?.adminLoginCodeExpire;
 
     if (!user || (!userOtpHash1 && !userOtpHash2) || !userOtpExpires) {
+      await recordFailedLoginAttempt(req, user, normalizedEmail, 'Invalid or expired code', 'Password + OTP');
       return res.status(401).json({ success: false, message: 'Invalid or expired code.' });
     }
 
@@ -448,6 +529,7 @@ router.post('/admin/verify-code', otpLimiter, async (req, res) => {
       user.adminLoginCodeExpire = undefined;
       user.adminOtpAttempts = 0;
       await user.save();
+      await recordFailedLoginAttempt(req, user, normalizedEmail, 'Verification code expired', 'Password + OTP');
       return res.status(401).json({ success: false, message: 'This code has expired. Please request a new one.' });
     }
 
@@ -458,6 +540,7 @@ router.post('/admin/verify-code', otpLimiter, async (req, res) => {
       user.adminLoginCodeExpire = undefined;
       user.adminOtpAttempts = 0;
       await user.save();
+      await recordFailedLoginAttempt(req, user, normalizedEmail, 'Maximum verification attempts exceeded', 'Password + OTP');
       return res.status(423).json({ success: false, message: 'Maximum verification attempts exceeded. Code invalidated.' });
     }
 
@@ -465,6 +548,7 @@ router.post('/admin/verify-code', otpLimiter, async (req, res) => {
     if (hashedCandidate !== userOtpHash1 && hashedCandidate !== userOtpHash2) {
       user.adminOtpAttempts = (user.adminOtpAttempts || 0) + 1;
       await user.save();
+      await recordFailedLoginAttempt(req, user, normalizedEmail, 'Invalid verification code', 'Password + OTP');
       return res.status(401).json({ success: false, message: `Invalid code. ${3 - user.adminOtpAttempts} attempt(s) remaining.` });
     }
 
@@ -477,10 +561,12 @@ router.post('/admin/verify-code', otpLimiter, async (req, res) => {
     user.lockUntil = null;
     await user.save();
 
-    const token = generateToken(user);
+    const sessionId = await createAdminLoginSession(req, user, 'Password + OTP');
+    const token = generateToken(user, sessionId);
     res.json({
       success: true,
       token,
+      sessionId,
       user: {
         id: user.id,
         name: user.name,
@@ -651,6 +737,142 @@ router.post('/reset-password/:token', authLimiter, async (req, res) => {
   } catch (error) {
     console.error('Reset password error:', error);
     res.status(500).json({ success: false, message: 'Server error during password reset' });
+  }
+});
+
+
+// ─── ADMIN SESSION MANAGEMENT & LOGIN ACTIVITY ─────────────────────────────
+
+// @route   GET /api/auth/sessions
+// @desc    Get all active admin sessions
+// @access  Private/Admin
+router.get('/sessions', protect, adminOnly, async (req, res) => {
+  try {
+    const sessions = await AdminSession.find({
+      email: req.user.email,
+      isRevoked: false
+    }).sort({ lastActiveAt: -1 });
+
+    res.json({
+      success: true,
+      currentSessionId: req.user.sessionId || req.sessionId || null,
+      sessions: sessions.map(s => ({
+        sessionId: s.sessionId,
+        deviceType: s.deviceType,
+        browser: s.browser,
+        os: s.os,
+        ip: s.ip,
+        location: s.location,
+        loginMethod: s.loginMethod,
+        createdAt: s.createdAt,
+        lastActiveAt: s.lastActiveAt,
+        isCurrent: Boolean((req.user.sessionId || req.sessionId) && (req.user.sessionId || req.sessionId) === s.sessionId)
+      }))
+    });
+  } catch (error) {
+    console.error('Fetch sessions error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch active sessions.' });
+  }
+});
+
+// @route   GET /api/auth/login-activity
+// @desc    Get recent login activity logs (successful and failed attempts)
+// @access  Private/Admin
+router.get('/login-activity', protect, adminOnly, async (req, res) => {
+  try {
+    const activities = await LoginActivity.find({
+      email: req.user.email
+    })
+    .sort({ timestamp: -1 })
+    .limit(50);
+
+    res.json({
+      success: true,
+      activities: activities.map(a => ({
+        id: a._id.toString(),
+        status: a.status,
+        failureReason: a.failureReason,
+        sessionId: a.sessionId,
+        deviceType: a.deviceType,
+        browser: a.browser,
+        os: a.os,
+        ip: a.ip,
+        location: a.location,
+        loginMethod: a.loginMethod,
+        timestamp: a.timestamp,
+        logoutAt: a.logoutAt,
+        isCurrent: Boolean((req.user.sessionId || req.sessionId) && (req.user.sessionId || req.sessionId) === a.sessionId)
+      }))
+    });
+  } catch (error) {
+    console.error('Fetch login activity error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch login activity.' });
+  }
+});
+
+// @route   POST /api/auth/sessions/:sessionId/revoke
+// @desc    Revoke/logout a specific session
+// @access  Private/Admin
+router.post('/sessions/:sessionId/revoke', protect, adminOnly, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = await AdminSession.findOne({ sessionId, email: req.user.email });
+
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found.' });
+    }
+
+    session.isRevoked = true;
+    session.revokedAt = new Date();
+    session.revokedReason = 'Admin manual logout';
+    await session.save();
+
+    await LoginActivity.updateMany(
+      { sessionId, logoutAt: null },
+      { $set: { logoutAt: new Date() } }
+    );
+
+    res.json({ success: true, message: 'Session logged out successfully.' });
+  } catch (error) {
+    console.error('Revoke session error:', error);
+    res.status(500).json({ success: false, message: 'Unable to revoke this session.' });
+  }
+});
+
+// @route   POST /api/auth/sessions/revoke-others
+// @desc    Revoke/logout all active sessions except current
+// @access  Private/Admin
+router.post('/sessions/revoke-others', protect, adminOnly, async (req, res) => {
+  try {
+    const currentSessionId = req.user.sessionId || req.sessionId;
+    const filter = {
+      email: req.user.email,
+      isRevoked: false
+    };
+    if (currentSessionId) {
+      filter.sessionId = { $ne: currentSessionId };
+    }
+
+    const sessionsToRevoke = await AdminSession.find(filter);
+    const sessionIds = sessionsToRevoke.map(s => s.sessionId);
+
+    await AdminSession.updateMany(filter, {
+      $set: {
+        isRevoked: true,
+        revokedAt: new Date(),
+        revokedReason: 'Logged out all other sessions'
+      }
+    });
+
+    await LoginActivity.updateMany(
+      { sessionId: { $in: sessionIds }, logoutAt: null },
+      { $set: { logoutAt: new Date() } }
+    );
+
+    res.json({ success: true, message: 'All other sessions have been logged out.' });
+  } catch (error) {
+    console.error('Revoke other sessions error:', error);
+    res.status(500).json({ success: false, message: 'Unable to revoke other sessions.' });
   }
 });
 

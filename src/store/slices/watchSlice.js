@@ -465,7 +465,12 @@ const initialState = {
     }
   ],
   filters: DEFAULT_FILTER_CATEGORIES,
-  adminFilters: DEFAULT_FILTER_CATEGORIES
+  adminFilters: DEFAULT_FILTER_CATEGORIES,
+  footerSections: DEFAULT_FOOTER_SECTIONS,
+  adminFooterSections: DEFAULT_FOOTER_SECTIONS,
+  activeSessions: [],
+  loginActivities: [],
+  currentSessionId: null
 };
 
 // Helper for standard API headers
@@ -565,6 +570,15 @@ const watchSlice = createSlice({
     },
     setAdminFooterSectionsAction: (state, action) => {
       state.adminFooterSections = action.payload;
+    },
+    setActiveSessionsAction: (state, action) => {
+      state.activeSessions = action.payload;
+    },
+    setLoginActivitiesAction: (state, action) => {
+      state.loginActivities = action.payload;
+    },
+    setCurrentSessionIdAction: (state, action) => {
+      state.currentSessionId = action.payload;
     }
   }
 });
@@ -587,7 +601,10 @@ export const {
   setFiltersAction,
   setAdminFiltersAction,
   setFooterSectionsAction,
-  setAdminFooterSectionsAction
+  setAdminFooterSectionsAction,
+  setActiveSessionsAction,
+  setLoginActivitiesAction,
+  setCurrentSessionIdAction
 } = watchSlice.actions;
 
 export const selectCurrentCurrency = state => state.watch.currentCurrency || 'INR';
@@ -1804,6 +1821,78 @@ export const moveAllFooterLinks = (sourceSectionId, targetSectionId) => async (d
     return { success: false, message: data.message };
   } catch (error) {
     return { success: false, message: 'Failed to move all footer links.' };
+  }
+};
+
+
+export const fetchActiveSessions = () => async (dispatch) => {
+  try {
+    const res = await fetch('/api/auth/sessions', {
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to fetch active sessions.');
+    if (data.success && data.sessions) {
+      dispatch(setActiveSessionsAction(data.sessions));
+      if (data.currentSessionId) {
+        dispatch(setCurrentSessionIdAction(data.currentSessionId));
+      }
+      return { success: true, sessions: data.sessions, currentSessionId: data.currentSessionId };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to fetch active sessions.' };
+  }
+};
+
+export const fetchLoginActivity = () => async (dispatch) => {
+  try {
+    const res = await fetch('/api/auth/login-activity', {
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to fetch login activity.');
+    if (data.success && data.activities) {
+      dispatch(setLoginActivitiesAction(data.activities));
+      return { success: true, activities: data.activities };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to fetch login activity.' };
+  }
+};
+
+export const revokeAdminSession = (sessionId) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/auth/sessions/${sessionId}/revoke`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to revoke session.');
+    if (data.success) {
+      await dispatch(fetchActiveSessions());
+      await dispatch(fetchLoginActivity());
+      return { success: true, message: data.message };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Unable to revoke this session.' };
+  }
+};
+
+export const revokeAllOtherSessions = () => async (dispatch) => {
+  try {
+    const res = await fetch('/api/auth/sessions/revoke-others', {
+      method: 'POST',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to revoke other sessions.');
+    if (data.success) {
+      await dispatch(fetchActiveSessions());
+      await dispatch(fetchLoginActivity());
+      return { success: true, message: data.message };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Unable to revoke other sessions.' };
   }
 };
 

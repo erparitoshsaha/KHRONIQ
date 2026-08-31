@@ -36,14 +36,25 @@ import {
   updateFooterLink,
   deleteFooterLink,
   moveFooterLink,
-  moveAllFooterLinks
+  moveAllFooterLinks,
+  fetchActiveSessions,
+  fetchLoginActivity,
+  revokeAdminSession,
+  revokeAllOtherSessions
 } from '../store/slices/watchSlice';
 import { 
   BarChart3, Plus, Edit, Trash2, Check, X, Tag, Star, 
   Package, AlertTriangle, ShieldAlert, ArrowLeft, ArrowUpRight,
   CheckCircle2, LogOut, Newspaper, ImagePlus, BookOpen, Gift, Download,
   SlidersHorizontal,
-  LayoutTemplate
+  LayoutTemplate,
+  ShieldCheck,
+  Smartphone,
+  Monitor,
+  Globe,
+  KeyRound,
+  Laptop,
+  Tablet
 } from 'lucide-react';
 
 const PRESET_STRAPS = [
@@ -129,6 +140,14 @@ export default function Admin({ onPageChange }) {
   const [movingLink, setMovingLink] = useState(null);
   const [deleteSecPrompt, setDeleteSecPrompt] = useState(null);
 
+  // Security / Login Activity State
+  const activeSessions = useSelector(state => state.watch.activeSessions || []);
+  const loginActivities = useSelector(state => state.watch.loginActivities || []);
+  const currentSessionId = useSelector(state => state.watch.currentSessionId);
+  const [sessionActionMsg, setSessionActionMsg] = useState(null);
+  const [revokingSession, setRevokingSession] = useState(null);
+  const [showRevokeAllModal, setShowRevokeAllModal] = useState(false);
+
   const dynamicCollectionOptions = (() => {
     const colCat = adminFilters.find(c => c.slug === 'collection');
     if (colCat && colCat.options && colCat.options.length > 0) {
@@ -151,6 +170,10 @@ export default function Admin({ onPageChange }) {
   }, [activeTab, dispatch]);
 
   useEffect(() => {
+    if (activeTab === 'security') {
+      dispatch(fetchActiveSessions());
+      dispatch(fetchLoginActivity());
+    }
     if (activeTab === 'footer') {
       dispatch(fetchAdminFooterSections());
     }
@@ -1224,6 +1247,7 @@ const handleEditImageUpload = async (e) => {
           
           { key: 'filters', label: 'Catalog Filters', icon: SlidersHorizontal },
           { key: 'footer', label: 'Footer Management', icon: LayoutTemplate },
+          { key: 'security', label: 'Login Activity', icon: ShieldCheck },
           { key: 'updates', label: 'Brand Updates', icon: Newspaper },
           { key: 'media', label: 'Homepage Media', icon: ImagePlus },
           { key: 'blogs', label: 'Blogs Editorial', icon: BookOpen },
@@ -3188,6 +3212,594 @@ const handleEditImageUpload = async (e) => {
               </div>
             </div>
           )}
+
+
+      
+            {/* ─── TAB CONTENT: LOGIN ACTIVITY & SESSIONS ───────────────────────────── */}
+      {activeTab === 'security' && (
+        <div className="space-y-8">
+          {/* Header Banner */}
+          <div 
+            className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-neutral-200 p-6 rounded-lg shadow-sm"
+            style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}
+          >
+            <div>
+              <h3 
+                className="font-serif text-lg font-bold text-neutral-900 uppercase tracking-wider flex items-center space-x-2"
+                style={{ color: '#111827' }}
+              >
+                <ShieldCheck size={20} className="text-[#b45309]" style={{ color: '#b45309' }} />
+                <span>Admin Login Activity & Sessions</span>
+              </h3>
+              <p className="text-neutral-600 text-xs mt-1" style={{ color: '#4b5563' }}>
+                Monitor active administrator devices, review recent sign-in security events, and remotely revoke untrusted sessions.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={async () => {
+                  await dispatch(fetchActiveSessions());
+                  await dispatch(fetchLoginActivity());
+                  setSessionActionMsg({ type: 'success', text: 'Activity and active sessions refreshed.' });
+                  setTimeout(() => setSessionActionMsg(null), 3000);
+                }}
+                className="px-4 py-2 bg-neutral-900 hover:bg-black text-white font-bold text-xs uppercase tracking-wider transition rounded shadow-sm cursor-pointer border border-neutral-800"
+                style={{ backgroundColor: '#111827', color: '#ffffff', borderColor: '#1f2937' }}
+              >
+                Refresh Activity
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowRevokeAllModal(true)}
+                disabled={activeSessions.filter(s => !s.isCurrent && s.sessionId !== currentSessionId).length === 0}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white disabled:bg-neutral-200 disabled:text-neutral-400 disabled:border-neutral-200 disabled:cursor-not-allowed font-bold text-xs uppercase tracking-wider transition rounded shadow-sm flex items-center space-x-1.5 cursor-pointer border border-red-700"
+                style={{
+                  backgroundColor: activeSessions.filter(s => !s.isCurrent && s.sessionId !== currentSessionId).length === 0 ? '#e5e7eb' : '#dc2626',
+                  color: activeSessions.filter(s => !s.isCurrent && s.sessionId !== currentSessionId).length === 0 ? '#9ca3af' : '#ffffff',
+                  borderColor: activeSessions.filter(s => !s.isCurrent && s.sessionId !== currentSessionId).length === 0 ? '#d1d5db' : '#b91c1c'
+                }}
+              >
+                <LogOut size={14} />
+                <span>Log Out All Other Sessions</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Feedback Message Notification */}
+          {sessionActionMsg && (
+            <div
+              className={`p-4 rounded-lg border text-xs font-bold flex items-center justify-between transition-all shadow-sm ${
+                sessionActionMsg.type === 'success'
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                  : 'bg-red-50 border-red-300 text-red-800'
+              }`}
+              style={{
+                backgroundColor: sessionActionMsg.type === 'success' ? '#ecfdf5' : '#fef2f2',
+                borderColor: sessionActionMsg.type === 'success' ? '#86efac' : '#fca5a5',
+                color: sessionActionMsg.type === 'success' ? '#166534' : '#991b1b'
+              }}
+            >
+              <span>{sessionActionMsg.text}</span>
+              <button 
+                type="button" 
+                onClick={() => setSessionActionMsg(null)} 
+                className="cursor-pointer text-neutral-500 hover:text-neutral-800"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          {/* ─── SECTION 1: ACTIVE SESSIONS ───────────────────────────── */}
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-neutral-200 pb-3">
+              <div>
+                <h4 
+                  className="text-neutral-900 text-sm font-bold uppercase tracking-wider flex items-center space-x-2"
+                  style={{ color: '#111827' }}
+                >
+                  <span>Active Sessions</span>
+                  <span className="text-xs font-mono font-bold text-[#b45309]" style={{ color: '#b45309' }}>
+                    ({activeSessions.length})
+                  </span>
+                </h4>
+                <p className="text-neutral-600 text-xs mt-0.5" style={{ color: '#4b5563' }}>
+                  Devices currently authorized to access the Admin Control Center.
+                </p>
+              </div>
+            </div>
+
+            {activeSessions.length === 0 ? (
+              <div 
+                className="p-8 text-center bg-white border border-neutral-200 rounded-lg text-neutral-500 text-xs italic shadow-sm"
+                style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb', color: '#6b7280' }}
+              >
+                No other active sessions.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {activeSessions.map((session) => {
+                  const isCurrent = Boolean(session.isCurrent || (currentSessionId && currentSessionId === session.sessionId));
+                  const formatTime = (ts) => {
+                    if (!ts) return 'Recently';
+                    const d = new Date(ts);
+                    if (isNaN(d.getTime())) return String(ts);
+                    const now = new Date();
+                    const diffMins = Math.floor((now.getTime() - d.getTime()) / 60000);
+                    if (diffMins < 1) return 'Just now';
+                    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+                    const isToday = d.toDateString() === now.toDateString();
+                    const tStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    if (isToday) return `Today, ${tStr}`;
+                    return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${tStr}`;
+                  };
+
+                  return (
+                    <div
+                      key={session.sessionId}
+                      className="p-5 rounded-lg border flex flex-col justify-between space-y-4 transition shadow-sm"
+                      style={{
+                        backgroundColor: '#ffffff',
+                        borderColor: isCurrent ? '#059669' : '#e5e7eb',
+                        borderWidth: isCurrent ? '2px' : '1px',
+                        boxShadow: isCurrent ? '0 1px 3px 0 rgba(5, 150, 105, 0.15)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                      }}
+                    >
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center space-x-3">
+                            <div 
+                              className="p-2.5 rounded border flex items-center justify-center shadow-xs"
+                              style={{
+                                backgroundColor: isCurrent ? '#ecfdf5' : '#f3f4f6',
+                                borderColor: isCurrent ? '#a7f3d0' : '#e5e7eb',
+                                color: isCurrent ? '#047857' : '#1f2937'
+                              }}
+                            >
+                              {session.deviceType === 'Mobile' ? (
+                                <Smartphone size={22} style={{ color: isCurrent ? '#047857' : '#1f2937' }} />
+                              ) : session.deviceType === 'Tablet' ? (
+                                <Tablet size={22} style={{ color: isCurrent ? '#047857' : '#1f2937' }} />
+                              ) : (
+                                <Monitor size={22} style={{ color: isCurrent ? '#047857' : '#1f2937' }} />
+                              )}
+                            </div>
+                            <div>
+                              <div 
+                                className="font-bold text-base tracking-tight"
+                                style={{ color: '#111827' }}
+                              >
+                                {session.browser} · {session.os}
+                              </div>
+                              <div 
+                                className="text-xs flex items-center space-x-1 mt-0.5 font-medium"
+                                style={{ color: '#4b5563' }}
+                              >
+                                <Globe size={12} style={{ color: '#6b7280' }} />
+                                <span>{session.location || 'India / approximate location'}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            {isCurrent ? (
+                              <span 
+                                className="inline-flex items-center px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider border shadow-xs"
+                                style={{ 
+                                  backgroundColor: '#dcfce7', 
+                                  color: '#15803d', 
+                                  borderColor: '#86efac' 
+                                }}
+                              >
+                                CURRENT DEVICE
+                              </span>
+                            ) : (
+                              <span 
+                                className="inline-flex items-center px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider border shadow-xs"
+                                style={{ 
+                                  backgroundColor: '#f3f4f6', 
+                                  color: '#374151', 
+                                  borderColor: '#d1d5db' 
+                                }}
+                              >
+                                ACTIVE
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Metadata Box: IP, Method, Last Active */}
+                        <div 
+                          className="grid grid-cols-2 gap-2 text-xs p-3.5 rounded border font-mono"
+                          style={{
+                            backgroundColor: '#f9fafb',
+                            borderColor: '#e5e7eb'
+                          }}
+                        >
+                          <div>
+                            <span 
+                              className="text-[10px] uppercase block font-sans font-bold"
+                              style={{ color: '#6b7280' }}
+                            >
+                              IP Address
+                            </span>
+                            <span 
+                              className="font-bold text-xs"
+                              style={{ color: '#111827' }}
+                            >
+                              {session.ip || '127.0.0.1'}
+                            </span>
+                          </div>
+                          <div>
+                            <span 
+                              className="text-[10px] uppercase block font-sans font-bold"
+                              style={{ color: '#6b7280' }}
+                            >
+                              Login Method
+                            </span>
+                            <span 
+                              className="font-medium text-xs"
+                              style={{ color: '#111827' }}
+                            >
+                              {session.loginMethod || 'Password + OTP'}
+                            </span>
+                          </div>
+                          <div 
+                            className="col-span-2 pt-2 mt-1 border-t flex justify-between items-center"
+                            style={{ borderColor: '#e5e7eb' }}
+                          >
+                            <span 
+                              className="text-[11px] font-sans font-semibold"
+                              style={{ color: '#4b5563' }}
+                            >
+                              Last Active:
+                            </span>
+                            <span 
+                              className="font-bold text-xs"
+                              style={{ color: '#b45309' }}
+                            >
+                              {formatTime(session.lastActiveAt)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-1 flex justify-end">
+                        {isCurrent ? (
+                          <div 
+                            className="px-3.5 py-1.5 rounded text-xs font-bold uppercase tracking-wider border select-none flex items-center space-x-1"
+                            style={{ 
+                              backgroundColor: '#f0fdf4', 
+                              color: '#15803d', 
+                              borderColor: '#bbf7d0' 
+                            }}
+                          >
+                            <span>[ THIS DEVICE ]</span>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setRevokingSession(session)}
+                            className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider rounded transition cursor-pointer shadow-sm border border-red-700"
+                            style={{ 
+                              backgroundColor: '#dc2626', 
+                              color: '#ffffff', 
+                              borderColor: '#b91c1c' 
+                            }}
+                          >
+                            [ LOG OUT ]
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ─── SECTION 2: RECENT LOGIN ACTIVITY / AUDIT LOG ───────────────────────────── */}
+          <div className="space-y-4 pt-4 border-t border-neutral-200">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <h4 
+                  className="text-neutral-900 text-sm font-bold uppercase tracking-wider flex items-center space-x-2"
+                  style={{ color: '#111827' }}
+                >
+                  <span>Recent Login Activity & Security Events</span>
+                  <span className="text-xs font-mono font-bold text-neutral-500" style={{ color: '#6b7280' }}>
+                    ({loginActivities.length})
+                  </span>
+                </h4>
+                <p className="text-neutral-600 text-xs mt-0.5" style={{ color: '#4b5563' }}>
+                  Complete historical record of successful administrative sign-ins and failed authentication attempts.
+                </p>
+              </div>
+            </div>
+
+            <div 
+              className="bg-white border border-neutral-200 rounded-lg overflow-hidden shadow-sm"
+              style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead 
+                    className="text-[10px] font-bold uppercase tracking-widest border-b"
+                    style={{ backgroundColor: '#f3f4f6', color: '#4b5563', borderColor: '#e5e7eb' }}
+                  >
+                    <tr>
+                      <th className="p-4">Status</th>
+                      <th className="p-4">Device & Browser</th>
+                      <th className="p-4">Location / IP</th>
+                      <th className="p-4">Login Method</th>
+                      <th className="p-4 text-right">Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-200" style={{ borderColor: '#e5e7eb' }}>
+                    {loginActivities.length === 0 ? (
+                      <tr>
+                        <td 
+                          colSpan={5} 
+                          className="p-12 text-center text-neutral-500 italic"
+                          style={{ color: '#6b7280' }}
+                        >
+                          No login activity yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      loginActivities.map((activity) => {
+                        const isSuccess = activity.status === 'successful';
+                        const formatTs = (ts) => {
+                          if (!ts) return '-';
+                          const d = new Date(ts);
+                          if (isNaN(d.getTime())) return String(ts);
+                          const now = new Date();
+                          const isToday = d.toDateString() === now.toDateString();
+                          const tStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                          if (isToday) return `Today, ${tStr}`;
+                          return `${d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}, ${tStr}`;
+                        };
+
+                        return (
+                          <tr 
+                            key={activity.id || activity._id} 
+                            className="hover:bg-neutral-50 transition"
+                          >
+                            <td className="p-4">
+                              {isSuccess ? (
+                                <span 
+                                  className="inline-block px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider border shadow-xs"
+                                  style={{ 
+                                    backgroundColor: '#dcfce7', 
+                                    color: '#15803d', 
+                                    borderColor: '#86efac' 
+                                  }}
+                                >
+                                  SUCCESSFUL
+                                </span>
+                              ) : (
+                                <div className="space-y-1">
+                                  <span 
+                                    className="inline-block px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider border shadow-xs"
+                                    style={{ 
+                                      backgroundColor: '#fee2e2', 
+                                      color: '#b91c1c', 
+                                      borderColor: '#fca5a5' 
+                                    }}
+                                  >
+                                    FAILED
+                                  </span>
+                                  {activity.failureReason && (
+                                    <div 
+                                      className="text-[10px] font-semibold"
+                                      style={{ color: '#dc2626' }}
+                                    >
+                                      {activity.failureReason}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              <div 
+                                className="font-bold text-sm"
+                                style={{ color: '#111827' }}
+                              >
+                                {activity.browser} · {activity.os}
+                              </div>
+                              <div 
+                                className="text-[11px] mt-0.5 font-medium"
+                                style={{ color: '#6b7280' }}
+                              >
+                                Device: {activity.deviceType || 'Desktop'}
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div 
+                                className="font-medium"
+                                style={{ color: '#374151' }}
+                              >
+                                {activity.location || 'India / approximate location'}
+                              </div>
+                              <div 
+                                className="text-[11px] font-mono mt-0.5"
+                                style={{ color: '#6b7280' }}
+                              >
+                                IP: {activity.ip || '127.0.0.1'}
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div 
+                                className="font-medium"
+                                style={{ color: '#374151' }}
+                              >
+                                {activity.loginMethod || 'Password + OTP'}
+                              </div>
+                              {activity.logoutAt && (
+                                <div 
+                                  className="text-[10px] mt-0.5 font-mono font-bold"
+                                  style={{ color: '#b45309' }}
+                                >
+                                  Logged out: {formatTs(activity.logoutAt)}
+                                </div>
+                              )}
+                            </td>
+                            <td 
+                              className="p-4 text-right font-mono font-medium"
+                              style={{ color: '#374151' }}
+                            >
+                              {formatTs(activity.timestamp)}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* ─── MODAL: LOG OUT SPECIFIC SESSION ───────────────────────────── */}
+          {revokingSession && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+              <div 
+                className="bg-white border border-neutral-200 p-6 rounded-lg w-full max-w-md space-y-4 shadow-2xl"
+                style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}
+              >
+                <div className="flex justify-between items-center border-b border-neutral-200 pb-3">
+                  <h3 
+                    className="text-sm font-bold uppercase tracking-wider flex items-center space-x-2"
+                    style={{ color: '#dc2626' }}
+                  >
+                    <LogOut size={16} />
+                    <span>Log Out Device</span>
+                  </h3>
+                  <button 
+                    type="button" 
+                    onClick={() => setRevokingSession(null)} 
+                    className="text-neutral-400 hover:text-neutral-700 cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <p className="font-semibold text-sm" style={{ color: '#111827' }}>
+                    Log out this device session?
+                  </p>
+                  <div 
+                    className="border p-3.5 rounded space-y-1.5 font-mono text-xs"
+                    style={{ backgroundColor: '#f9fafb', borderColor: '#e5e7eb' }}
+                  >
+                    <div><span className="font-sans font-bold" style={{ color: '#6b7280' }}>Device:</span> <span className="font-bold" style={{ color: '#111827' }}>{revokingSession.browser} · {revokingSession.os}</span></div>
+                    <div><span className="font-sans font-bold" style={{ color: '#6b7280' }}>Location:</span> <span style={{ color: '#374151' }}>{revokingSession.location}</span></div>
+                    <div><span className="font-sans font-bold" style={{ color: '#6b7280' }}>IP Address:</span> <span style={{ color: '#374151' }}>{revokingSession.ip}</span></div>
+                  </div>
+                  <p className="text-xs" style={{ color: '#6b7280' }}>
+                    This session will be revoked immediately on the server and the affected device will lose access to administrative features.
+                  </p>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-3 border-t border-neutral-200">
+                  <button
+                    type="button"
+                    onClick={() => setRevokingSession(null)}
+                    className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-xs border border-neutral-300"
+                    style={{ backgroundColor: '#f3f4f6', color: '#1f2937', borderColor: '#d1d5db' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const res = await dispatch(revokeAdminSession(revokingSession.sessionId));
+                      if (res.success) {
+                        setRevokingSession(null);
+                        setSessionActionMsg({ type: 'success', text: 'Session logged out successfully.' });
+                        setTimeout(() => setSessionActionMsg(null), 3000);
+                      } else {
+                        setSessionActionMsg({ type: 'error', text: res.message || 'Unable to revoke this session.' });
+                        setTimeout(() => setSessionActionMsg(null), 4000);
+                      }
+                    }}
+                    className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-xs border border-red-700"
+                    style={{ backgroundColor: '#dc2626', color: '#ffffff', borderColor: '#b91c1c' }}
+                  >
+                    Log Out
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MODAL: LOG OUT ALL OTHER SESSIONS ───────────────────────────── */}
+          {showRevokeAllModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+              <div 
+                className="bg-white border border-amber-300 p-6 rounded-lg w-full max-w-md space-y-4 shadow-2xl"
+                style={{ backgroundColor: '#ffffff', borderColor: '#fcd34d' }}
+              >
+                <div className="flex justify-between items-center border-b border-neutral-200 pb-3">
+                  <h3 
+                    className="text-sm font-bold uppercase tracking-wider flex items-center space-x-2"
+                    style={{ color: '#b45309' }}
+                  >
+                    <AlertTriangle size={16} />
+                    <span>Log Out All Other Sessions</span>
+                  </h3>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowRevokeAllModal(false)} 
+                    className="text-neutral-400 hover:text-neutral-700 cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <p className="font-semibold text-sm" style={{ color: '#111827' }}>
+                    Log out all other active sessions?
+                  </p>
+                  <p style={{ color: '#4b5563' }}>
+                    Your current device will remain logged in, while all other devices and browser sessions will be immediately invalidated and signed out.
+                  </p>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-3 border-t border-neutral-200">
+                  <button
+                    type="button"
+                    onClick={() => setShowRevokeAllModal(false)}
+                    className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-xs border border-neutral-300"
+                    style={{ backgroundColor: '#f3f4f6', color: '#1f2937', borderColor: '#d1d5db' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const res = await dispatch(revokeAllOtherSessions());
+                      if (res.success) {
+                        setShowRevokeAllModal(false);
+                        setSessionActionMsg({ type: 'success', text: 'All other sessions have been logged out.' });
+                        setTimeout(() => setSessionActionMsg(null), 3000);
+                      } else {
+                        setSessionActionMsg({ type: 'error', text: res.message || 'Unable to revoke other sessions.' });
+                        setTimeout(() => setSessionActionMsg(null), 4000);
+                      }
+                    }}
+                    className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-xs border border-red-700"
+                    style={{ backgroundColor: '#dc2626', color: '#ffffff', borderColor: '#b91c1c' }}
+                  >
+                    Log Out Other Sessions
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
 
       {/* --- TAB CONTENT: ANALYTICS --- */}

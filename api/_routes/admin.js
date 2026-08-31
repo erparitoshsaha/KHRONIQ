@@ -1,3 +1,5 @@
+import AdminSession from '../_models/AdminSession.js';
+import LoginActivity from '../_models/LoginActivity.js';
 import express from 'express';
 import mongoose from 'mongoose';
 import Order from '../_models/Order.js';
@@ -110,6 +112,140 @@ router.get('/analytics', protect, adminOnly, async (req, res) => {
   } catch (error) {
     console.error('Analytics fetch error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+
+// @route   GET /api/admin/sessions
+// @desc    Get all active admin sessions
+// @access  Private/Admin
+router.get('/sessions', protect, adminOnly, async (req, res) => {
+  try {
+    const sessions = await AdminSession.find({
+      email: req.user.email,
+      isRevoked: false
+    }).sort({ lastActiveAt: -1 });
+
+    res.json({
+      success: true,
+      currentSessionId: req.user.sessionId || req.sessionId || null,
+      sessions: sessions.map(s => ({
+        sessionId: s.sessionId,
+        deviceType: s.deviceType,
+        browser: s.browser,
+        os: s.os,
+        ip: s.ip,
+        location: s.location,
+        loginMethod: s.loginMethod,
+        createdAt: s.createdAt,
+        lastActiveAt: s.lastActiveAt,
+        isCurrent: Boolean((req.user.sessionId || req.sessionId) && (req.user.sessionId || req.sessionId) === s.sessionId)
+      }))
+    });
+  } catch (error) {
+    console.error('Fetch admin sessions error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch active sessions.' });
+  }
+});
+
+// @route   GET /api/admin/login-activity
+// @desc    Get recent admin login activities
+// @access  Private/Admin
+router.get('/login-activity', protect, adminOnly, async (req, res) => {
+  try {
+    const activities = await LoginActivity.find({
+      email: req.user.email
+    })
+    .sort({ timestamp: -1 })
+    .limit(50);
+
+    res.json({
+      success: true,
+      activities: activities.map(a => ({
+        id: a._id.toString(),
+        status: a.status,
+        failureReason: a.failureReason,
+        sessionId: a.sessionId,
+        deviceType: a.deviceType,
+        browser: a.browser,
+        os: a.os,
+        ip: a.ip,
+        location: a.location,
+        loginMethod: a.loginMethod,
+        timestamp: a.timestamp,
+        logoutAt: a.logoutAt,
+        isCurrent: Boolean((req.user.sessionId || req.sessionId) && (req.user.sessionId || req.sessionId) === a.sessionId)
+      }))
+    });
+  } catch (error) {
+    console.error('Fetch admin login activity error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch login activity.' });
+  }
+});
+
+// @route   POST /api/admin/sessions/:sessionId/revoke
+// @desc    Revoke specific session
+// @access  Private/Admin
+router.post('/sessions/:sessionId/revoke', protect, adminOnly, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = await AdminSession.findOne({ sessionId, email: req.user.email });
+
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found.' });
+    }
+
+    session.isRevoked = true;
+    session.revokedAt = new Date();
+    session.revokedReason = 'Admin manual logout';
+    await session.save();
+
+    await LoginActivity.updateMany(
+      { sessionId, logoutAt: null },
+      { $set: { logoutAt: new Date() } }
+    );
+
+    res.json({ success: true, message: 'Session logged out successfully.' });
+  } catch (error) {
+    console.error('Revoke admin session error:', error);
+    res.status(500).json({ success: false, message: 'Unable to revoke this session.' });
+  }
+});
+
+// @route   POST /api/admin/sessions/revoke-others
+// @desc    Revoke all other sessions except current
+// @access  Private/Admin
+router.post('/sessions/revoke-others', protect, adminOnly, async (req, res) => {
+  try {
+    const currentSessionId = req.user.sessionId || req.sessionId;
+    const filter = {
+      email: req.user.email,
+      isRevoked: false
+    };
+    if (currentSessionId) {
+      filter.sessionId = { $ne: currentSessionId };
+    }
+
+    const sessionsToRevoke = await AdminSession.find(filter);
+    const sessionIds = sessionsToRevoke.map(s => s.sessionId);
+
+    await AdminSession.updateMany(filter, {
+      $set: {
+        isRevoked: true,
+        revokedAt: new Date(),
+        revokedReason: 'Logged out all other sessions'
+      }
+    });
+
+    await LoginActivity.updateMany(
+      { sessionId: { $in: sessionIds }, logoutAt: null },
+      { $set: { logoutAt: new Date() } }
+    );
+
+    res.json({ success: true, message: 'All other sessions have been logged out.' });
+  } catch (error) {
+    console.error('Revoke other admin sessions error:', error);
+    res.status(500).json({ success: false, message: 'Unable to revoke other sessions.' });
   }
 });
 
