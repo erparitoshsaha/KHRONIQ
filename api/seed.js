@@ -16,7 +16,7 @@ async function seed() {
       const initialBlogs = [
         {
           title: "The Art of Swadeshi Horology",
-          content: "Behind the scenes of KHRONIQ's Le Locle and Indian assembly processes, bringing high-precision chronometer watches to modern watch enthusiasts. Discover how we balance heritage design with modern components.",
+          content: "Behind the scenes of KHRONIQ's design and assembly processes, bringing high-precision watches to modern watch enthusiasts. Discover how we balance heritage design with modern components.",
           author: "Vikram R. Mehta",
           image: "/assets/lifestyle_black_cafe.jpg",
           category: "Horology"

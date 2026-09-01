@@ -211,7 +211,7 @@ export default function Static({ params, _onPageChange }) {
       content: (
         <div className="space-y-2">
           <p className="font-bold text-luxury-text">KHRONIQ</p>
-          <p className="text-[11px] text-luxury-muted italic">Born From The Movement Of Time</p>
+          <p className="text-[11px] text-luxury-muted italic">Born from The Movement Of Time</p>
           <p>A Premium Watch Brand by True Knock Industries Private Limited</p>
           <div className="pl-3 border-l border-luxury-gold-dark/30 text-[11px] text-luxury-muted space-y-1">
             <p><span className="font-semibold text-luxury-text">Office Address:</span> OFFICE NO. - 2, CHAMBER - 4, UDAIGIRI TOWER, KAUSHAMBI, GHAZIABAD, UTTAR PRADESH — 201010, India</p>
@@ -1844,7 +1844,7 @@ export default function Static({ params, _onPageChange }) {
                 <Compass className="absolute text-luxury-gold-dark/5 w-80 h-80 -right-20 -bottom-20 rotate-12" />
                 <img
                   src="/assets/spotlight_red_angled.png"
-                  alt="Swiss manufacture"
+                  alt="Khroniq Timepiece"
                   className="max-h-full max-w-full object-contain relative z-10 filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.15)]"
                 />
               </div>
@@ -1858,13 +1858,13 @@ export default function Static({ params, _onPageChange }) {
               </div>
               <div className="space-y-2">
                 <Compass className="mx-auto text-luxury-gold-dark" size={24} />
-                <h4 className="text-xs font-bold text-luxury-text uppercase tracking-wider">HOROLOGICAL SPEED</h4>
-                <p className="text-[11px] text-luxury-muted leading-relaxed font-light">High-frequency movements vibrating at 36,000 VpH, enabling 1/10th of a second precision.</p>
+                <h4 className="text-xs font-bold text-luxury-text uppercase tracking-wider">PRECISION ENGINEERING</h4>
+                <p className="text-[11px] text-luxury-muted leading-relaxed font-light">Accurately calibrated movements designed to deliver reliable performance and smooth everyday timekeeping.</p>
               </div>
               <div className="space-y-2">
                 <CheckCircle2 className="mx-auto text-luxury-gold-dark" size={24} />
-                <h4 className="text-xs font-bold text-luxury-text uppercase tracking-wider">CHRONOMETER PRIZES</h4>
-                <p className="text-[11px] text-luxury-muted leading-relaxed font-light">Over 2,300 first-place chronometry awards secured since foundation.</p>
+                <h4 className="text-xs font-bold text-luxury-text uppercase tracking-wider">REFINED CRAFTSMANSHIP</h4>
+                <p className="text-[11px] text-luxury-muted leading-relaxed font-light">Uncompromising standards of quality, durable materials, and contemporary luxury design.</p>
               </div>
             </div>
           </div>
@@ -1891,7 +1891,7 @@ export default function Static({ params, _onPageChange }) {
                       required
                       value={contactForm.name}
                       onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                      placeholder="Georges Favre"
+                      placeholder="Rahul Sharma"
                       className="w-full bg-luxury-bg border border-luxury-text/10 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-luxury-gold-dark"
                     />
                   </div>
@@ -1902,7 +1902,7 @@ export default function Static({ params, _onPageChange }) {
                       required
                       value={contactForm.email}
                       onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                      placeholder="georges@locle.ch"
+                      placeholder="rahul@example.com"
                       className="w-full bg-luxury-bg border border-luxury-text/10 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-luxury-gold-dark"
                     />
                   </div>
@@ -1949,8 +1949,8 @@ export default function Static({ params, _onPageChange }) {
                 <div className="flex items-start space-x-3">
                   <MapPin size={16} className="text-luxury-gold-dark mt-0.5" />
                   <div>
-                    <h5 className="font-bold text-luxury-text uppercase">La Manufacture Khroniq</h5>
-                    <p className="text-luxury-muted font-light leading-relaxed">Rue des Billodes 34,<br />2400 Le Locle, Switzerland</p>
+                    <h5 className="font-bold text-luxury-text uppercase">KHRONIQ Headquarters</h5>
+                    <p className="text-luxury-muted font-light leading-relaxed">Office No. - 2, Chamber - 4,<br />Udaigiri Tower, Kaushambi,<br />Ghaziabad, Uttar Pradesh — 201010, India</p>
                   </div>
                 </div>
 
@@ -1958,7 +1958,7 @@ export default function Static({ params, _onPageChange }) {
                   <Phone size={16} className="text-luxury-gold-dark mt-0.5" />
                   <div>
                     <h5 className="font-bold text-luxury-text uppercase">Concierge Desk</h5>
-                    <p className="text-luxury-muted font-light">+41 (0) 32 930 65 00</p>
+                    <p className="text-luxury-muted font-light">Available Mon–Sat, 10 AM – 7 PM IST</p>
                   </div>
                 </div>
 
@@ -1966,7 +1966,7 @@ export default function Static({ params, _onPageChange }) {
                   <Mail size={16} className="text-luxury-gold-dark mt-0.5" />
                   <div>
                     <h5 className="font-bold text-luxury-text uppercase">Boutique Email</h5>
-                    <p className="text-luxury-muted font-light">concierge@khroniq-watches.com</p>
+                    <p className="text-luxury-muted font-light">support@khroniq.com</p>
                   </div>
                 </div>
               </div>
@@ -1975,7 +1975,7 @@ export default function Static({ params, _onPageChange }) {
                 <Award className="mx-auto text-luxury-gold-dark" size={20} />
                 <h5 className="text-[10px] font-bold text-luxury-text uppercase tracking-widest">Boutique Appointments</h5>
                 <p className="text-[10px] text-luxury-muted leading-relaxed font-light">
-                  Reserve a personalized viewing session at our international salons located in Paris, Geneva, Tokyo, and New York.
+                  Reserve a personalized consultation or viewing session with our private concierge team.
                 </p>
               </div>
             </div>

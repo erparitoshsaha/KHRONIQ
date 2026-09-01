@@ -5601,7 +5601,7 @@ const handleEditImageUpload = async (e) => {
                     required
                     value={newUpdate.title}
                     onChange={(e) => setNewUpdate({ ...newUpdate, title: e.target.value })}
-                    placeholder="e.g. Geneva Flagship Opening"
+                    placeholder="e.g. New Boutique Opening"
                     className="w-full bg-white border border-black/10 rounded text-neutral-900 p-2.5 focus:outline-none focus:border-black"
                   />
                 </div>

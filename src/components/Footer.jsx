@@ -286,7 +286,7 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
 
                   <p style={{ fontSize: '0.62rem', color: '#ffffff', opacity: 0.8, letterSpacing: '0.08em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Clock size={11} style={{ display: 'inline', verticalAlign: 'middle', color: '#047857' }} />
-                    MON–FRI · 11AM–5PM CET
+                    MON–FRI · 10AM–6PM IST
                   </p>
 
                   {/* Social icons */}

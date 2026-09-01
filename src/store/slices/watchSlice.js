@@ -48,9 +48,9 @@ const getMockProducts = () => [
     stock: 5,
     category: 'Khronomaster',
     gender: 'men',
-    description: 'High-precision luxury chronograph watch in matte black design with silver sub-dials and detailed tachymeter scale. Equipped with the legendary El Primero movement DNA.',
+    description: 'High-precision luxury chronograph watch in matte black design with silver sub-dials and detailed tachymeter scale. Equipped with a high-precision automatic movement.',
     specs: {
-      movement: 'El Primero Chronograph (36,000 vph)',
+      movement: 'Automatic Chronograph',
       case: 'Matte Black Ceramic (42mm)',
       strap: 'Black Rubberized Steel Link',
       waterResistance: '100m (10 ATM)',
@@ -61,7 +61,7 @@ const getMockProducts = () => [
     allowCaseCustomization: true,
     allowDialCustomization: true,
     reviews: [
-      { id: 'rev-3', userName: 'Marc V.', rating: 5, comment: 'The El Primero movement is flawless. The black ceramic case is scratchproof!', date: '2026-05-10', status: 'approved' }
+      { id: 'rev-3', userName: 'Marc V.', rating: 5, comment: 'The automatic movement is flawless. The black case finish is scratchproof!', date: '2026-05-10', status: 'approved' }
     ]
   },
   {
@@ -126,9 +126,9 @@ const getMockProducts = () => [
     stock: 6,
     category: 'Khronomaster',
     gender: 'men',
-    description: 'An exquisite luxury timepiece featuring a dial opening revealing the high-frequency El Primero balance wheel. Crafted with a polished steel case.',
+    description: 'An exquisite luxury timepiece featuring an open dial revealing the precision balance wheel. Crafted with a polished stainless steel case.',
     specs: {
-      movement: 'El Primero Automatic Chronograph',
+      movement: 'Automatic Chronograph',
       case: 'Polished Steel (42mm)',
       strap: 'Alligator Leather Strap',
       waterResistance: '100m (10 ATM)',
@@ -200,7 +200,7 @@ const getMockProducts = () => [
     gender: 'men',
     description: 'A modern architectural masterpiece featuring an openworked black skeleton dial inside a sharp octagonal steel case.',
     specs: {
-      movement: 'El Primero High-Frequency Automatic',
+      movement: 'Automatic Chronometer',
       case: 'Brushed Steel Octagonal (41mm)',
       strap: 'Black Rubber Strap',
       waterResistance: '100m (10 ATM)',
@@ -448,7 +448,7 @@ const initialState = {
     {
       id: 'blog-1',
       title: "The Art of Swadeshi Horology",
-      content: "Behind the scenes of KHRONIQ's Le Locle and Indian assembly processes, bringing high-precision chronometer watches to modern watch enthusiasts. Discover how we balance heritage design with modern components.",
+      content: "Behind the scenes of KHRONIQ's design and assembly processes, bringing high-precision watches to modern watch enthusiasts. Discover how we balance heritage design with modern components.",
       author: "Vikram R. Mehta",
       image: "/assets/lifestyle_black_cafe.jpg",
       category: "Horology",

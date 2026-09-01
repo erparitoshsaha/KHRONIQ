@@ -507,7 +507,7 @@ export default function Profile({ params, onPageChange }) {
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      placeholder="Geneva"
+                      placeholder="Mumbai"
                       className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                     />
                   </div>
@@ -517,7 +517,7 @@ export default function Profile({ params, onPageChange }) {
                       type="text"
                       value={stateVal}
                       onChange={(e) => setStateVal(e.target.value)}
-                      placeholder="Geneva"
+                      placeholder="Maharashtra"
                       className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
                     />
                   </div>

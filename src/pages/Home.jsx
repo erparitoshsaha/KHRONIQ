@@ -828,7 +828,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   const currentCurrency = useSelector(selectCurrentCurrency);
 
   useEffect(() => {
-    document.title = 'KHRONIQ — Haute Horlogerie & Precision Timepieces';
+    document.title = 'KHRONIQ — Born from The Movement Of Time';
   }, []);
 
   useEffect(() => {
@@ -1167,13 +1167,13 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
             {/* Heading — both lines same depth */}
             <motion.div initial={{ opacity: 0, y: 36 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, delay: 0.16, ease: [0.22, 1, 0.36, 1] }} className="select-none cursor-default">
               <div className="font-cinzel font-bold text-2xl sm:text-3xl md:text-4xl tracking-wider text-white uppercase leading-tight">
-                Born from the
+                Born from The
               </div>
               <div className="font-cinzel font-bold text-2xl sm:text-3xl md:text-4xl tracking-wider uppercase leading-tight mt-1">
                 <span className="text-white inline-block" style={{
                   color: '#ffffff',
                   filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.4)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))',
-                }}>movement of Time</span>
+                }}>Movement Of Time</span>
               </div>
             </motion.div>
 
@@ -1399,7 +1399,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           {[...Array(8)].map((_, i) => (
             <React.Fragment key={i}>
               <span style={{ color: '#ffffff', fontFamily: 'Georgia, serif', letterSpacing: '0.18em' }} className="text-sm sm:text-base font-bold uppercase mx-10 whitespace-nowrap shrink-0">
-                Born From The Movement Of Time
+                Born from The Movement Of Time
               </span>
               <LogoMark className="h-9 w-9 mx-4 shrink-0 opacity-95" />
             </React.Fragment>
