@@ -21,7 +21,10 @@ const generateToken = (user, sessionId = null) => {
     id: user.id || user._id,
     name: user.name,
     email: user.email,
-    role: user.role
+    role: user.role,
+    permissions: user.permissions || [],
+    location: user.location || 'Main Store',
+    locationId: user.locationId || 'loc-flagship'
   };
   if (sessionId) {
     payload.sessionId = sessionId;
@@ -39,6 +42,7 @@ async function createAdminLoginSession(req, user, loginMethod = 'Password + OTP'
     sessionId,
     userId: user.id || user._id,
     email: user.email,
+    role: user.role || 'admin',
     deviceType,
     browser,
     os,
@@ -54,6 +58,7 @@ async function createAdminLoginSession(req, user, loginMethod = 'Password + OTP'
   await LoginActivity.create({
     userId: user.id || user._id,
     email: user.email,
+    role: user.role || 'admin',
     status: 'successful',
     sessionId,
     deviceType,
@@ -78,6 +83,7 @@ async function recordFailedLoginAttempt(req, user, email, failureReason, loginMe
     await LoginActivity.create({
       userId: user ? (user.id || user._id) : null,
       email: String(email || '').toLowerCase().trim(),
+      role: user ? user.role : 'customer',
       status: 'failed',
       failureReason: failureReason || 'Authentication failed',
       deviceType,
@@ -114,7 +120,7 @@ router.post('/register', authLimiter, async (req, res) => {
   if (!/[a-z]/.test(password)) {
     return res.status(400).json({ success: false, message: 'Password must contain at least one lowercase letter.' });
   }
-  if (!/[!@#$%^&*(),.?":{}|<>\-_]/.test(password)) {
+  if (!/[!@#$%^&*(),.?":{}|<>-_]/.test(password)) {
     return res.status(400).json({ success: false, message: 'Password must contain at least one special character.' });
   }
 
@@ -152,7 +158,7 @@ router.post('/register', authLimiter, async (req, res) => {
 });
 
 // @route   POST /api/auth/login
-// @desc    Authenticate user & get token (Customers only; Admins must use OTP flow)
+// @desc    Authenticate user & get token (Customers and Restricted Admins with email+password; Super Admins must use OTP)
 // @access  Public
 router.post('/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
@@ -169,16 +175,85 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    // If the account is an admin, MUST NOT issue an admin JWT via normal login
-    if (user.role === 'admin') {
+    // Super Admin accounts MUST use the 2FA OTP flow
+    if (user.role === 'super_admin') {
       return res.status(403).json({
         success: false,
         requireOtp: true,
-        message: 'Admin accounts require two-factor OTP verification. Please authenticate via the administrative sign-in flow.'
+        isSuperAdmin: true,
+        message: 'Super Admin accounts require two-factor OTP verification. Please authenticate via the administrative sign-in flow.'
       });
     }
 
-    // Check if account is currently locked
+    // Restricted Admin accounts use Email + Password
+    if (user.role === 'admin') {
+      if (user.isActive === false) {
+        await recordFailedLoginAttempt(req, user, normalizedEmail, 'Account disabled by administrator', 'Email + Password');
+        return res.status(403).json({
+          success: false,
+          accountDisabled: true,
+          message: 'Your administrator account has been deactivated. Please contact the Super Administrator.'
+        });
+      }
+
+      // Check if account is locked
+      if (user.lockUntil && user.lockUntil > Date.now()) {
+        const remainingSeconds = Math.ceil((user.lockUntil - Date.now()) / 1000);
+        return res.status(423).json({
+          success: false,
+          message: `Too many failed attempts. Account locked. Please try again in ${remainingSeconds} seconds.`,
+          remainingSeconds
+        });
+      }
+
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        user.loginAttempts = (user.loginAttempts || 0) + 1;
+        if (user.loginAttempts >= 5) {
+          user.lockUntil = new Date(Date.now() + 60 * 1000);
+          user.loginAttempts = 0;
+          await user.save();
+          await recordFailedLoginAttempt(req, user, normalizedEmail, 'Account locked: 5 failed attempts', 'Email + Password');
+          return res.status(423).json({
+            success: false,
+            message: 'Too many failed attempts. Account locked for 1 minute.',
+            remainingSeconds: 60
+          });
+        }
+        await user.save();
+        await recordFailedLoginAttempt(req, user, normalizedEmail, 'Invalid password', 'Email + Password');
+        const attemptsRemaining = 5 - user.loginAttempts;
+        return res.status(401).json({
+          success: false,
+          message: `Invalid email or password. ${attemptsRemaining} attempts remaining.`
+        });
+      }
+
+      user.loginAttempts = 0;
+      user.lockUntil = null;
+      user.lastLogin = new Date();
+      await user.save();
+
+      const sessionId = await createAdminLoginSession(req, user, 'Email + Password');
+      const token = generateToken(user, sessionId);
+
+      return res.json({
+        success: true,
+        token,
+        sessionId,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          permissions: user.permissions || [],
+          location: user.location || 'Main Store',
+          locationId: user.locationId || 'loc-flagship'
+        }
+      });
+    }
+
+    // Regular customer login
     if (user.lockUntil && user.lockUntil > Date.now()) {
       const remainingSeconds = Math.ceil((user.lockUntil - Date.now()) / 1000);
       return res.status(423).json({
@@ -215,6 +290,7 @@ router.post('/login', authLimiter, async (req, res) => {
     // Reset login attempts on successful login
     user.loginAttempts = 0;
     user.lockUntil = null;
+    user.lastLogin = new Date();
     await user.save();
 
     const token = generateToken(user);
@@ -236,7 +312,7 @@ router.post('/login', authLimiter, async (req, res) => {
 });
 
 // @route   POST /api/auth/check-admin
-// @desc    Check if an email belongs to an administrator account
+// @desc    Check if an email belongs to an administrator account (returns whether OTP is required)
 // @access  Public (Rate-limited)
 router.post('/check-admin', authLimiter, async (req, res) => {
   const { email } = req.body;
@@ -249,11 +325,17 @@ router.post('/check-admin', authLimiter, async (req, res) => {
     const normalizedEmail = email.trim().toLowerCase();
     const user = await User.findOne({ email: normalizedEmail });
 
-    const isAdmin = Boolean(user && user.role === 'admin');
+    const isSuperAdmin = Boolean(user && user.role === 'super_admin');
+    const isAdmin = Boolean(user && (user.role === 'admin' || user.role === 'super_admin'));
+    const requiresOtp = isSuperAdmin; // Super Admin requires OTP; restricted admin uses email+password
+    const isActive = user ? (user.isActive !== false) : true;
 
     return res.json({
       success: true,
-      isAdmin
+      isAdmin,
+      isSuperAdmin,
+      requiresOtp,
+      isActive
     });
   } catch (error) {
     console.error('Check admin error:', error.message);
@@ -262,7 +344,7 @@ router.post('/check-admin', authLimiter, async (req, res) => {
 });
 
 // @route   POST /api/auth/admin-otp/request
-// @desc    Generate and email a 6-digit cryptographically secure OTP for admin verification
+// @desc    Generate and email a 6-digit cryptographically secure OTP for super admin verification
 // @access  Public (Rate-limited)
 router.post('/admin-otp/request', otpLimiter, async (req, res) => {
   const { email } = req.body;
@@ -273,29 +355,43 @@ router.post('/admin-otp/request', otpLimiter, async (req, res) => {
 
   try {
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail, role: 'admin' });
+    const user = await User.findOne({ email: normalizedEmail, role: { $in: ['admin', 'super_admin'] } });
 
-    // Validate user credentials and admin role
     if (!user) {
-      // Return generic response to avoid admin email enumeration
       return res.json({
         success: true,
         message: 'If the credentials are valid, a secure verification code has been dispatched.'
       });
     }
 
-    // Rate-limit consecutive OTP requests (minimum 60 seconds interval)
-    if (user.adminOtpLastSent && Date.now() - user.adminOtpLastSent.getTime() < 60 * 1000) {
-      return res.status(429).json({
+    if (user.isActive === false) {
+      return res.status(403).json({
         success: false,
-        message: 'Please wait at least 60 seconds before requesting another code.'
+        accountDisabled: true,
+        message: 'Your administrator account has been deactivated. Please contact the Super Administrator.'
       });
     }
 
-    // Generate cryptographically secure 6-digit OTP
+    console.log(`[AUTH] Administrator detected: ${normalizedEmail} (Role: ${user.role})`);
+    if (user.role === 'super_admin') {
+      console.log(`[AUTH] Super Admin detected: ${normalizedEmail}`);
+    }
+
+    // Rate-limit consecutive OTP requests (minimum 60 seconds interval)
+    if (user.adminOtpLastSent && Date.now() - user.adminOtpLastSent.getTime() < 60 * 1000) {
+      const waitSeconds = Math.ceil((60 * 1000 - (Date.now() - user.adminOtpLastSent.getTime())) / 1000);
+      console.log(`[AUTH] OTP request throttled for ${normalizedEmail}: wait ${waitSeconds}s`);
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${waitSeconds} seconds before requesting another code.`
+      });
+    }
+
+    console.log(`[AUTH] Generating OTP for: ${normalizedEmail}`);
     const rawOtp = crypto.randomInt(100000, 1000000).toString();
     const hashedOtp = crypto.createHash('sha256').update(rawOtp).digest('hex');
     const expiryDate = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+    console.log(`[AUTH] OTP generated for: ${normalizedEmail} (Expires: ${expiryDate.toISOString()})`);
 
     user.adminOtp = hashedOtp;
     user.adminOtpExpires = expiryDate;
@@ -305,8 +401,8 @@ router.post('/admin-otp/request', otpLimiter, async (req, res) => {
     user.adminOtpLastSent = new Date();
     await user.save();
 
-    // Send OTP via email
-    await sendEmail({
+    console.log(`[AUTH] Sending OTP to ${user.email}`);
+    const emailRes = await sendEmail({
       to: user.email,
       subject: 'KHRONIQ Security - Admin Authentication Code',
       html: `
@@ -322,9 +418,21 @@ router.post('/admin-otp/request', otpLimiter, async (req, res) => {
       `
     });
 
+    console.log(`[AUTH] OTP email send result: ${emailRes?.success ? 'SUCCESS' : 'FAILED'}`);
+    if (emailRes?.messageId) {
+      console.log(`[AUTH] OTP message ID / accepted recipient: ${emailRes.messageId} -> ${user.email}`);
+    }
+
+    if (!emailRes || !emailRes.success) {
+      return res.status(500).json({
+        success: false,
+        message: 'Unable to send OTP. Please try again.'
+      });
+    }
+
     res.json({
       success: true,
-      message: 'If the credentials are valid, a secure verification code has been dispatched.'
+      message: 'A verification code has been dispatched to your email.'
     });
   } catch (error) {
     console.error('Admin OTP request error:', error);
@@ -345,15 +453,19 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
 
   try {
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail });
+    const user = await User.findOne({ email: normalizedEmail, role: { $in: ['admin', 'super_admin'] } });
 
     const userOtpHash1 = user?.adminOtp;
     const userOtpHash2 = user?.adminLoginCode;
     const userOtpExpires = user?.adminOtpExpires || user?.adminLoginCodeExpire;
 
-    if (!user || user.role !== 'admin' || (!userOtpHash1 && !userOtpHash2) || !userOtpExpires) {
+    if (!user || (!userOtpHash1 && !userOtpHash2) || !userOtpExpires) {
       await recordFailedLoginAttempt(req, user, normalizedEmail, 'Invalid or expired verification code', 'Password + OTP');
       return res.status(400).json({ success: false, message: 'Invalid or expired verification code.' });
+    }
+
+    if (user.isActive === false) {
+      return res.status(403).json({ success: false, accountDisabled: true, message: 'Account has been disabled. Please contact the administrator.' });
     }
 
     // Check expiration
@@ -405,6 +517,7 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
     user.adminOtpAttempts = 0;
     user.loginAttempts = 0;
     user.lockUntil = null;
+    user.lastLogin = new Date();
     await user.save();
 
     const sessionId = await createAdminLoginSession(req, user, 'Password + OTP');
@@ -418,7 +531,10 @@ router.post('/admin-otp/verify', otpLimiter, async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        permissions: user.permissions || [],
+        location: user.location || 'Main Store',
+        locationId: user.locationId || 'loc-flagship'
       }
     });
   } catch (error) {
@@ -435,19 +551,39 @@ router.post('/admin/request-code', otpLimiter, async (req, res) => {
   }
   try {
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail, role: 'admin' });
+    const user = await User.findOne({ email: normalizedEmail, role: { $in: ['admin', 'super_admin'] } });
 
     if (!user) {
       return res.json({ success: true, message: 'If that email belongs to an admin account, a code has been sent.' });
     }
 
-    if (user.adminOtpLastSent && Date.now() - user.adminOtpLastSent.getTime() < 60 * 1000) {
-      return res.status(429).json({ success: false, message: 'Please wait at least 60 seconds before requesting another code.' });
+    if (user.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        accountDisabled: true,
+        message: 'Your administrator account has been deactivated. Please contact the Super Administrator.'
+      });
     }
 
+    console.log(`[AUTH] Administrator detected: ${normalizedEmail} (Role: ${user.role})`);
+    if (user.role === 'super_admin') {
+      console.log(`[AUTH] Super Admin detected: ${normalizedEmail}`);
+    }
+
+    if (user.adminOtpLastSent && Date.now() - user.adminOtpLastSent.getTime() < 60 * 1000) {
+      const waitSeconds = Math.ceil((60 * 1000 - (Date.now() - user.adminOtpLastSent.getTime())) / 1000);
+      console.log(`[AUTH] OTP request throttled for ${normalizedEmail}: wait ${waitSeconds}s`);
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${waitSeconds} seconds before requesting another code.`
+      });
+    }
+
+    console.log(`[AUTH] Generating OTP for: ${normalizedEmail}`);
     const rawOtp = crypto.randomInt(100000, 1000000).toString();
     const hashedOtp = crypto.createHash('sha256').update(rawOtp).digest('hex');
     const expiryTime = new Date(Date.now() + 10 * 60 * 1000);
+    console.log(`[AUTH] OTP generated for: ${normalizedEmail} (Expires: ${expiryTime.toISOString()})`);
 
     user.adminOtp = hashedOtp;
     user.adminOtpExpires = expiryTime;
@@ -457,6 +593,7 @@ router.post('/admin/request-code', otpLimiter, async (req, res) => {
     user.adminOtpLastSent = new Date();
     await user.save();
 
+    console.log(`[AUTH] Sending OTP to ${user.email}`);
     const emailRes = await sendEmail({
       to: user.email,
       subject: 'KHRONIQ Admin - Your Sign-In Code',
@@ -487,10 +624,15 @@ router.post('/admin/request-code', otpLimiter, async (req, res) => {
       `
     });
 
+    console.log(`[AUTH] OTP email send result: ${emailRes?.success ? 'SUCCESS' : 'FAILED'}`);
+    if (emailRes?.messageId) {
+      console.log(`[AUTH] OTP message ID / accepted recipient: ${emailRes.messageId} -> ${user.email}`);
+    }
+
     if (!emailRes || !emailRes.success) {
       return res.status(500).json({
         success: false,
-        message: emailRes?.message || emailRes?.error || 'Email dispatch failed. Please check SMTP settings.'
+        message: 'Unable to send OTP. Please try again.'
       });
     }
 
@@ -511,7 +653,7 @@ router.post('/admin/verify-code', otpLimiter, async (req, res) => {
 
   try {
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail, role: 'admin' });
+    const user = await User.findOne({ email: normalizedEmail, role: { $in: ['admin', 'super_admin'] } });
 
     const userOtpHash1 = user?.adminOtp;
     const userOtpHash2 = user?.adminLoginCode;
@@ -520,6 +662,10 @@ router.post('/admin/verify-code', otpLimiter, async (req, res) => {
     if (!user || (!userOtpHash1 && !userOtpHash2) || !userOtpExpires) {
       await recordFailedLoginAttempt(req, user, normalizedEmail, 'Invalid or expired code', 'Password + OTP');
       return res.status(401).json({ success: false, message: 'Invalid or expired code.' });
+    }
+
+    if (user.isActive === false) {
+      return res.status(403).json({ success: false, accountDisabled: true, message: 'Account has been disabled.' });
     }
 
     if (userOtpExpires < Date.now()) {
@@ -559,6 +705,7 @@ router.post('/admin/verify-code', otpLimiter, async (req, res) => {
     user.adminOtpAttempts = 0;
     user.loginAttempts = 0;
     user.lockUntil = null;
+    user.lastLogin = new Date();
     await user.save();
 
     const sessionId = await createAdminLoginSession(req, user, 'Password + OTP');
@@ -571,7 +718,10 @@ router.post('/admin/verify-code', otpLimiter, async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        permissions: user.permissions || [],
+        location: user.location || 'Main Store',
+        locationId: user.locationId || 'loc-flagship'
       }
     });
   } catch (error) {
@@ -597,6 +747,10 @@ router.get('/profile', protect, async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        permissions: user.permissions || [],
+        location: user.location || 'Main Store',
+        locationId: user.locationId || 'loc-flagship',
+        isActive: user.isActive !== false,
         shippingAddress: user.shippingAddress
       }
     });
@@ -649,6 +803,10 @@ router.put('/profile', protect, async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        permissions: user.permissions || [],
+        location: user.location || 'Main Store',
+        locationId: user.locationId || 'loc-flagship',
+        isActive: user.isActive !== false,
         shippingAddress: user.shippingAddress
       }
     });
@@ -673,16 +831,14 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
-      // Don't reveal whether the email exists, for security
       return res.json({ success: true, message: 'If that email exists, a reset link has been sent.' });
     }
 
-    // Generate raw token (sent to user) and hashed version (stored in DB)
     const rawToken = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
 
     user.resetPasswordToken = hashedToken;
-    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
     await user.save();
 
     const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -728,7 +884,7 @@ router.post('/reset-password/:token', authLimiter, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid or expired reset link.' });
     }
 
-    user.password = password; // pre-save hook will hash it
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
@@ -739,7 +895,6 @@ router.post('/reset-password/:token', authLimiter, async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error during password reset' });
   }
 });
-
 
 // ─── ADMIN SESSION MANAGEMENT & LOGIN ACTIVITY ─────────────────────────────
 
@@ -758,6 +913,7 @@ router.get('/sessions', protect, adminOnly, async (req, res) => {
       currentSessionId: req.user.sessionId || req.sessionId || null,
       sessions: sessions.map(s => ({
         sessionId: s.sessionId,
+        role: s.role || 'admin',
         deviceType: s.deviceType,
         browser: s.browser,
         os: s.os,
@@ -790,6 +946,7 @@ router.get('/login-activity', protect, adminOnly, async (req, res) => {
       success: true,
       activities: activities.map(a => ({
         id: a._id.toString(),
+        role: a.role || 'admin',
         status: a.status,
         failureReason: a.failureReason,
         sessionId: a.sessionId,

@@ -1,6 +1,6 @@
 import express from 'express';
 import BrandUpdate from '../_models/BrandUpdate.js';
-import { protect, adminOnly } from '../_middleware/auth.js';
+import { protect, adminOnly, requirePermission } from '../_middleware/auth.js';
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 // @route   GET /api/brand-updates/admin
 // @desc    Get all brand updates (approved and unapproved)
 // @access  Private/Admin
-router.get('/admin', protect, adminOnly, async (req, res) => {
+router.get('/admin', protect, requirePermission('brand_updates'), async (req, res) => {
   try {
     const updates = await BrandUpdate.find({}).sort({ createdAt: -1 });
     res.json({ success: true, updates });
@@ -33,7 +33,7 @@ router.get('/admin', protect, adminOnly, async (req, res) => {
 // @route   POST /api/brand-updates
 // @desc    Add a brand update
 // @access  Private/Admin
-router.post('/', protect, adminOnly, async (req, res) => {
+router.post('/', protect, requirePermission('brand_updates'), async (req, res) => {
   const { title, detail, approved } = req.body;
 
   try {
@@ -58,7 +58,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
 // @route   PUT /api/brand-updates/:id
 // @desc    Update a brand update
 // @access  Private/Admin
-router.put('/:id', protect, adminOnly, async (req, res) => {
+router.put('/:id', protect, requirePermission('brand_updates'), async (req, res) => {
   const { title, detail, approved } = req.body;
 
   try {
@@ -83,7 +83,7 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
 // @route   DELETE /api/brand-updates/:id
 // @desc    Delete a brand update
 // @access  Private/Admin
-router.delete('/:id', protect, adminOnly, async (req, res) => {
+router.delete('/:id', protect, requirePermission('brand_updates'), async (req, res) => {
   try {
     const update = await BrandUpdate.findById(req.params.id);
 

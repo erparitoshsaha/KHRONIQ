@@ -4,6 +4,8 @@ import { logoutUser, cancelOrder, updateUserProfile, requestExchangeRefund } fro
 import { handleImageError } from '../utils/imageUtils';
 import ProductCard from '../components/ProductCard';
 import { Heart, User, Package, LogOut } from 'lucide-react';
+import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
+
 
 const getStatusStepIndex = (status) => {
   switch (status) {
@@ -259,16 +261,16 @@ export default function Profile({ params, onPageChange }) {
           <div>
             <h1 className="text-xl font-bold text-white uppercase tracking-wider">{currentUser.name}</h1>
             <p className="text-xs text-gray-400 font-light mt-0.5">{currentUser.email}</p>
-            {currentUser.role === 'admin' && (
-              <span className="inline-block bg-luxury-red text-white text-[9px] font-bold tracking-widest px-2 py-0.5 rounded uppercase mt-1">
-                ADMIN ACCESS
+            {isAdminRole(currentUser.role) && (
+              <span className={`inline-block ${isSuperAdminRole(currentUser.role) ? 'bg-luxury-gold text-black' : 'bg-luxury-red text-white'} text-[9px] font-bold tracking-widest px-2 py-0.5 rounded uppercase mt-1`}>
+                {isSuperAdminRole(currentUser.role) ? 'SUPER ADMIN ACCESS' : 'ADMIN ACCESS'}
               </span>
             )}
           </div>
         </div>
 
         <div className="flex space-x-3">
-          {currentUser.role === 'admin' && (
+          {isAdminRole(currentUser.role) && (
             <button
               onClick={() => onPageChange('admin')}
               className="px-5 py-2.5 bg-luxury-gold text-luxury-dark text-xs font-bold tracking-widest uppercase hover:bg-luxury-gold-dark transition cursor-pointer"

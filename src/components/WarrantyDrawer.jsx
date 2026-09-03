@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { X, ShieldCheck, User, Mail, Search, CheckCircle, Lock } from 'lucide-react';
+import { isAdminRole } from '../constants/permissions';
+
 
 // Same header-building logic used by watchSlice.js thunks (getHeaders is not exported from there,
 // so it's kept in sync here rather than importing internals across files).
@@ -105,8 +107,9 @@ export default function WarrantyDrawer({ isOpen, onClose }) {
   // Admins can look up warranty records for a specific customer by typing their email.
   // Regular customers stay locked to their own account email (never editable, never sent —
   // the backend always derives it from the JWT for them, as a security guarantee).
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = isAdminRole(currentUser?.role);
   const [lookupEmail, setLookupEmail] = useState(isAdmin ? '' : (currentUser?.email || ''));
+
 
   // Country / State / City / Phone — sent only on final claim, saved as extra info on the claim record
   const [country, setCountry] = useState('India');

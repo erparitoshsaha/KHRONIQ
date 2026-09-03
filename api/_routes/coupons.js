@@ -1,6 +1,6 @@
 import express from 'express';
 import Coupon from '../_models/Coupon.js';
-import { protect, adminOnly } from '../_middleware/auth.js';
+import { protect, adminOnly, requirePermission } from '../_middleware/auth.js';
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 // @route   POST /api/coupons
 // @desc    Add a coupon
 // @access  Private/Admin
-router.post('/', protect, adminOnly, async (req, res) => {
+router.post('/', protect, requirePermission('coupons'), async (req, res) => {
   const { code, discountPercent, description } = req.body;
 
   try {
@@ -48,7 +48,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
 // @route   DELETE /api/coupons/:code
 // @desc    Delete a coupon
 // @access  Private/Admin
-router.delete('/:code', protect, adminOnly, async (req, res) => {
+router.delete('/:code', protect, requirePermission('coupons'), async (req, res) => {
   try {
     const codeUpper = req.params.code.toUpperCase().trim();
     const coupon = await Coupon.findOne({ code: codeUpper });

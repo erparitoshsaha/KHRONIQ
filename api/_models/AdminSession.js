@@ -20,6 +20,11 @@ const AdminSessionSchema = new mongoose.Schema({
     trim: true,
     index: true
   },
+  role: {
+    type: String,
+    enum: ['admin', 'super_admin'],
+    default: 'admin'
+  },
   deviceType: {
     type: String,
     enum: ['Desktop', 'Mobile', 'Tablet', 'Other'],

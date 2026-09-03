@@ -1,4 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { DEFAULT_CONTENT_SECTIONS } from '../../constants/defaultContent.js';
+export { DEFAULT_CONTENT_SECTIONS };
 
 // Helper to safe-parse localStorage items
 const loadSaved = (key, fallback) => {
@@ -468,9 +470,13 @@ const initialState = {
   adminFilters: DEFAULT_FILTER_CATEGORIES,
   footerSections: DEFAULT_FOOTER_SECTIONS,
   adminFooterSections: DEFAULT_FOOTER_SECTIONS,
+  contentSections: DEFAULT_CONTENT_SECTIONS,
+  adminContentSections: DEFAULT_CONTENT_SECTIONS,
   activeSessions: [],
   loginActivities: [],
-  currentSessionId: null
+  currentSessionId: null,
+  adminUsers: [],
+  adminUsersLoading: false
 };
 
 // Helper for standard API headers
@@ -579,6 +585,18 @@ const watchSlice = createSlice({
     },
     setCurrentSessionIdAction: (state, action) => {
       state.currentSessionId = action.payload;
+    },
+    setContentSectionsAction: (state, action) => {
+      state.contentSections = action.payload;
+    },
+    setAdminContentSectionsAction: (state, action) => {
+      state.adminContentSections = action.payload;
+    },
+    setAdminUsersAction: (state, action) => {
+      state.adminUsers = action.payload;
+    },
+    setAdminUsersLoadingAction: (state, action) => {
+      state.adminUsersLoading = action.payload;
     }
   }
 });
@@ -602,9 +620,13 @@ export const {
   setAdminFiltersAction,
   setFooterSectionsAction,
   setAdminFooterSectionsAction,
+  setContentSectionsAction,
+  setAdminContentSectionsAction,
   setActiveSessionsAction,
   setLoginActivitiesAction,
-  setCurrentSessionIdAction
+  setCurrentSessionIdAction,
+  setAdminUsersAction,
+  setAdminUsersLoadingAction
 } = watchSlice.actions;
 
 export const selectCurrentCurrency = state => state.watch.currentCurrency || 'INR';
@@ -825,9 +847,14 @@ export const checkAdminEmail = (email) => async () => {
       body: JSON.stringify({ email })
     });
     const data = await res.json();
-    return { isAdmin: !!data.isAdmin };
+    return {
+      isAdmin: !!data.isAdmin,
+      isSuperAdmin: !!data.isSuperAdmin,
+      requiresOtp: !!data.requiresOtp,
+      isActive: data.isActive !== false
+    };
   } catch (error) {
-    return { isAdmin: false };
+    return { isAdmin: false, isSuperAdmin: false, requiresOtp: false, isActive: true };
   }
 };
 
@@ -1893,6 +1920,414 @@ export const revokeAllOtherSessions = () => async (dispatch) => {
     return { success: false, message: data.message };
   } catch (error) {
     return { success: false, message: 'Unable to revoke other sessions.' };
+  }
+};
+
+// ----------------------------------------------------
+// WEBSITE CONTENT MANAGEMENT THUNKS
+// ----------------------------------------------------
+
+export const fetchContentSections = (page = '') => async (dispatch) => {
+  try {
+    const url = page ? `/api/content?page=${encodeURIComponent(page)}` : '/api/content';
+    const res = await fetch(url);
+    const data = await parseApiResponse(res, 'Failed to fetch content sections.');
+    if (data.success && Array.isArray(data.sections) && data.sections.length > 0) {
+      dispatch(setContentSectionsAction(data.sections));
+      return { success: true, sections: data.sections };
+    }
+  } catch (error) {
+    // continue to fallback
+  }
+  const defaults = DEFAULT_CONTENT_SECTIONS.filter(s => !page || s.page === page);
+  dispatch(setContentSectionsAction(defaults));
+  return { success: true, sections: defaults };
+};
+
+export const fetchAdminContentSections = (page = '') => async (dispatch) => {
+  try {
+    const url = page ? `/api/content/admin/all?page=${encodeURIComponent(page)}` : '/api/content/admin/all';
+    const res = await fetch(url, { headers: getHeaders() });
+    const data = await parseApiResponse(res, 'Failed to fetch admin content sections.');
+    if (data.success && Array.isArray(data.sections) && data.sections.length > 0) {
+      dispatch(setAdminContentSectionsAction(data.sections));
+      return { success: true, sections: data.sections };
+    }
+  } catch (error) {
+    // continue to fallback
+  }
+
+  // Fallback 1: Attempt public content API
+  try {
+    const pubUrl = page ? `/api/content?page=${encodeURIComponent(page)}` : '/api/content';
+    const pubRes = await fetch(pubUrl);
+    const pubData = await parseApiResponse(pubRes, 'Failed to fetch public content');
+    if (pubData.success && Array.isArray(pubData.sections) && pubData.sections.length > 0) {
+      dispatch(setAdminContentSectionsAction(pubData.sections));
+      return { success: true, sections: pubData.sections };
+    }
+  } catch (err) {
+    // continue to static defaults
+  }
+
+  // Fallback 2: Built-in default sections (100% faithful to existing website content)
+  const defaults = DEFAULT_CONTENT_SECTIONS.filter(s => !page || s.page === page);
+  dispatch(setAdminContentSectionsAction(defaults));
+  return { success: true, sections: defaults };
+};
+
+export const updateContentSection = (sectionId, updateData) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/content/sections/${sectionId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(updateData)
+    });
+    const data = await parseApiResponse(res, 'Failed to update section.');
+    if (data.success) {
+      await dispatch(fetchAdminContentSections());
+      await dispatch(fetchContentSections());
+      return { success: true, section: data.section };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to update section.' };
+  }
+};
+
+export const createContentSection = (sectionData) => async (dispatch) => {
+  try {
+    const res = await fetch('/api/content/sections', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(sectionData)
+    });
+    const data = await parseApiResponse(res, 'Failed to create section.');
+    if (data.success) {
+      await dispatch(fetchAdminContentSections());
+      await dispatch(fetchContentSections());
+      return { success: true, section: data.section };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to create section.' };
+  }
+};
+
+export const deleteContentSection = (sectionId) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/content/sections/${sectionId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to delete section.');
+    if (data.success) {
+      await dispatch(fetchAdminContentSections());
+      await dispatch(fetchContentSections());
+      return { success: true, message: data.message };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to delete section.' };
+  }
+};
+
+export const toggleContentSection = (sectionId) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/content/sections/${sectionId}/toggle`, {
+      method: 'PATCH',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to toggle section status.');
+    if (data.success) {
+      await dispatch(fetchAdminContentSections());
+      await dispatch(fetchContentSections());
+      return { success: true, isActive: data.isActive };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to toggle section status.' };
+  }
+};
+
+export const reorderContentSections = (sectionIds) => async (dispatch) => {
+  try {
+    const res = await fetch('/api/content/sections/reorder', {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ sectionIds })
+    });
+    const data = await parseApiResponse(res, 'Failed to reorder sections.');
+    if (data.success) {
+      await dispatch(fetchAdminContentSections());
+      await dispatch(fetchContentSections());
+      return { success: true };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to reorder sections.' };
+  }
+};
+
+export const addContentItem = (sectionId, itemData) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/content/sections/${sectionId}/items`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(itemData)
+    });
+    const data = await parseApiResponse(res, 'Failed to add content item.');
+    if (data.success) {
+      await dispatch(fetchAdminContentSections());
+      await dispatch(fetchContentSections());
+      return { success: true, item: data.item };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to add content item.' };
+  }
+};
+
+export const updateContentItem = (sectionId, itemId, updateData) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/content/sections/${sectionId}/items/${itemId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(updateData)
+    });
+    const data = await parseApiResponse(res, 'Failed to update content item.');
+    if (data.success) {
+      await dispatch(fetchAdminContentSections());
+      await dispatch(fetchContentSections());
+      return { success: true, item: data.item };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to update content item.' };
+  }
+};
+
+export const deleteContentItem = (sectionId, itemId) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/content/sections/${sectionId}/items/${itemId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to delete content item.');
+    if (data.success) {
+      await dispatch(fetchAdminContentSections());
+      await dispatch(fetchContentSections());
+      return { success: true };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to delete content item.' };
+  }
+};
+
+export const toggleContentItem = (sectionId, itemId) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/content/sections/${sectionId}/items/${itemId}/toggle`, {
+      method: 'PATCH',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to toggle item.');
+    if (data.success) {
+      await dispatch(fetchAdminContentSections());
+      await dispatch(fetchContentSections());
+      return { success: true, isActive: data.isActive };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to toggle item.' };
+  }
+};
+
+export const reorderContentItems = (sectionId, itemIds) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/content/sections/${sectionId}/items/reorder`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ itemIds })
+    });
+    const data = await parseApiResponse(res, 'Failed to reorder items.');
+    if (data.success) {
+      await dispatch(fetchAdminContentSections());
+      await dispatch(fetchContentSections());
+      return { success: true };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to reorder items.' };
+  }
+};
+
+export const seedDefaultContent = () => async (dispatch) => {
+  try {
+    const res = await fetch('/api/content/seed-defaults', {
+      method: 'POST',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to seed default content.');
+    if (data.success) {
+      await dispatch(fetchAdminContentSections());
+      await dispatch(fetchContentSections());
+      return { success: true, message: data.message };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: 'Failed to seed default content.' };
+  }
+};
+
+
+// ─── ADMIN MANAGEMENT THUNKS (SUPER ADMIN ONLY) ──────────────────────────
+
+export const fetchAdminUsers = () => async (dispatch) => {
+  dispatch(setAdminUsersLoadingAction(true));
+  try {
+    const res = await fetch('/api/admin/users', {
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to fetch admin users.');
+    if (data.success) {
+      dispatch(setAdminUsersAction(data.admins || []));
+      return { success: true, admins: data.admins };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    console.error('fetchAdminUsers error:', error);
+    return { success: false, message: 'Server error fetching admins.' };
+  } finally {
+    dispatch(setAdminUsersLoadingAction(false));
+  }
+};
+
+export const createAdminUser = (adminData) => async (dispatch) => {
+  try {
+    const res = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(adminData)
+    });
+    const data = await parseApiResponse(res, 'Failed to create admin user.');
+    if (data.success) {
+      await dispatch(fetchAdminUsers());
+      return { success: true, message: data.message, admin: data.admin };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    console.error('createAdminUser error:', error);
+    return { success: false, message: 'Server error creating admin account.' };
+  }
+};
+
+export const updateAdminUser = (id, updateData) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(updateData)
+    });
+    const data = await parseApiResponse(res, 'Failed to update admin user.');
+    if (data.success) {
+      await dispatch(fetchAdminUsers());
+      return { success: true, message: data.message, admin: data.admin };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    console.error('updateAdminUser error:', error);
+    return { success: false, message: 'Server error updating admin account.' };
+  }
+};
+
+export const updateAdminPermissions = (id, permissions) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/admin/users/${id}/permissions`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ permissions })
+    });
+    const data = await parseApiResponse(res, 'Failed to update permissions.');
+    if (data.success) {
+      await dispatch(fetchAdminUsers());
+      return { success: true, message: data.message };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    console.error('updateAdminPermissions error:', error);
+    return { success: false, message: 'Server error updating permissions.' };
+  }
+};
+
+export const toggleAdminStatus = (id, isActive) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/admin/users/${id}/status`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ isActive })
+    });
+    const data = await parseApiResponse(res, 'Failed to update admin status.');
+    if (data.success) {
+      await dispatch(fetchAdminUsers());
+      return { success: true, message: data.message, isActive: data.isActive };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    console.error('toggleAdminStatus error:', error);
+    return { success: false, message: 'Server error updating status.' };
+  }
+};
+
+export const resetAdminPassword = (id, newPassword, confirmPassword) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/admin/users/${id}/reset-password`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ newPassword, confirmPassword })
+    });
+    const data = await parseApiResponse(res, 'Failed to reset admin password.');
+    if (data.success) {
+      return { success: true, message: data.message };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    console.error('resetAdminPassword error:', error);
+    return { success: false, message: 'Server error resetting password.' };
+  }
+};
+
+export const deleteAdminUser = (id) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to delete admin user.');
+    if (data.success) {
+      await dispatch(fetchAdminUsers());
+      return { success: true, message: data.message };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    console.error('deleteAdminUser error:', error);
+    return { success: false, message: 'Server error deleting admin account.' };
+  }
+};
+
+export const fetchAdminUserSessions = (id) => async () => {
+  try {
+    const res = await fetch(`/api/admin/users/${id}/sessions`, {
+      headers: getHeaders()
+    });
+    const data = await parseApiResponse(res, 'Failed to fetch sessions.');
+    if (data.success) {
+      return { success: true, sessions: data.sessions || [] };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    console.error('fetchAdminUserSessions error:', error);
+    return { success: false, message: 'Server error fetching sessions.' };
   }
 };
 

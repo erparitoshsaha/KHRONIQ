@@ -2,7 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import Product from '../_models/Product.js';
 import Order from '../_models/Order.js';
-import { protect, adminOnly } from '../_middleware/auth.js';
+import { protect, adminOnly, requirePermission } from '../_middleware/auth.js';
 
 const router = express.Router();
 
@@ -54,7 +54,7 @@ router.get('/', async (req, res) => {
 // @route   POST /api/products
 // @desc    Create a product
 // @access  Private/Admin
-router.post('/', protect, adminOnly, async (req, res) => {
+router.post('/', protect, requirePermission('products'), async (req, res) => {
   const { name, modelNo, serialNo, uniqueCode, price, stock, category, gender, description, image, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths, customizationOptions } = req.body;
   try {
     const rawSerial = typeof serialNo === 'string' ? serialNo.trim() : '';
@@ -118,7 +118,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
 // @route   PUT /api/products/:id
 // @desc    Update a product
 // @access  Private/Admin
-router.put('/:id', protect, adminOnly, async (req, res) => {
+router.put('/:id', protect, requirePermission('products'), async (req, res) => {
   const { name, modelNo, serialNo, uniqueCode, price, stock, category, gender, description, image, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths, customizationOptions } = req.body;
   try {
     const product = await Product.findById(req.params.id);
@@ -197,7 +197,7 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
 // @route   DELETE /api/products/:id
 // @desc    Delete a product
 // @access  Private/Admin
-router.delete('/:id', protect, adminOnly, async (req, res) => {
+router.delete('/:id', protect, requirePermission('products'), async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
 
@@ -252,7 +252,7 @@ router.post('/:id/reviews', protect, async (req, res) => {
 // @route   PUT /api/products/:id/reviews/:reviewId
 // @desc    Moderate (approve/reject/hide) a review
 // @access  Private/Admin
-router.put('/:id/reviews/:reviewId', protect, adminOnly, async (req, res) => {
+router.put('/:id/reviews/:reviewId', protect, requirePermission('reviews'), async (req, res) => {
   const { status } = req.body; // 'approved', 'rejected', or 'hidden'
 
   try {

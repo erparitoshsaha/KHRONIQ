@@ -30,6 +30,7 @@ import contactRoutes from './_routes/contact.js';
 import newsletterRoutes from './_routes/newsletter.js';
 import filterRoutes, { seedDefaultFiltersSafe } from './_routes/filters.js';
 import footerRoutes, { seedDefaultFooterSafe } from './_routes/footer.js';
+import contentRoutes, { seedDefaultContentSafe } from './_routes/content.js';
 
 // 1. Validate environment configuration on boot
 validateEnv();
@@ -140,6 +141,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/filters', filterRoutes);
 app.use('/api/footer', footerRoutes);
+app.use('/api/content', contentRoutes);
 
 // Base Endpoint
 app.get('/api', (req, res) => {
@@ -181,6 +183,7 @@ if (!process.env.VERCEL) {
       try {
         await seedDefaultFiltersSafe();
         await seedDefaultFooterSafe();
+        await seedDefaultContentSafe();
       } catch (err) {
         console.error('Initial check error:', err.message);
       }

@@ -1,6 +1,6 @@
 import express from 'express';
 import FooterSection from '../_models/FooterSection.js';
-import { protect, adminOnly } from '../_middleware/auth.js';
+import { protect, requirePermission } from '../_middleware/auth.js';
 
 const router = express.Router();
 
@@ -141,7 +141,7 @@ router.get('/', async (req, res, next) => {
 // @route   GET /api/footer/admin
 // @desc    Get all footer sections & links for Admin Panel
 // @access  Private/Admin
-router.get('/admin', protect, adminOnly, async (req, res, next) => {
+router.get('/admin', protect, requirePermission('footer_management'), async (req, res, next) => {
   try {
     const sections = await FooterSection.find({}).sort({ order: 1, title: 1 });
     res.json({ success: true, sections });
@@ -154,7 +154,7 @@ router.get('/admin', protect, adminOnly, async (req, res, next) => {
 // @route   POST /api/footer/seed-defaults
 // @desc    Seed default footer sections idempotently
 // @access  Private/Admin
-router.post('/seed-defaults', protect, adminOnly, async (req, res, next) => {
+router.post('/seed-defaults', protect, requirePermission('footer_management'), async (req, res, next) => {
   try {
     await seedDefaultFooterSafe();
     const sections = await FooterSection.find({}).sort({ order: 1, title: 1 });
@@ -168,7 +168,7 @@ router.post('/seed-defaults', protect, adminOnly, async (req, res, next) => {
 // @route   POST /api/footer/sections
 // @desc    Create a new custom footer section
 // @access  Private/Admin
-router.post('/sections', protect, adminOnly, async (req, res, next) => {
+router.post('/sections', protect, requirePermission('footer_management'), async (req, res, next) => {
   try {
     const { title, order, isActive } = req.body;
     if (!title || !title.trim()) {
@@ -212,7 +212,7 @@ router.post('/sections', protect, adminOnly, async (req, res, next) => {
 // @route   PUT /api/footer/sections/:id
 // @desc    Update a footer section (title, order, isActive)
 // @access  Private/Admin
-router.put('/sections/:id', protect, adminOnly, async (req, res, next) => {
+router.put('/sections/:id', protect, requirePermission('footer_management'), async (req, res, next) => {
   try {
     const { title, order, isActive } = req.body;
     const section = await FooterSection.findById(req.params.id);
@@ -260,7 +260,7 @@ router.put('/sections/:id', protect, adminOnly, async (req, res, next) => {
 // @route   DELETE /api/footer/sections/:id
 // @desc    Delete a footer section (custom only)
 // @access  Private/Admin
-router.delete('/sections/:id', protect, adminOnly, async (req, res, next) => {
+router.delete('/sections/:id', protect, requirePermission('footer_management'), async (req, res, next) => {
   try {
     const section = await FooterSection.findById(req.params.id);
     if (!section) {
@@ -285,7 +285,7 @@ router.delete('/sections/:id', protect, adminOnly, async (req, res, next) => {
 // @route   POST /api/footer/sections/:sectionId/links
 // @desc    Add a link to a footer section
 // @access  Private/Admin
-router.post('/sections/:sectionId/links', protect, adminOnly, async (req, res, next) => {
+router.post('/sections/:sectionId/links', protect, requirePermission('footer_management'), async (req, res, next) => {
   try {
     const { label, page, url, args, action, order, isActive } = req.body;
     if (!label || !label.trim()) {
@@ -339,7 +339,7 @@ router.post('/sections/:sectionId/links', protect, adminOnly, async (req, res, n
 // @route   PUT /api/footer/sections/:sectionId/links/:linkId
 // @desc    Update a footer link
 // @access  Private/Admin
-router.put('/sections/:sectionId/links/:linkId', protect, adminOnly, async (req, res, next) => {
+router.put('/sections/:sectionId/links/:linkId', protect, requirePermission('footer_management'), async (req, res, next) => {
   try {
     const { label, page, url, args, action, order, isActive } = req.body;
     const section = await FooterSection.findById(req.params.sectionId);
@@ -387,7 +387,7 @@ router.put('/sections/:sectionId/links/:linkId', protect, adminOnly, async (req,
 // @route   DELETE /api/footer/sections/:sectionId/links/:linkId
 // @desc    Delete a footer link
 // @access  Private/Admin
-router.delete('/sections/:sectionId/links/:linkId', protect, adminOnly, async (req, res, next) => {
+router.delete('/sections/:sectionId/links/:linkId', protect, requirePermission('footer_management'), async (req, res, next) => {
   try {
     const section = await FooterSection.findById(req.params.sectionId);
     if (!section) {
@@ -415,7 +415,7 @@ router.delete('/sections/:sectionId/links/:linkId', protect, adminOnly, async (r
 // @route   PUT /api/footer/sections/:sourceSectionId/links/:linkId/move
 // @desc    Move a link from one footer section to another
 // @access  Private/Admin
-router.put('/sections/:sourceSectionId/links/:linkId/move', protect, adminOnly, async (req, res, next) => {
+router.put('/sections/:sourceSectionId/links/:linkId/move', protect, requirePermission('footer_management'), async (req, res, next) => {
   try {
     const { targetSectionId } = req.body;
     const { sourceSectionId, linkId } = req.params;
@@ -500,7 +500,7 @@ router.put('/sections/:sourceSectionId/links/:linkId/move', protect, adminOnly, 
 // @route   POST /api/footer/sections/:sourceSectionId/move-all-links
 // @desc    Move all links from source section to target section (for safe section deletion)
 // @access  Private/Admin
-router.post('/sections/:sourceSectionId/move-all-links', protect, adminOnly, async (req, res, next) => {
+router.post('/sections/:sourceSectionId/move-all-links', protect, requirePermission('footer_management'), async (req, res, next) => {
   try {
     const { targetSectionId } = req.body;
     const { sourceSectionId } = req.params;

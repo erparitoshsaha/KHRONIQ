@@ -1,7 +1,7 @@
 import express from 'express';
 import Order from '../_models/Order.js';
 import Product from '../_models/Product.js';
-import { protect, adminOnly } from '../_middleware/auth.js';
+import { protect, adminOnly, requirePermission } from '../_middleware/auth.js';
 
 const router = express.Router();
 
@@ -11,7 +11,8 @@ const router = express.Router();
 router.get('/', protect, async (req, res, next) => {
   try {
     let orders;
-    if (req.user.role === 'admin') {
+    const canViewAll = req.user.role === 'super_admin' || (req.user.role === 'admin' && req.user.permissions?.includes('orders'));
+    if (canViewAll) {
       orders = await Order.find({}).sort({ createdAt: -1 });
     } else {
       orders = await Order.find({ userEmail: req.user.email }).sort({ createdAt: -1 });
@@ -35,7 +36,8 @@ router.get('/:id', protect, async (req, res, next) => {
     }
 
     // Authorization check
-    if (req.user.role !== 'admin' && order.userEmail !== req.user.email) {
+    const isPrivileged = req.user.role === 'super_admin' || (req.user.role === 'admin' && req.user.permissions?.includes('orders'));
+    if (!isPrivileged && order.userEmail !== req.user.email) {
       return res.status(403).json({ success: false, message: 'Access denied: You do not own this order.' });
     }
 
@@ -49,7 +51,7 @@ router.get('/:id', protect, async (req, res, next) => {
 // @route   PUT /api/orders/:id/status
 // @desc    Update order status
 // @access  Private/Admin
-router.put('/:id/status', protect, adminOnly, async (req, res, next) => {
+router.put('/:id/status', protect, requirePermission('orders'), async (req, res, next) => {
   const { status } = req.body;
 
   const validStatuses = ['Paid', 'Pending', 'Processing', 'Cancelled', 'Shipped', 'Delivered', 'Exchange/Refund Requested'];
@@ -84,8 +86,9 @@ router.put('/:id/cancel', protect, async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // Authorization check: only order owner or admin can cancel
-    if (req.user.role !== 'admin' && order.userEmail !== req.user.email) {
+    // Authorization check: only order owner or privileged admin can cancel
+    const isPrivileged = req.user.role === 'super_admin' || (req.user.role === 'admin' && req.user.permissions?.includes('orders'));
+    if (!isPrivileged && order.userEmail !== req.user.email) {
       return res.status(403).json({ success: false, message: 'Access denied: not your order' });
     }
 
@@ -129,7 +132,8 @@ router.put('/:id/exchange-refund', protect, async (req, res, next) => {
     }
 
     // Authorization check
-    if (req.user.role !== 'admin' && order.userEmail !== req.user.email) {
+    const isPrivileged = req.user.role === 'super_admin' || (req.user.role === 'admin' && req.user.permissions?.includes('orders'));
+    if (!isPrivileged && order.userEmail !== req.user.email) {
       return res.status(403).json({ success: false, message: 'Access denied: not your order' });
     }
 

@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { logoutUser, setCurrencyAction, selectCurrentCurrency } from '../store/slices/watchSlice';
-import { ShoppingBag, Heart, Search, User, ShieldAlert, Menu, X } from 'lucide-react';
+import {
+  ShoppingBag, Search, Menu, X, User, Heart, Star, Sparkles, Tag, ShieldAlert,
+  ArrowRight, Shield, RefreshCw, Truck, Check, Trash2, Clock, CheckCircle2, ChevronRight, XCircle
+} from 'lucide-react';
+import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
 
 
 export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
@@ -35,7 +39,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       // Track scrolling for background transparency on homepage
       if (currentScrollY > 80) {
         setScrolled(true);
@@ -101,7 +105,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
   } top-0 left-0 right-0 z-50 transition-all duration-300 transform ${
     visible ? 'translate-y-0' : 'translate-y-0 md:-translate-y-full'
   } ${
-    isHome 
+    isHome
       ? (scrolled ? 'bg-black/95 backdrop-blur-md shadow-md' : 'bg-transparent')
       : 'bg-[#111111] shadow-md'
   }`;
@@ -112,10 +116,10 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
     <header className={headerClass}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative flex items-center justify-between h-20">
-          
+
           {/* Mobile Menu Button */}
           <div className="flex items-center md:hidden">
-            <button 
+            <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className={isHome ? "text-white hover:text-luxury-gold focus:outline-none" : "text-luxury-muted hover:text-luxury-text focus:outline-none"}
             >
@@ -172,7 +176,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                     >
                       {link.label}
                     </button>
-                    
+
                     {/* FULL SCREEN WIDE LIGHT GLASSMORPHIC (LIQUIFIED) MEGA MENU */}
                     <div className={`fixed left-0 right-0 w-screen bg-white/40 backdrop-blur-2xl border-y border-white/20 shadow-[0_25px_50px_rgba(0,0,0,0.15)] p-0 hidden group-hover:block z-50 text-left transition-all duration-300 top-[80px] left-0 ${megaMenuForceClosed ? '!hidden' : ''}`}>
                       <div className="max-w-7xl mx-auto px-8 py-10 grid grid-cols-12 gap-10">
@@ -316,22 +320,22 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
 
           {/* Center Logo */}
           <div className="md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 flex-1 md:flex-none flex justify-center items-center min-w-0 px-2 z-20">
-            <button 
+            <button
               onClick={() => {
                 localStorage.setItem('khroniq_is_gifting_journey', 'false');
                 onPageChange('home');
-              }} 
+              }}
               className="flex flex-col items-center gap-0.5 sm:gap-1 transition duration-300 cursor-pointer py-1 max-w-[130px] sm:max-w-none"
             >
-              <img 
-                src="/assets/logo_icon.png" 
-                alt="KHRONIQ Logo" 
-                className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain shrink-0" 
+              <img
+                src="/assets/logo_icon.png"
+                alt="KHRONIQ Logo"
+                className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain shrink-0"
               />
-              <img 
-                src="/assets/logo_text.png" 
-                alt="KHRONIQ" 
-                className="h-3.5 sm:h-4 md:h-5 max-w-[100px] sm:max-w-[120px] md:max-w-none object-contain shrink-0" 
+              <img
+                src="/assets/logo_text.png"
+                alt="KHRONIQ"
+                className="h-3.5 sm:h-4 md:h-5 max-w-[100px] sm:max-w-[120px] md:max-w-none object-contain shrink-0"
               />
             </button>
           </div>
@@ -353,8 +357,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                   <button type="submit" className="bg-black text-white px-2.5 py-1.5 rounded-r-md border border-black hover:bg-neutral-700 transition cursor-pointer">
                     <Search size={14} />
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setSearchOpen(false)}
                     className="ml-2 text-luxury-muted hover:text-luxury-text"
                   >
@@ -362,7 +366,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                   </button>
                 </form>
               ) : (
-                <button 
+                <button
                   onClick={() => setSearchOpen(true)}
                   className="transition cursor-pointer hover:text-luxury-gold"
                   title="Search"
@@ -377,12 +381,12 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
               {currentUser ? (
                 <div className="flex items-center space-x-3 text-[11px] font-bold uppercase tracking-widest">
                   <button
-                    onClick={() => onPageChange(currentUser.role === 'admin' ? 'admin' : 'profile')}
+                    onClick={() => onPageChange(isAdminRole(currentUser.role) ? 'admin' : 'profile')}
                     className="flex items-center space-x-1.5 transition cursor-pointer text-white/90 hover:text-[#dfb76c]"
-                    title={currentUser.role === 'admin' ? 'Admin Dashboard' : 'My Account'}
+                    title={isSuperAdminRole(currentUser.role) ? 'Super Admin Dashboard' : isAdminRole(currentUser.role) ? 'Admin Dashboard' : 'My Account'}
                   >
-                    {currentUser.role === 'admin' ? (
-                      <ShieldAlert size={14} className="text-luxury-red" />
+                    {isAdminRole(currentUser.role) ? (
+                      <ShieldAlert size={14} className={isSuperAdminRole(currentUser.role) ? "text-luxury-gold" : "text-luxury-red"} />
                     ) : (
                       <User size={14} />
                     )}
@@ -391,7 +395,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                     </span>
                   </button>
                   <span className="text-white/20 font-light">|</span>
-                  <button 
+                  <button
                     onClick={handleLogout}
                     className="transition cursor-pointer text-white/60 hover:text-luxury-red"
                   >
@@ -400,7 +404,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                 </div>
               ) : (
                 <div className="flex items-center space-x-3 text-[11px] font-bold uppercase tracking-widest">
-                  <button 
+                  <button
                     onClick={() => onPageChange('login')}
                     className="transition cursor-pointer text-white/90 hover:text-[#dfb76c]"
                     title="Sign In"
@@ -408,7 +412,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                     Sign In
                   </button>
                   <span className="text-white/20 font-light">|</span>
-                  <button 
+                  <button
                     onClick={() => onPageChange('login')}
                     className="transition cursor-pointer text-white/60 hover:text-[#dfb76c]"
                     title="Register"
@@ -420,7 +424,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
             </div>
 
             {/* Wishlist Icon (Desktop Only) */}
-            <button 
+            <button
               onClick={() => onPageChange(currentUser ? 'profile' : 'login', currentUser ? { tab: 'wishlist' } : null)}
               className="hidden md:block relative transition cursor-pointer hover:text-luxury-gold"
               title="Wishlist"
@@ -435,7 +439,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
 
             {/* Currency Selector Dropdown (Desktop Only) */}
             <div className="hidden md:block relative">
-              <button 
+              <button
                 onClick={() => setCurrencyOpen(!currencyOpen)}
                 className="flex items-center justify-center w-10 h-10 rounded-full border border-white/20 hover:border-luxury-gold hover:text-luxury-gold transition cursor-pointer text-lg font-black"
                 title="Select Currency"
@@ -464,7 +468,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
             </div>
 
             {/* Cart Icon (Always Visible) */}
-            <button 
+            <button
               onClick={onCartOpen}
               className="relative transition cursor-pointer hover:text-luxury-gold"
               title="Shopping Cart"
@@ -542,13 +546,13 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
             {currentUser ? (
               <button
                 onClick={() => {
-                  onPageChange(currentUser.role === 'admin' ? 'admin' : 'profile');
+                  onPageChange(isAdminRole(currentUser.role) ? 'admin' : 'profile');
                   setMobileMenuOpen(false);
                 }}
                 className="text-left text-sm text-luxury-text font-bold uppercase tracking-wider flex items-center space-x-2"
               >
                 <User size={16} />
-                <span>{currentUser.role === 'admin' ? 'Admin Portal' : 'My Account'}</span>
+                <span>{isSuperAdminRole(currentUser.role) ? 'Super Admin Portal' : isAdminRole(currentUser.role) ? 'Admin Portal' : 'My Account'}</span>
               </button>
             ) : (
               <button
@@ -587,8 +591,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                       setMobileMenuOpen(false);
                     }}
                     className={`px-3 py-1 rounded border text-xs font-semibold ${
-                      currentCurrency === code 
-                        ? 'border-black bg-black/5 text-black' 
+                      currentCurrency === code
+                        ? 'border-black bg-black/5 text-black'
                         : 'border-luxury-text/10 text-luxury-text'
                     }`}
                   >

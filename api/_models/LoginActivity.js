@@ -14,6 +14,11 @@ const LoginActivitySchema = new mongoose.Schema({
     trim: true,
     index: true
   },
+  role: {
+    type: String,
+    enum: ['customer', 'admin', 'super_admin'],
+    default: 'admin'
+  },
   status: {
     type: String,
     enum: ['successful', 'failed'],

@@ -313,7 +313,7 @@ function CollectionCard({ col, idx, onPageChange }) {
         {/* Top: Num & Header */}
         <div className="space-y-3">
           <span className="text-[10px] sm:text-xs font-black tracking-[0.25em]" style={{ color: col.dark ? '#ffffff' : numColor }}>
-            {col.num} — {col.num === '02' && <span className="text-white">DEFY</span>}
+            {col.num} — {col.name}
           </span>
           <div className="space-y-1 sm:space-y-1.5">
             <h3 className="font-serif text-xl sm:text-2xl font-black uppercase tracking-wider leading-tight"
@@ -372,120 +372,135 @@ function CollectionCard({ col, idx, onPageChange }) {
 /* ─────────────────────────────────────────────────────────────────────
    CIRCULAR WATCH WHEEL — Omega-style rotating selector (enhanced)
 ───────────────────────────────────────────────────────────────────── */
-function WatchWheel({ products, selectedIndex, setSelectedIndex, size = 340 }) {
-  // Scale the ring outward as more watches are added so thumbnails never crowd each other
-  const extraRadius = Math.max(0, (products.length - 4)) * 11;
-  const radius = size / 2 - 40 + extraRadius;
-  const angleStep = 360 / products.length;
+function WatchWheel({ products, selectedIndex, setSelectedIndex, size = 350 }) {
+  // Scale the ring outward as more watches are added with bounded radius
+  const extraRadius = Math.min(36, Math.max(0, (products.length - 4)) * 9);
+  const radius = size / 2 - 36 + extraRadius;
+  const angleStep = 360 / Math.max(1, products.length);
   const rotation = -selectedIndex * angleStep;
   const [hoverIdx, setHoverIdx] = useState(null);
 
   const springCfg = { stiffness: 90, damping: 16, mass: 0.9 };
 
+  // Calculate maximum bounding reach of the rotating thumbnails (active thumbnail has dim 104px)
+  const maxThumbnailReach = radius + 52 + 10; // radius + half active dim (52px) + shadow/glow allowance
+  const sidePad = Math.max(54, Math.ceil(maxThumbnailReach - size / 2 + 12));
+
   return (
-    <div className="relative mx-auto shrink-0" style={{ width: size, height: size }}>
-      {/* Outer ring */}
-      <div className="absolute inset-0 rounded-full border border-[#10b981]/25" />
+    <div
+      className="relative flex flex-col items-center shrink-0 select-none"
+      style={{
+        paddingLeft: sidePad,
+        paddingRight: sidePad,
+        paddingTop: sidePad
+      }}
+    >
+      {/* Central Rotating Wheel Stage */}
+      <div className="relative shrink-0" style={{ width: size, height: size }}>
+        {/* Outer ring */}
+        <div className="absolute inset-0 rounded-full border border-[#10b981]/25" />
 
-      {/* Tick marks around the ring */}
-      {products.map((_, i) => {
-        const angle = i * angleStep;
-        const rad = (angle * Math.PI) / 180;
-        const tickR = size / 2 - 6;
-        const x = tickR * Math.sin(rad);
-        const y = -tickR * Math.cos(rad);
-        const isActive = i === selectedIndex;
-        return (
-          <motion.div
-            key={`tick-${i}`}
-            className="absolute top-1/2 left-1/2 rounded-full pointer-events-none"
-            style={{
-              width: isActive ? 6 : 3,
-              height: isActive ? 6 : 3,
-              marginLeft: isActive ? -3 : -1.5,
-              marginTop: isActive ? -3 : -1.5,
-              x, y,
-              background: isActive ? '#10b981' : 'rgba(255,255,255,0.2)',
-            }}
-            animate={{ scale: isActive ? 1.3 : 1 }}
-            transition={{ duration: 0.5 }}
-          />
-        );
-      })}
-
-      {/* Soft glow behind active thumbnail */}
-      <motion.div
-        className="absolute top-1/2 left-1/2 rounded-full pointer-events-none"
-        style={{
-          width: 100, height: 100, marginLeft: -50, marginTop: -50,
-          x: 0, y: -radius,
-          background: 'radial-gradient(circle, rgba(16,185,129,0.4) 0%, transparent 70%)',
-          filter: 'blur(10px)',
-        }}
-        animate={{ rotate: rotation }}
-        transition={{ type: 'spring', ...springCfg }}
-      />
-
-      {/* Rotating wheel */}
-      <motion.div
-        className="absolute inset-0"
-        animate={{ rotate: rotation }}
-        transition={{ type: 'spring', ...springCfg }}
-      >
-        {/* Spoke line to active item */}
-        <motion.div
-          className="absolute top-1/2 left-1/2 origin-top pointer-events-none"
-          style={{
-            width: 1, height: radius - 30, marginLeft: -0.5,
-            background: 'linear-gradient(to top, rgba(16,185,129,0.55), transparent)',
-          }}
-        />
-
-        {products.map((p, i) => {
+        {/* Tick marks around the ring */}
+        {products.map((_, i) => {
           const angle = i * angleStep;
           const rad = (angle * Math.PI) / 180;
-          const x = radius * Math.sin(rad);
-          const y = -radius * Math.cos(rad);
+          const tickR = size / 2 - 6;
+          const x = tickR * Math.sin(rad);
+          const y = -tickR * Math.cos(rad);
           const isActive = i === selectedIndex;
-          const isHovered = hoverIdx === i;
-          const dim = isActive ? 104 : isHovered ? 84 : 66;
-
           return (
-            <motion.button
-              key={p.id}
-              onClick={() => setSelectedIndex(i)}
-              onMouseEnter={() => setHoverIdx(i)}
-              onMouseLeave={() => setHoverIdx(null)}
-              className="absolute top-1/2 left-1/2 rounded-full overflow-hidden flex items-center justify-center cursor-pointer"
+            <motion.div
+              key={`tick-${i}`}
+              className="absolute top-1/2 left-1/2 rounded-full pointer-events-none"
               style={{
-                width: dim, height: dim,
-                marginLeft: -dim / 2, marginTop: -dim / 2,
+                width: isActive ? 6 : 3,
+                height: isActive ? 6 : 3,
+                marginLeft: isActive ? -3 : -1.5,
+                marginTop: isActive ? -3 : -1.5,
                 x, y,
-                background: '#12110f',
-                border: isActive ? '2px solid #10b981' : '1px solid rgba(255,255,255,0.15)',
-                boxShadow: isActive
-                  ? '0 0 0 6px rgba(16,185,129,0.12), 0 0 30px rgba(16,185,129,0.55), 0 8px 20px rgba(0,0,0,0.6)'
-                  : isHovered
-                    ? '0 0 16px rgba(16,185,129,0.3), 0 6px 14px rgba(0,0,0,0.5)'
-                    : '0 4px 10px rgba(0,0,0,0.4)',
-                zIndex: isActive ? 20 : isHovered ? 15 : 10,
+                background: isActive ? '#10b981' : 'rgba(255,255,255,0.2)',
               }}
-              animate={{
-                rotate: -rotation,
-                opacity: isActive ? 1 : isHovered ? 0.9 : 0.55,
-              }}
-              transition={{ type: 'spring', ...springCfg }}
-            >
-              <img src={p.image} alt={p.name} onError={(e) => handleImageError(e)} className="w-full h-full object-contain p-2" />
-            </motion.button>
+              animate={{ scale: isActive ? 1.3 : 1 }}
+              transition={{ duration: 0.5 }}
+            />
           );
         })}
-      </motion.div>
 
-      {/* Center hub */}
+        {/* Soft glow behind active thumbnail */}
+        <motion.div
+          className="absolute top-1/2 left-1/2 rounded-full pointer-events-none"
+          style={{
+            width: 100, height: 100, marginLeft: -50, marginTop: -50,
+            x: 0, y: -radius,
+            background: 'radial-gradient(circle, rgba(16,185,129,0.4) 0%, transparent 70%)',
+            filter: 'blur(10px)',
+          }}
+          animate={{ rotate: rotation }}
+          transition={{ type: 'spring', ...springCfg }}
+        />
 
-      {/* Position counter below wheel */}
-      <div className="absolute left-1/2 -translate-x-1/2 text-[10px] font-bold tracking-[0.25em] text-[#10b981]/80" style={{ bottom: -92 }}>
+        {/* Rotating wheel */}
+        <motion.div
+          className="absolute inset-0"
+          animate={{ rotate: rotation }}
+          transition={{ type: 'spring', ...springCfg }}
+        >
+          {/* Spoke line to active item */}
+          <motion.div
+            className="absolute top-1/2 left-1/2 origin-top pointer-events-none"
+            style={{
+              width: 1, height: radius - 30, marginLeft: -0.5,
+              background: 'linear-gradient(to top, rgba(16,185,129,0.55), transparent)',
+            }}
+          />
+
+          {products.map((p, i) => {
+            const angle = i * angleStep;
+            const rad = (angle * Math.PI) / 180;
+            const x = radius * Math.sin(rad);
+            const y = -radius * Math.cos(rad);
+            const isActive = i === selectedIndex;
+            const isHovered = hoverIdx === i;
+            const dim = isActive ? 104 : isHovered ? 84 : 66;
+
+            return (
+              <motion.button
+                key={p.id}
+                onClick={() => setSelectedIndex(i)}
+                onMouseEnter={() => setHoverIdx(i)}
+                onMouseLeave={() => setHoverIdx(null)}
+                className="absolute top-1/2 left-1/2 rounded-full overflow-hidden flex items-center justify-center cursor-pointer"
+                style={{
+                  width: dim, height: dim,
+                  marginLeft: -dim / 2, marginTop: -dim / 2,
+                  x, y,
+                  background: '#12110f',
+                  border: isActive ? '2px solid #10b981' : '1px solid rgba(255,255,255,0.15)',
+                  boxShadow: isActive
+                    ? '0 0 0 6px rgba(16,185,129,0.12), 0 0 30px rgba(16,185,129,0.55), 0 8px 20px rgba(0,0,0,0.6)'
+                    : isHovered
+                      ? '0 0 16px rgba(16,185,129,0.3), 0 6px 14px rgba(0,0,0,0.5)'
+                      : '0 4px 10px rgba(0,0,0,0.4)',
+                  zIndex: isActive ? 20 : isHovered ? 15 : 10,
+                }}
+                animate={{
+                  rotate: -rotation,
+                  opacity: isActive ? 1 : isHovered ? 0.9 : 0.55,
+                }}
+                transition={{ type: 'spring', ...springCfg }}
+              >
+                <img src={p.image} alt={p.name} onError={(e) => handleImageError(e)} className="w-full h-full object-contain p-2" />
+              </motion.button>
+            );
+          })}
+        </motion.div>
+      </div>
+
+      {/* Position counter below wheel — placed with safe margin below the lowest thumbnail reach */}
+      <div
+        className="text-[10px] font-bold tracking-[0.25em] text-[#10b981]/80 select-none"
+        style={{ marginTop: Math.max(28, (maxThumbnailReach - size / 2) + 20) }}
+      >
         {String(selectedIndex + 1).padStart(2, '0')} / {String(products.length).padStart(2, '0')}
       </div>
     </div>
@@ -826,6 +841,8 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     return () => clearInterval(interval);
   }, []);
   const currentCurrency = useSelector(selectCurrentCurrency);
+  const filters = useSelector(state => state.watch.filters || []);
+  const contentSections = useSelector(state => state.watch.contentSections || []);
 
   useEffect(() => {
     document.title = 'KHRONIQ — Born from The Movement Of Time';
@@ -1055,57 +1072,114 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     }
   ];
 
-  const featured = products && products.length > 0 ? products.slice(-8) : fallbackFeatured;
+  // --- Dynamic Content Sections from CMS (MongoDB) ---
+  const heroSection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'hero');
+  const marqueeASection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'marquee_a');
+  const genderSplitSection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'gender_split');
+  const featuredSection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'featured');
+  const storySection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'story');
+  const collectionsSection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'collections');
+  const bannerSection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'banner');
+  const marqueeBSection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'marquee_b');
+  const lifestyleSection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'lifestyle');
+  const statsSection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'stats');
 
-  const collections = [
-    {
-      num: '01',
-      name: 'CLASSIC',
+  const cmsFeaturedTimepieces = (featuredSection?.items && featuredSection.items.length > 0)
+    ? featuredSection.items
+        .filter(it => it.isActive !== false)
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .map(it => ({
+          id: it.metadata?.productId || it._id?.toString() || it.id,
+          _id: it._id?.toString() || it.id,
+          name: it.title,
+          subtitle: it.subtitle || 'PRECISION AT EVERY LEVEL',
+          image: it.image || '/assets/wt1.png',
+          price: Number(it.price !== undefined && it.price !== 0 ? it.price : (it.metadata?.price || 1425)),
+          description: it.description || '',
+          buttonText: it.buttonText || 'EXPLORE',
+          buttonLink: it.buttonLink || '/shop',
+          specs: { movement: 'Quartz Precision', case: 'Stainless Steel' }
+        }))
+    : null;
+
+  const featured = (cmsFeaturedTimepieces && cmsFeaturedTimepieces.length > 0)
+    ? cmsFeaturedTimepieces
+    : (products && products.length > 0 ? products.slice(-8) : fallbackFeatured);
+
+  const safeFeaturedIndex = (selectedProductIndex >= 0 && selectedProductIndex < featured.length) ? selectedProductIndex : 0;
+
+  // --- Global Collection Synchronization (Single Source of Truth: Catalog Filters) ---
+  const collectionCat = filters.find(c => c.slug === 'collection');
+  const activeCollectionOptions = (collectionCat?.options && collectionCat.options.length > 0)
+    ? collectionCat.options.filter(opt => opt.isActive)
+    : [
+        { name: 'Deevaaz', slug: 'deevaaz', value: 'deevaaz' },
+        { name: 'Classic', slug: 'classic', value: 'classic' }
+      ];
+
+  const defaultCollectionArt = {
+    deevaaz: {
+      tagline: 'CONTEMPORARY SWADESHI LUXURY',
+      desc: 'Modern elegance and graceful proportions, tailored for distinction.',
+      image: '/assets/watch_uploaded_2.png',
+      dark: false
+    },
+    classic: {
       tagline: 'HIGH-FREQUENCY CHRONOGRAPHS',
-      desc: 'Engineered for precision. Built for performance.',
-      image:'/assets/watch_green.jpg',
-      specs: [
-        { label: 'Automatic Movement', icon: 'Cpu' },
-        { label: 'Sapphire Crystal', icon: 'Gem' }
-      ],
-      dark: false,
-      filter: { gender: 'men' }
-    },
-    {
-      num: '02',
-      name: 'DEFY',
-      tagline: 'FUTURISTIC WATCHMAKING',
-      desc: 'Bold innovation. Boundary-breaking design.',
-      image: '/assets/watch_red.jpg',
-      specs: [
-        { label: 'Automatic Movement', icon: 'Cpu' },
-        { label: 'Sapphire Crystal', icon: 'Gem' }
-      ],
-      dark: true,
-      filter: { category: 'Defy' }
-    },
-    {
-      num: '03',
-      name: 'ELITE & HERITAGE',
-      tagline: 'TIMELESS SWADESHI CLASSICS',
-      desc: 'Inspired by heritage. Made for generations.',
-      image:'/assets/watch_uploaded_2.png',
-      specs: [
-        { label: 'Automatic Movement', icon: 'Cpu' },
-        { label: 'Premium Leather', icon: 'Gem' }
-      ],
-      dark: false,
-      filter: { category: 'Heritage' }
+      desc: 'Engineered for precision. Built for timeless performance.',
+      image: '/assets/watch_green.jpg',
+      dark: false
     }
-  ];
+  };
 
-  const marqueeA = ['Premium & Luxury', 'Indian Engineered', '1 Year Premium Warranty'];
-  const marqueeB = ['True Knock Group Product', 'Limited Edition Masterpiece', 'Khroniq Caliber Craftsmanship', 'Excellence Redefined', 'State-of-the-Art Indian Manufacture', 'Precision Made in India'];
-  const stats = [
-    { raw: '100', suffix: '%', label: 'Swadeshi Design' },
-    { raw: '2026', suffix: '', label: 'Indian Launch' },
-    { raw: '50', suffix: 'K+', label: 'Pre-bookings' },
-  ];
+  const collections = activeCollectionOptions.map((opt, idx) => {
+    const slug = (opt.slug || opt.value || opt.name).toLowerCase();
+    const customItem = collectionsSection?.items?.find(it =>
+      (it.metadata?.collectionSlug && it.metadata.collectionSlug.toLowerCase() === slug) ||
+      (it.title && it.title.toLowerCase() === opt.name.toLowerCase())
+    );
+
+    const art = defaultCollectionArt[slug] || {
+      tagline: 'LUXURY TIMEPIECE COLLECTION',
+      desc: `Distinct expressions of our watchmaking philosophy in the ${opt.name} collection.`,
+      image: idx % 2 === 0 ? '/assets/watch_uploaded_2.png' : '/assets/watch_green.jpg',
+      dark: false
+    };
+
+    return {
+      num: customItem?.metadata?.num || String(idx + 1).padStart(2, '0'),
+      name: opt.name.toUpperCase(),
+      tagline: customItem?.subtitle || art.tagline,
+      desc: customItem?.description || art.desc,
+      image: customItem?.image || art.image,
+      specs: customItem?.metadata?.specs || [
+        { label: 'Automatic Movement', icon: 'Cpu' },
+        { label: 'Sapphire Crystal', icon: 'Gem' }
+      ],
+      dark: customItem?.metadata?.dark !== undefined ? customItem.metadata.dark : art.dark,
+      filter: { category: opt.value || opt.slug || opt.name }
+    };
+  });
+
+  const marqueeA = (marqueeASection?.items && marqueeASection.items.length > 0)
+    ? marqueeASection.items.map(i => i.title)
+    : ['Premium & Luxury', 'Indian Engineered', '1 Year Premium Warranty'];
+
+  const marqueeB = (marqueeBSection?.items && marqueeBSection.items.length > 0)
+    ? marqueeBSection.items.map(i => i.title)
+    : ['Born from The Movement Of Time'];
+
+  const stats = (statsSection?.items && statsSection.items.length > 0)
+    ? statsSection.items.map(i => ({
+        raw: i.title.replace(/[^0-9]/g, '') || i.title,
+        suffix: i.title.replace(/[0-9]/g, '') || '',
+        label: i.subtitle || i.description || ''
+      }))
+    : [
+        { raw: '100', suffix: '%', label: 'Swadeshi Design' },
+        { raw: '2026', suffix: '', label: 'Indian Launch' },
+        { raw: '50', suffix: 'K+', label: 'Pre-bookings' },
+      ];
 
   /* ─── Render ─────────────────────────────────────────────────────── */
   return (
@@ -1167,33 +1241,29 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
             {/* Heading — both lines same depth */}
             <motion.div initial={{ opacity: 0, y: 36 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, delay: 0.16, ease: [0.22, 1, 0.36, 1] }} className="select-none cursor-default">
               <div className="font-cinzel font-bold text-2xl sm:text-3xl md:text-4xl tracking-wider text-white uppercase leading-tight">
-                Born from The
+                {heroSection?.title || 'Born from The'}
               </div>
               <div className="font-cinzel font-bold text-2xl sm:text-3xl md:text-4xl tracking-wider uppercase leading-tight mt-1">
                 <span className="text-white inline-block" style={{
                   color: '#ffffff',
                   filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.4)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))',
-                }}>Movement Of Time</span>
+                }}>{heroSection?.subtitle || 'Movement Of Time'}</span>
               </div>
             </motion.div>
 
             {/* Subtitle */}
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.85, delay: 0.32 }}
               className="text-gray-200 text-sm sm:text-base max-w-xl font-light tracking-wide leading-relaxed">
-              KHRONIQ exists to inspire those who strive towards their dreams, offering unmatched horological mastery and mechanical innovation.
+              {heroSection?.description || 'KHRONIQ exists to inspire those who strive towards their dreams, offering unmatched horological mastery and mechanical innovation.'}
             </motion.p>
 
             {/* Buttons */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, delay: 0.46 }}
-              className="pt-4 flex flex-col sm:flex-row justify-center sm:justify-start items-center gap-4">
+              className="pt-4 flex flex-col sm:flex-row justify-center sm:justify-start items-center gap-4 pointer-events-auto">
               <MagBtn onClick={() => onPageChange('shop')}
-                className="px-8 py-4 text-white text-xs font-bold tracking-widest uppercase hover:opacity-90 transition duration-150 w-full sm:w-auto cursor-pointer border"
+                className="px-8 py-4 text-white text-xs font-bold tracking-widest uppercase hover:opacity-90 transition duration-150 w-full sm:w-auto cursor-pointer border shadow-lg"
                 style={{ background: 'linear-gradient(135deg, #047857 0%, #065f46 45%, #022c22 100%)', borderColor: '#047857' }}>
-                Explore Timepieces
-              </MagBtn>
-              <MagBtn onClick={() => onPageChange('shop', { gender: 'men' })}
-                className="px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/25 text-white hover:bg-white/22 text-xs font-bold tracking-widest uppercase transition-colors duration-150 w-full sm:w-auto cursor-pointer">
-                Classic DNA
+                {heroSection?.buttonText || 'Explore Timepieces'}
               </MagBtn>
             </motion.div>
           </div>
@@ -1216,10 +1286,14 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
       <section className="w-full overflow-hidden">
         <div className="text-center py-14 bg-white">
           <Reveal dir="down">
-            <p className="text-[10px] text-luxury-gold-dark font-bold tracking-widest uppercase mb-3">CURATED FOR YOU</p>
+            <p className="text-[10px] text-luxury-gold-dark font-bold tracking-widest uppercase mb-3">
+              {genderSplitSection?.label || 'CURATED FOR YOU'}
+            </p>
           </Reveal>
           <SlideReveal delay={0.1}>
-            <h2 className="text-3xl sm:text-4xl font-serif font-bold text-luxury-text tracking-wide uppercase">Shop By Gender</h2>
+            <h2 className="text-3xl sm:text-4xl font-serif font-bold text-luxury-text tracking-wide uppercase">
+              {genderSplitSection?.title || 'Shop By Gender'}
+            </h2>
           </SlideReveal>
           <motion.div className="w-12 h-[2px] bg-luxury-gold-dark mx-auto mt-5"
             initial={{ scaleX: 0 }} whileInView={{ scaleX: 1 }} viewport={{ once: true }}
@@ -1227,8 +1301,22 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2">
-          <GenderPanel label="Men's Watches" img={homeImages.gender_men || "/assets/men_watches.jpg"} gender="men" delay={0} accent="#ffffff" onPageChange={onPageChange} />
-          <GenderPanel label="Women's Watches" img={"/assets/women_watches_beach.jpeg"} gender="women" delay={0.1} accent="#34d399" onPageChange={onPageChange} />
+          <GenderPanel
+            label={genderSplitSection?.items?.[0]?.title || "Men's Watches"}
+            img={genderSplitSection?.items?.[0]?.image || homeImages.gender_men || "/assets/men_watches.jpg"}
+            gender="men"
+            delay={0}
+            accent="#ffffff"
+            onPageChange={onPageChange}
+          />
+          <GenderPanel
+            label={genderSplitSection?.items?.[1]?.title || "Women's Watches"}
+            img={genderSplitSection?.items?.[1]?.image || "/assets/women_watches_beach.jpeg"}
+            gender="women"
+            delay={0.1}
+            accent="#34d399"
+            onPageChange={onPageChange}
+          />
         </div>
       </section>
 
@@ -1251,26 +1339,40 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           {/* Left — text */}
           <div className="flex flex-col justify-center px-10 sm:px-16 py-16 space-y-6 bg-white">
             <Reveal dir="left" delay={0}>
-              <p className="text-[30px] font-bold tracking-[0.25em] uppercase text-luxury-gold-dark">Featured Collection</p>
+              <p className="text-[30px] font-bold tracking-[0.25em] uppercase text-luxury-gold-dark">
+                {storySection?.label || 'Featured Collection'}
+              </p>
             </Reveal>
             <SlideReveal delay={0.1}>
               <h2 className="text-4xl sm:text-5xl font-serif font-bold text-luxury-text leading-tight">
-                <span className="text-luxury-gold-dark">Classic</span> Professional
+                {storySection?.title ? (
+                  <span>{storySection.title}</span>
+                ) : (
+                  <>
+                    <span className="text-luxury-gold-dark">Classic</span> Professional
+                  </>
+                )}
               </h2>
             </SlideReveal>
             <Reveal dir="left" delay={0.2}>
               <p className="text-luxury-muted text-sm leading-relaxed max-w-md">
-                Engineered with Indian precision, the Classic Professional pushes boundaries with components from the True Knock Group and the legendary Khroniq caliber. Built to inspire confidence for every Indian connoisseur.
+                {storySection?.description ||
+                  'Engineered with Indian precision, the Classic Professional pushes boundaries with components from the True Knock Group and the legendary Khroniq caliber. Built to inspire confidence for every Indian connoisseur.'}
               </p>
             </Reveal>
             <Reveal dir="left" delay={0.3}>
               <motion.button
-                onClick={() => onPageChange('shop', { gender: 'men' })}
+                onClick={() =>
+                  onPageChange(
+                    storySection?.buttonLink ? storySection.buttonLink.replace(/^\//, '') : 'shop',
+                    { gender: 'men' }
+                  )
+                }
                 className="flex items-center gap-2 text-xs font-black tracking-[0.22em] uppercase text-luxury-text border-b border-luxury-text pb-1 w-fit cursor-pointer"
                 whileHover={{ gap: 16, color: '#000000', borderColor: '#000000' }}
                 transition={{ duration: 0.25 }}
               >
-                Discover <ArrowRight size={12} />
+                {storySection?.buttonText || 'Discover'} <ArrowRight size={12} />
               </motion.button>
             </Reveal>
           </div>
@@ -1345,12 +1447,14 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
       <section className="w-full px-4 sm:px-8 lg:px-12 pt-32 pb-24 space-y-14 bg-white">
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <Reveal dir="flip">
-            <p className="text-xs text-neutral-800 font-extrabold tracking-[0.35em] uppercase">The Pillars of KHRONIQ</p>
+            <p className="text-xs text-neutral-800 font-extrabold tracking-[0.35em] uppercase">
+              {collectionsSection?.label || 'The Pillars of KHRONIQ'}
+            </p>
           </Reveal>
 
           <Reveal dir="up" delay={0.15}>
             <h2 className="text-4xl sm:text-5xl font-serif font-black text-neutral-900 tracking-wide uppercase">
-              Signature Collections
+              {collectionsSection?.title || 'Signature Collections'}
             </h2>
           </Reveal>
 
@@ -1376,14 +1480,14 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
 
           <Reveal dir="up" delay={0.3}>
             <p className="text-neutral-600 text-xs sm:text-sm max-w-xl mx-auto font-medium leading-relaxed">
-              Three distinct expressions of our watchmaking philosophy. Crafted for those who value timeless excellence.
+              {collectionsSection?.description || 'Distinct expressions of our watchmaking philosophy. Crafted for those who value timeless excellence.'}
             </p>
           </Reveal>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className={`grid grid-cols-1 ${collections.length === 2 ? 'md:grid-cols-2 max-w-5xl mx-auto' : 'md:grid-cols-3'} gap-8`}>
           {collections.map((col, idx) => (
-            <CollectionCard key={idx} col={col} idx={idx} onPageChange={onPageChange} />
+            <CollectionCard key={col.name + idx} col={col} idx={idx} onPageChange={onPageChange} />
           ))}
         </div>
       </section>
@@ -1399,7 +1503,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           {[...Array(8)].map((_, i) => (
             <React.Fragment key={i}>
               <span style={{ color: '#ffffff', fontFamily: 'Georgia, serif', letterSpacing: '0.18em' }} className="text-sm sm:text-base font-bold uppercase mx-10 whitespace-nowrap shrink-0">
-                Born from The Movement Of Time
+                {bannerSection?.title || 'Born from The Movement Of Time'}
               </span>
               <LogoMark className="h-9 w-9 mx-4 shrink-0 opacity-95" />
             </React.Fragment>
@@ -1429,7 +1533,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
             }}
             className="text-2xl sm:text-3xl lg:text-5xl uppercase"
           >
-            FEATURED COLLECTION
+            {featuredSection?.title || 'FEATURED COLLECTION'}
           </h2>
           <div className="w-12 h-[1px] bg-[#047857] mx-auto mt-4" />
         </div>
@@ -1448,12 +1552,9 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                 </svg>
               </div>
 
-              {/* Left Column: Big Watch Image and Arrows (unchanged) */}
-              <div
-                className="flex flex-col items-center justify-center relative z-10"
-                style={{ transform: "translateY(40px)" }}
-              >
-                <div className="w-full max-w-[320px] lg:max-w-md aspect-[3/4] flex items-center justify-center p-6 relative">
+              {/* Left Column: Big Watch Image and Arrows */}
+              <div className="flex flex-col items-center justify-center relative z-10 lg:translate-y-6 translate-y-0 w-full">
+                <div className="w-full max-w-[260px] sm:max-w-[320px] lg:max-w-md aspect-[3/4] flex items-center justify-center p-4 sm:p-6 relative">
                   <div
                     className="absolute inset-0 pointer-events-none"
                     style={{
@@ -1462,9 +1563,10 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                     }}
                   />
                   <motion.img
-                    key={selectedProductIndex}
-                    src={featured[selectedProductIndex].image}
-                    alt={featured[selectedProductIndex].name}
+                    key={safeFeaturedIndex}
+                    src={featured[safeFeaturedIndex].image}
+                    alt={featured[safeFeaturedIndex].name}
+                    onError={(e) => handleImageError(e)}
                     className="max-h-full max-w-full object-contain drop-shadow-[0_15px_35px_rgba(0,0,0,0.25)] z-10"
                     initial={{ opacity: 0, scale: 0.9, y: 15 }}
                     animate={{
@@ -1473,7 +1575,6 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                       y: [0, -12, 0],
                       rotate: [0, 1, -1, 0]
                     }}
-
                     transition={{
                       opacity: { duration: 0.5 },
                       scale: { duration: 0.5 },
@@ -1495,24 +1596,26 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                   <button
                     onClick={() => setSelectedProductIndex((prev) => (prev === 0 ? featured.length - 1 : prev - 1))}
                     className="w-10 h-10 border border-[#047857] bg-white text-[#047857] hover:bg-[#047857] hover:text-white transition-all duration-300 flex items-center justify-center cursor-pointer"
+                    aria-label="Previous timepiece"
                   >
                     <ChevronLeft size={18} />
                   </button>
                   <button
                     onClick={() => setSelectedProductIndex((prev) => (prev === featured.length - 1 ? 0 : prev + 1))}
                     className="w-10 h-10 border border-[#047857] bg-white text-[#047857] hover:bg-[#047857] hover:text-white transition-all duration-300 flex items-center justify-center cursor-pointer"
+                    aria-label="Next timepiece"
                   >
                     <ChevronRight size={18} />
                   </button>
                 </div>
               </div>
 
-              {/* Right Column: Text */}
-              <div className="flex flex-col justify-center items-start text-left space-y-8 relative z-10 lg:pl-12">
+              {/* Right Column: Text & Product Selector */}
+              <div className="flex flex-col justify-center items-center lg:items-start text-center lg:text-left space-y-6 lg:space-y-8 relative z-10 lg:pl-8 xl:pl-12 w-full">
 
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4 w-full">
                   <h3
-                    className="text-4xl sm:text-5xl lg:text-6xl uppercase leading-none"
+                    className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl uppercase leading-tight"
                     style={{
                       color: "#111111",
                       fontFamily: "'Cormorant Garamond', serif",
@@ -1521,59 +1624,96 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                       letterSpacing: "0.03em",
                     }}
                   >
-                    {featured[selectedProductIndex].name.split(" ").slice(0, 1).join(" ")}
+                    {featured[safeFeaturedIndex].name}
                   </h3>
 
                   <p
-                    style={{
-                      color: "#4b4b4b",
-                      fontFamily: "'Cormorant Garamond', serif",
-                      fontSize: "1.8rem",
-                      letterSpacing: "0.05em",
-                    }}
-                    className="uppercase"
-                  >
-                    {featured[selectedProductIndex].name
-                      .split(" ")
-                      .slice(1)
-                      .join(" ")}
-                  </p>
-                  <p
-                    className="uppercase text-sm font-bold tracking-[0.35em]"
+                    className="uppercase text-xs sm:text-sm font-bold tracking-[0.25em]"
                     style={{
                       color: "#047857",
                       letterSpacing: "0.25em",
                     }}
                   >
-                    PRECISION AT EVERY LEVEL
+                    {featured[safeFeaturedIndex].subtitle || 'PRECISION AT EVERY LEVEL'}
                   </p>
+
                   <p
                     style={{ color: '#047857' }}
                     className="text-xl sm:text-2xl font-serif italic font-light tracking-wider uppercase"
                   >
-                    {featured[selectedProductIndex].id?.startsWith('ap-')
-                      ? `£ ${featured[selectedProductIndex].price.toLocaleString()}`
-                      : formatPrice(getDiscountedPrice(featured[selectedProductIndex]), currentCurrency)}
-                  </p><button
-                    onClick={() =>
-                      onPageChange("product-detail", {
-                        id: featured[selectedProductIndex].id,
-                      })
-                    }
-                    className="uppercase font-bold text-xs tracking-[0.28em] border-b border-black pb-1 hover:text-[#047857] transition-all duration-300"
-                  >
-                    EXPLORE
-                  </button>
+                    {featured[safeFeaturedIndex].price
+                      ? `₹${Number(featured[safeFeaturedIndex].price).toLocaleString('en-IN')}`
+                      : (featured[safeFeaturedIndex].id?.startsWith('ap-')
+                          ? `£ ${featured[safeFeaturedIndex].price.toLocaleString()}`
+                          : formatPrice(getDiscountedPrice(featured[safeFeaturedIndex]), currentCurrency))}
+                  </p>
 
+                  <div className="pt-1">
+                    <button
+                      onClick={() => {
+                        const link = featured[safeFeaturedIndex].buttonLink;
+                        if (link && link.includes('shop')) {
+                          onPageChange("shop");
+                        } else if (featured[safeFeaturedIndex].id) {
+                          onPageChange("product-detail", {
+                            id: featured[safeFeaturedIndex].id,
+                          });
+                        } else {
+                          onPageChange("shop");
+                        }
+                      }}
+                      className="uppercase font-bold text-xs tracking-[0.28em] border-b border-black pb-1 hover:text-[#047857] hover:border-[#047857] transition-all duration-300 cursor-pointer inline-block"
+                    >
+                      {featured[safeFeaturedIndex].buttonText || 'EXPLORE'}
+                    </button>
+                  </div>
                 </div>
 
-                <div className="pt-4 w-full flex justify-center lg:justify-start">
-                  <WatchWheel
-                    products={featured}
-                    selectedIndex={selectedProductIndex}
-                    setSelectedIndex={setSelectedProductIndex}
-                    size={360}
-                  />
+                {/* Navigation: Responsive Switch */}
+                <div className="pt-2 sm:pt-4 w-full flex justify-center lg:justify-start">
+                  {/* Desktop Circular Wheel */}
+                  <div className="hidden lg:block w-full max-w-full">
+                    <WatchWheel
+                      products={featured}
+                      selectedIndex={safeFeaturedIndex}
+                      setSelectedIndex={setSelectedProductIndex}
+                      size={350}
+                    />
+                  </div>
+
+                  {/* Mobile & Tablet Compact Horizontal Product Selector */}
+                  <div className="lg:hidden w-full max-w-full">
+                    <div className="flex items-center justify-center gap-2 sm:gap-3 py-2 px-1 overflow-x-auto no-scrollbar scroll-smooth">
+                      {featured.map((item, idx) => {
+                        const isSel = idx === safeFeaturedIndex;
+                        return (
+                          <button
+                            key={item.id || idx}
+                            type="button"
+                            onClick={() => setSelectedProductIndex(idx)}
+                            className={`relative shrink-0 rounded-full transition-all duration-300 p-1 cursor-pointer ${
+                              isSel
+                                ? 'ring-2 ring-[#047857] scale-110 shadow-sm bg-emerald-50/70'
+                                : 'opacity-60 hover:opacity-100 hover:scale-105'
+                            }`}
+                            title={item.name}
+                          >
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-white/90 border border-neutral-200 flex items-center justify-center p-1">
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                onError={(e) => handleImageError(e)}
+                                className="max-h-full max-w-full object-contain"
+                              />
+                            </div>
+                            {isSel && (
+                              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#047857]" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
 
               </div>

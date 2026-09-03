@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { loginUser, registerUser, checkAdminEmail, requestAdminCode, verifyAdminCode } from '../store/slices/watchSlice';
-import { Star, CheckCircle2, ShieldCheck } from 'lucide-react';
-import { forgotPassword } from '../store/slices/watchSlice';
-
+import { loginUser, registerUser, checkAdminEmail, requestAdminCode, verifyAdminCode, forgotPassword } from '../store/slices/watchSlice';
+import { Star, CheckCircle2, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { isAdminRole } from '../constants/permissions';
 
 export default function Login({ params, onPageChange }) {
   const dispatch = useDispatch();
@@ -26,7 +25,11 @@ export default function Login({ params, onPageChange }) {
   const [loading, setLoading] = useState(false);
   const [showPasswordPopup, setShowPasswordPopup] = useState(false);
   const [lockoutCountdown, setLockoutCountdown] = useState(0);
+
+  // Admin states
   const [isAdminEmail, setIsAdminEmail] = useState(false);
+  const [isSuperAdminEmail, setIsSuperAdminEmail] = useState(false);
+  const [requiresOtp, setRequiresOtp] = useState(false);
   const [adminStep, setAdminStep] = useState('email'); // 'email' | 'code'
   const [adminCode, setAdminCode] = useState('');
 
@@ -41,6 +44,9 @@ export default function Login({ params, onPageChange }) {
       setAdminStep('email');
       setAdminCode('');
       setOtpSentMsg(false);
+      setIsAdminEmail(false);
+      setIsSuperAdminEmail(false);
+      setRequiresOtp(false);
     }
   };
 
@@ -48,24 +54,32 @@ export default function Login({ params, onPageChange }) {
     if (authMode !== 'login' || !email.trim()) return;
     const res = await dispatch(checkAdminEmail(email.trim().toLowerCase()));
     setIsAdminEmail(Boolean(res?.isAdmin));
+    setIsSuperAdminEmail(Boolean(res?.isSuperAdmin));
+    setRequiresOtp(Boolean(res?.requiresOtp));
   };
 
   // Real-time admin email detection as user types or pastes email
   useEffect(() => {
     if (authMode !== 'login') {
       setIsAdminEmail(false);
+      setIsSuperAdminEmail(false);
+      setRequiresOtp(false);
       return;
     }
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
       setIsAdminEmail(false);
+      setIsSuperAdminEmail(false);
+      setRequiresOtp(false);
       return;
     }
 
     const debounceTimer = setTimeout(async () => {
       const res = await dispatch(checkAdminEmail(cleanEmail));
       setIsAdminEmail(Boolean(res?.isAdmin));
-    }, 200);
+      setIsSuperAdminEmail(Boolean(res?.isSuperAdmin));
+      setRequiresOtp(Boolean(res?.requiresOtp));
+    }, 250);
 
     return () => clearTimeout(debounceTimer);
   }, [email, authMode, dispatch]);
@@ -105,35 +119,62 @@ export default function Login({ params, onPageChange }) {
       try {
         // Check if this email is an admin email on submit
         const checkRes = await dispatch(checkAdminEmail(cleanEmail));
-        if (checkRes && checkRes.isAdmin) {
+        const isAdmin = Boolean(checkRes?.isAdmin);
+        const requires2Fa = Boolean(checkRes?.requiresOtp);
+
+        if (isAdmin) {
           setIsAdminEmail(true);
-          if (adminStep === 'email') {
-            const res = await dispatch(requestAdminCode(cleanEmail));
-            if (res.success) {
-              setAdminStep('code');
-              setOtpSentMsg(true);
-            } else if (res.message && res.message.includes('60 seconds')) {
-              setAdminStep('code');
-              setOtpSentMsg(true);
-              setErrorMsg('A code was sent recently. Please check your inbox or wait 60s to request a new code.');
+          setIsSuperAdminEmail(Boolean(checkRes.isSuperAdmin));
+          setRequiresOtp(requires2Fa);
+
+          // Super Admin requires 2FA OTP flow
+          if (requires2Fa) {
+            if (adminStep === 'email') {
+              const res = await dispatch(requestAdminCode(cleanEmail));
+              if (res.success) {
+                setAdminStep('code');
+                setOtpSentMsg(true);
+              } else if (res.message && res.message.includes('seconds')) {
+                setAdminStep('code');
+                setOtpSentMsg(true);
+                setErrorMsg(res.message);
+              } else {
+                setErrorMsg(res.message || 'Unable to send OTP. Please try again.');
+              }
             } else {
-              setErrorMsg(res.message || 'Failed to send verification code.');
+              if (!adminCode.trim()) {
+                setErrorMsg('Please enter the code sent to your email.');
+                setLoading(false);
+                return;
+              }
+              const res = await dispatch(verifyAdminCode(cleanEmail, adminCode.trim()));
+              if (res.success) {
+                onPageChange('admin');
+              } else {
+                setErrorMsg(res.message || 'Invalid verification code.');
+              }
             }
+            setLoading(false);
+            return;
           } else {
-            if (!adminCode.trim()) {
-              setErrorMsg('Please enter the code sent to your email.');
+            // Restricted Admin uses standard Email + Password (no OTP)
+            if (!password) {
+              setErrorMsg('Please enter your administrator password.');
               setLoading(false);
               return;
             }
-            const res = await dispatch(verifyAdminCode(cleanEmail, adminCode.trim()));
+            const res = await dispatch(loginUser(cleanEmail, password));
             if (res.success) {
               onPageChange('admin');
             } else {
-              setErrorMsg(res.message || 'Invalid verification code.');
+              setErrorMsg(res.message || 'Invalid email or password.');
+              if (res.remainingSeconds) {
+                setLockoutCountdown(res.remainingSeconds);
+              }
             }
+            setLoading(false);
+            return;
           }
-          setLoading(false);
-          return;
         }
 
         // Regular customer login
@@ -145,7 +186,7 @@ export default function Login({ params, onPageChange }) {
 
         const res = await dispatch(loginUser(cleanEmail, password));
         if (res.success) {
-          if (res.role === 'admin') {
+          if (isAdminRole(res.role)) {
             onPageChange('admin');
           } else if (redirectPage === 'checkout') {
             onPageChange('checkout', { appliedCoupon });
@@ -163,6 +204,7 @@ export default function Login({ params, onPageChange }) {
           }
         }
       } catch (err) {
+        console.error('Sign In error:', err);
         setErrorMsg('Network or service error. Please try again.');
       } finally {
         setLoading(false);
@@ -171,19 +213,26 @@ export default function Login({ params, onPageChange }) {
     }
 
     if (authMode === 'forgot') {
-  if (!email) {
-    setErrorMsg('Please specify your registered email.');
-    return;
-  }
-  const res = await dispatch(forgotPassword(email));
-  if (res.success) {
-    setForgotSuccess(true);
-    setEmail('');
-  } else {
-    setErrorMsg(res.message || 'Failed to send reset link.');
-  }
-  return;
-}
+      if (!email) {
+        setErrorMsg('Please specify your registered email.');
+        return;
+      }
+      setLoading(true);
+      try {
+        const res = await dispatch(forgotPassword(email.trim().toLowerCase()));
+        if (res.success) {
+          setForgotSuccess(true);
+          setEmail('');
+        } else {
+          setErrorMsg(res.message || 'Failed to send reset link.');
+        }
+      } catch (err) {
+        setErrorMsg('Failed to process password reset request.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     if (!email || !password || (authMode === 'register' && !name)) {
       setErrorMsg('Please complete all form inputs.');
@@ -195,47 +244,32 @@ export default function Login({ params, onPageChange }) {
       const isStrong = password.length >= 8 &&
                        /[A-Z]/.test(password) &&
                        /[a-z]/.test(password) &&
-                       /[!@#$%^&*(),.?":{}|<>\-_]/.test(password);
+                       /[!@#$%^&*(),.?":{}|<>-_]/.test(password);
 
       if (!isStrong) {
         setShowPasswordPopup(true);
         return;
       }
 
-      const res = await dispatch(registerUser(name, email, password));
-      if (res.success) {
-        // Auto-signed in on success, redirect
-        if (redirectPage === 'checkout') {
-          onPageChange('checkout', { appliedCoupon });
+      setLoading(true);
+      try {
+        const res = await dispatch(registerUser(name.trim(), email.trim().toLowerCase(), password));
+        if (res.success) {
+          if (redirectPage === 'checkout') {
+            onPageChange('checkout', { appliedCoupon });
+          } else {
+            onPageChange('profile');
+          }
         } else {
-          onPageChange('profile');
+          setErrorMsg(res.message || 'Registration failed.');
         }
-      } else {
-        setErrorMsg(res.message || 'Registration failed.');
-      }
-    } else {
-      const res = await dispatch(loginUser(email, password));
-      if (res.success) {
-        if (res.role === 'admin') {
-          onPageChange('admin');
-        } else if (redirectPage === 'checkout') {
-          onPageChange('checkout', { appliedCoupon });
-        } else if (redirectPage.startsWith('product-detail:')) {
-          const pid = redirectPage.split(':')[1];
-          onPageChange('product-detail', { id: pid });
-        } else {
-          onPageChange('profile');
-        }
-      } else {
-        if (res.remainingSeconds) {
-          setLockoutCountdown(res.remainingSeconds);
-        } else {
-          setErrorMsg(res.message || 'Invalid login combination.');
-        }
+      } catch (err) {
+        setErrorMsg('Registration failed due to a service error.');
+      } finally {
+        setLoading(false);
       }
     }
   };
-
 
   return (
     <div className="max-w-md mx-auto py-12 space-y-8">
@@ -254,7 +288,15 @@ export default function Login({ params, onPageChange }) {
         {authMode !== 'forgot' ? (
           <div className="flex border-b border-white/5">
             <button
-              onClick={() => { setAuthMode('login'); setErrorMsg(''); setIsAdminEmail(false); setAdminStep('email'); setAdminCode(''); }}
+              onClick={() => {
+                setAuthMode('login');
+                setErrorMsg('');
+                setIsAdminEmail(false);
+                setIsSuperAdminEmail(false);
+                setRequiresOtp(false);
+                setAdminStep('email');
+                setAdminCode('');
+              }}
               className={`flex-1 pb-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 cursor-pointer transition ${
                 authMode === 'login' ? 'border-luxury-text text-luxury-text' : 'border-transparent text-gray-500 hover:text-gray-300'
               }`}
@@ -263,7 +305,15 @@ export default function Login({ params, onPageChange }) {
             </button>
             
             <button
-              onClick={() => { setAuthMode('register'); setErrorMsg(''); setIsAdminEmail(false); setAdminStep('email'); setAdminCode(''); }}
+              onClick={() => {
+                setAuthMode('register');
+                setErrorMsg('');
+                setIsAdminEmail(false);
+                setIsSuperAdminEmail(false);
+                setRequiresOtp(false);
+                setAdminStep('email');
+                setAdminCode('');
+              }}
               className={`flex-1 pb-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 cursor-pointer transition ${
                 authMode === 'register' ? 'border-luxury-text text-luxury-text' : 'border-transparent text-gray-500 hover:text-gray-300'
               }`}
@@ -302,7 +352,7 @@ export default function Login({ params, onPageChange }) {
           {/* Name (Registration Only) */}
           {authMode === 'register' && (
             <div className="space-y-1.5">
-              <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Full Name</label>
+              <label className="text-[10px] text-white font-bold uppercase tracking-widest block">Full Name</label>
               <input
                 type="text"
                 required
@@ -320,29 +370,34 @@ export default function Login({ params, onPageChange }) {
             <input
               type="email"
               required
-              disabled={authMode === 'login' && isAdminEmail && adminStep === 'code'}
+              disabled={authMode === 'login' && requiresOtp && adminStep === 'code'}
               value={email}
               onChange={handleEmailChange}
               onBlur={handleEmailBlur}
               placeholder="customer@domain.com"
               className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold disabled:opacity-50"
             />
-            {authMode === 'login' && isAdminEmail && adminStep === 'email' && (
+            {authMode === 'login' && isAdminEmail && (
               <div className="flex justify-between items-center pt-1">
-                <span className="text-[9px] text-luxury-gold font-medium uppercase tracking-wider">Admin Account Detected</span>
-                <button
-                  type="button"
-                  onClick={() => { setAdminStep('code'); setErrorMsg(''); setOtpSentMsg(false); }}
-                  className="text-[9px] text-gray-400 hover:text-white transition uppercase font-semibold cursor-pointer underline"
-                >
-                  Already have a code? Enter code
-                </button>
+                <span className="text-[9px] text-luxury-gold font-medium uppercase tracking-wider flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-luxury-gold inline" />
+                  {isSuperAdminEmail ? 'Super Admin Account • 2FA OTP Protected' : 'Staff Admin Account'}
+                </span>
+                {requiresOtp && adminStep === 'email' && (
+                  <button
+                    type="button"
+                    onClick={() => { setAdminStep('code'); setErrorMsg(''); setOtpSentMsg(false); }}
+                    className="text-[9px] text-gray-400 hover:text-white transition uppercase font-semibold cursor-pointer underline"
+                  >
+                    Already have a code? Enter code
+                  </button>
+                )}
               </div>
             )}
           </div>
 
-          {/* Admin Sign-In Code (shown automatically once an admin email is detected and code sent) */}
-          {authMode === 'login' && isAdminEmail && adminStep === 'code' && (
+          {/* Super Admin 2FA Code (Only shown when 2FA OTP is required and code step is active) */}
+          {authMode === 'login' && requiresOtp && adminStep === 'code' && (
             <div className="space-y-1.5">
               <label className="text-[10px] text-gray-300 font-bold uppercase tracking-widest block">Sign-In Code</label>
               <input
@@ -364,8 +419,8 @@ export default function Login({ params, onPageChange }) {
             </div>
           )}
 
-          {/* Password (Login & Register Only — hidden once an admin email is detected) */}
-          {authMode !== 'forgot' && !(authMode === 'login' && isAdminEmail) && (
+          {/* Password (Shown for register, customer login, and restricted admin login; hidden for Super Admin OTP flow) */}
+          {authMode !== 'forgot' && !(authMode === 'login' && requiresOtp) && (
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label className="text-[10px] text-gray-300 font-bold uppercase tracking-widest block">Password</label>
@@ -379,7 +434,7 @@ export default function Login({ params, onPageChange }) {
               </div>
               <input
                 type="password"
-                required={authMode === 'register'}
+                required={authMode === 'register' || (authMode === 'login' && !requiresOtp)}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
@@ -398,7 +453,7 @@ export default function Login({ params, onPageChange }) {
                     <span className={`flex items-center space-x-1 ${/[a-z]/.test(password) ? 'text-emerald-400/90' : 'text-gray-500'}`}>
                       <span>• One lowercase</span>
                     </span>
-                    <span className={`flex items-center space-x-1 ${/[!@#$%^&*(),.?":{}|<>\-_]/.test(password) ? 'text-emerald-400/90' : 'text-gray-500'}`}>
+                    <span className={`flex items-center space-x-1 ${/[!@#$%^&*(),.?":{}|<>-_]/.test(password) ? 'text-emerald-400/90' : 'text-gray-500'}`}>
                       <span>• One special char</span>
                     </span>
                   </div>
@@ -422,8 +477,10 @@ export default function Login({ params, onPageChange }) {
               ? 'Create Account' 
               : authMode === 'forgot'
               ? 'Request Reset Link'
+              : authMode === 'login' && requiresOtp
+              ? (adminStep === 'email' ? 'Send Verification Code' : 'Verify & Sign In')
               : authMode === 'login' && isAdminEmail
-              ? (adminStep === 'email' ? 'Send Code' : 'Verify & Sign In')
+              ? 'Sign In to Admin Panel'
               : lockoutCountdown > 0
               ? `Locked (${lockoutCountdown}s)`
               : 'Authenticate Credentials'
@@ -443,70 +500,25 @@ export default function Login({ params, onPageChange }) {
           )}
         </form>
 
-
       </div>
 
       {/* Password Requirements Popup Modal */}
       {showPasswordPopup && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1c1a17] border border-white/10 rounded-md p-6 max-w-sm w-full space-y-4 shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center space-x-2 text-luxury-gold">
-              <ShieldCheck size={20} />
-              <h3 className="font-serif text-sm font-bold uppercase tracking-widest text-white">Password Requirements</h3>
-            </div>
-            
-            <p className="text-[10px] text-gray-400 font-light">
-              Your security is paramount. Please ensure your password meets all Khroniq guidelines:
-            </p>
-
-            <ul className="space-y-2.5 text-xs">
-              <li className="flex items-center space-x-2">
-                <span className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  password.length >= 8 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                }`}>
-                  {password.length >= 8 ? '✓' : '✗'}
-                </span>
-                <span className={password.length >= 8 ? 'text-gray-200' : 'text-gray-500'}>
-                  Minimum 8 characters
-                </span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <span className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  /[A-Z]/.test(password) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                }`}>
-                  {/[A-Z]/.test(password) ? '✓' : '✗'}
-                </span>
-                <span className={/[A-Z]/.test(password) ? 'text-gray-200' : 'text-gray-500'}>
-                  At least one uppercase letter (A-Z)
-                </span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <span className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  /[a-z]/.test(password) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                }`}>
-                  {/[a-z]/.test(password) ? '✓' : '✗'}
-                </span>
-                <span className={/[a-z]/.test(password) ? 'text-gray-200' : 'text-gray-500'}>
-                  At least one lowercase letter (a-z)
-                </span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <span className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  /[!@#$%^&*(),.?":{}|<>\-_]/.test(password) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                }`}>
-                  {/[!@#$%^&*(),.?":{}|<>\-_]/.test(password) ? '✓' : '✗'}
-                </span>
-                <span className={/[!@#$%^&*(),.?":{}|<>\-_]/.test(password) ? 'text-gray-200' : 'text-gray-500'}>
-                  At least one special character
-                </span>
-              </li>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-luxury-gray border border-white/10 rounded-lg max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <h3 className="font-serif text-sm font-bold uppercase tracking-wider text-white">Password Requirements</h3>
+            <p className="text-xs text-gray-400">Your password does not satisfy the security requirements:</p>
+            <ul className="text-xs space-y-1.5 text-gray-300">
+              <li className={password.length >= 8 ? "text-emerald-400" : "text-luxury-red"}>• Minimum 8 characters</li>
+              <li className={/[A-Z]/.test(password) ? "text-emerald-400" : "text-luxury-red"}>• At least one uppercase letter (A-Z)</li>
+              <li className={/[a-z]/.test(password) ? "text-emerald-400" : "text-luxury-red"}>• At least one lowercase letter (a-z)</li>
+              <li className={/[!@#$%^&*(),.?":{}|<>-_]/.test(password) ? "text-emerald-400" : "text-luxury-red"}>• At least one special symbol (!@#$%^&*)</li>
             </ul>
-
             <button
               onClick={() => setShowPasswordPopup(false)}
-              className="w-full mt-2 py-2.5 bg-white hover:bg-luxury-gold text-luxury-dark font-bold text-xs tracking-wider uppercase transition cursor-pointer"
+              className="w-full py-2.5 bg-luxury-gold text-luxury-dark text-xs font-bold uppercase tracking-wider rounded transition cursor-pointer"
             >
-              Understand & Adjust
+              Acknowledge & Revise
             </button>
           </div>
         </div>

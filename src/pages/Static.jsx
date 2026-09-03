@@ -6,9 +6,24 @@ import { fetchBlogs } from '../store/slices/watchSlice';
 export default function Static({ params, _onPageChange }) {
   const dispatch = useDispatch();
   const blogs = useSelector(state => state.watch.blogs || []);
+  const contentSections = useSelector(state => state.watch.contentSections || []);
   const [activeTab, setActiveTab] = useState(params?.view || 'about');
   const [expandedFaq, setExpandedFaq] = useState(null);
   const [selectedBlog, setSelectedBlog] = useState(null);
+
+  const faqSection = contentSections.find(s => s.page === 'faq');
+  const aboutSection = contentSections.find(s => s.page === 'about' && (s.sectionKey === 'brand_story' || !s.sectionKey));
+  const pillarsSection = contentSections.find(s => s.page === 'about' && s.sectionKey === 'pillars');
+  const contactSection = contentSections.find(s => s.page === 'contact');
+
+  const defaultPillars = [
+    { title: 'PRESTIGE DESIGN', description: 'Every caliber is meticulously engineered and assembled by master craftsmen at our state-of-the-art facilities.' },
+    { title: 'PRECISION ENGINEERING', description: 'Accurately calibrated movements designed to deliver reliable performance and smooth everyday timekeeping.' },
+    { title: 'REFINED CRAFTSMANSHIP', description: 'Uncompromising standards of quality, durable materials, and contemporary luxury design.' }
+  ];
+  const displayPillars = (pillarsSection?.items && pillarsSection.items.length > 0)
+    ? pillarsSection.items.filter(it => it.isActive !== false)
+    : defaultPillars;
 
   useEffect(() => {
     dispatch(fetchBlogs());
@@ -73,6 +88,10 @@ export default function Static({ params, _onPageChange }) {
     { q: "How long does delivery take?", a: "Estimated delivery timelines are: Metro Cities 2–5 business days, Tier-2 & Tier-3 Cities 3–7 business days, Remote Areas 5–10 business days. Actual delivery times may vary due to logistics or Force Majeure events." },
     { q: "How can I contact KHRONIQ Customer Support?", a: "Email: support@khroniq.com. Our Customer Support team will be happy to assist you with product information, warranty claims, order tracking, returns, servicing, and general enquiries." }
   ];
+
+  const displayFaqData = (faqSection?.items && faqSection.items.length > 0)
+    ? faqSection.items.filter(it => it.isActive !== false).map(item => ({ q: item.title, a: item.description }))
+    : faqData;
 
   const policiesData = [
     {
@@ -1831,19 +1850,26 @@ export default function Static({ params, _onPageChange }) {
           <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div className="space-y-4">
-                <span className="text-[9px] text-luxury-gold-dark font-bold tracking-widest uppercase">LAUNCH EDITION</span>
-                <h2 className="text-2xl font-serif font-bold text-luxury-text uppercase">The Dawn of Modern Indian Luxury</h2>
+                <span className="text-[9px] text-luxury-gold-dark font-bold tracking-widest uppercase">
+                  {aboutSection?.label || 'LAUNCH EDITION'}
+                </span>
+                <h2 className="text-2xl font-serif font-bold text-luxury-text uppercase">
+                  {aboutSection?.title || 'The Dawn of Modern Indian Luxury'}
+                </h2>
                 <p className="text-luxury-muted text-xs leading-relaxed font-light">
-                  Khroniq was born from a bold vision: to establish a world-class luxury horology house in India. Merging traditional styling with cutting-edge micro-engineering, we design timepieces that redefine elegance and stand as a symbol of modern Indian precision.
+                  {aboutSection?.description ||
+                    'Khroniq was born from a bold vision: to establish a world-class luxury horology house in India. Merging traditional styling with cutting-edge micro-engineering, we design timepieces that redefine elegance and stand as a symbol of modern Indian precision.'}
                 </p>
-                <p className="text-luxury-muted text-xs leading-relaxed font-light">
-                  From our state-of-the-art assembly headquarters, our designers and engineers push technical limits. We craft robust calibers and elegant designs tailored for individuals who demand sophistication, reliability, and distinction.
-                </p>
+                {aboutSection?.subtitle && (
+                  <p className="text-luxury-muted text-xs leading-relaxed font-light">
+                    {aboutSection.subtitle}
+                  </p>
+                )}
               </div>
               <div className="h-64 bg-luxury-bg border border-luxury-text/10 rounded flex items-center justify-center p-6 relative overflow-hidden">
                 <Compass className="absolute text-luxury-gold-dark/5 w-80 h-80 -right-20 -bottom-20 rotate-12" />
                 <img
-                  src="/assets/spotlight_red_angled.png"
+                  src={aboutSection?.image || '/assets/spotlight_red_angled.png'}
                   alt="Khroniq Timepiece"
                   className="max-h-full max-w-full object-contain relative z-10 filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.15)]"
                 />
@@ -1851,21 +1877,15 @@ export default function Static({ params, _onPageChange }) {
             </div>
 
             <div className="border-t border-luxury-text/10 pt-8 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
-              <div className="space-y-2">
-                <Award className="mx-auto text-luxury-gold-dark" size={24} />
-                <h4 className="text-xs font-bold text-luxury-text uppercase tracking-wider">PRESTIGE DESIGN</h4>
-                <p className="text-[11px] text-luxury-muted leading-relaxed font-light">Every caliber is meticulously engineered and assembled by master craftsmen at our state-of-the-art facilities.</p>
-              </div>
-              <div className="space-y-2">
-                <Compass className="mx-auto text-luxury-gold-dark" size={24} />
-                <h4 className="text-xs font-bold text-luxury-text uppercase tracking-wider">PRECISION ENGINEERING</h4>
-                <p className="text-[11px] text-luxury-muted leading-relaxed font-light">Accurately calibrated movements designed to deliver reliable performance and smooth everyday timekeeping.</p>
-              </div>
-              <div className="space-y-2">
-                <CheckCircle2 className="mx-auto text-luxury-gold-dark" size={24} />
-                <h4 className="text-xs font-bold text-luxury-text uppercase tracking-wider">REFINED CRAFTSMANSHIP</h4>
-                <p className="text-[11px] text-luxury-muted leading-relaxed font-light">Uncompromising standards of quality, durable materials, and contemporary luxury design.</p>
-              </div>
+              {displayPillars.map((pil, pIdx) => (
+                <div key={pil._id || pil.id || pIdx} className="space-y-2">
+                  {pIdx === 0 && <Award className="mx-auto text-luxury-gold-dark" size={24} />}
+                  {pIdx === 1 && <Compass className="mx-auto text-luxury-gold-dark" size={24} />}
+                  {pIdx >= 2 && <CheckCircle2 className="mx-auto text-luxury-gold-dark" size={24} />}
+                  <h4 className="text-xs font-bold text-luxury-text uppercase tracking-wider">{pil.title}</h4>
+                  <p className="text-[11px] text-luxury-muted leading-relaxed font-light">{pil.description}</p>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -1943,14 +1963,18 @@ export default function Static({ params, _onPageChange }) {
 
             {/* Info */}
             <div className="lg:col-span-5 space-y-6 lg:border-l lg:border-luxury-text/10 lg:pl-10">
-              <h3 className="text-lg font-bold text-luxury-text font-serif uppercase tracking-wide">Boutique HQ</h3>
+              <h3 className="text-lg font-bold text-luxury-text font-serif uppercase tracking-wide">
+                {contactSection?.title || 'Boutique HQ'}
+              </h3>
               
               <div className="space-y-4 text-xs">
                 <div className="flex items-start space-x-3">
                   <MapPin size={16} className="text-luxury-gold-dark mt-0.5" />
                   <div>
                     <h5 className="font-bold text-luxury-text uppercase">KHRONIQ Headquarters</h5>
-                    <p className="text-luxury-muted font-light leading-relaxed">Office No. - 2, Chamber - 4,<br />Udaigiri Tower, Kaushambi,<br />Ghaziabad, Uttar Pradesh — 201010, India</p>
+                    <p className="text-luxury-muted font-light leading-relaxed">
+                      {contactSection?.label || 'Office No. - 2, Chamber - 4,\nUdaigiri Tower, Kaushambi,\nGhaziabad, Uttar Pradesh — 201010, India'}
+                    </p>
                   </div>
                 </div>
 
@@ -1958,7 +1982,9 @@ export default function Static({ params, _onPageChange }) {
                   <Phone size={16} className="text-luxury-gold-dark mt-0.5" />
                   <div>
                     <h5 className="font-bold text-luxury-text uppercase">Concierge Desk</h5>
-                    <p className="text-luxury-muted font-light">Available Mon–Sat, 10 AM – 7 PM IST</p>
+                    <p className="text-luxury-muted font-light">
+                      {contactSection?.subtitle || 'Available Mon–Sat, 10 AM – 7 PM IST'}
+                    </p>
                   </div>
                 </div>
 
@@ -1966,7 +1992,9 @@ export default function Static({ params, _onPageChange }) {
                   <Mail size={16} className="text-luxury-gold-dark mt-0.5" />
                   <div>
                     <h5 className="font-bold text-luxury-text uppercase">Boutique Email</h5>
-                    <p className="text-luxury-muted font-light">support@khroniq.com</p>
+                    <p className="text-luxury-muted font-light">
+                      {contactSection?.buttonText || 'support@khroniq.com'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1975,7 +2003,7 @@ export default function Static({ params, _onPageChange }) {
                 <Award className="mx-auto text-luxury-gold-dark" size={20} />
                 <h5 className="text-[10px] font-bold text-luxury-text uppercase tracking-widest">Boutique Appointments</h5>
                 <p className="text-[10px] text-luxury-muted leading-relaxed font-light">
-                  Reserve a personalized consultation or viewing session with our private concierge team.
+                  {contactSection?.description || 'Reserve a personalized consultation or viewing session with our private concierge team.'}
                 </p>
               </div>
             </div>
@@ -2317,9 +2345,11 @@ export default function Static({ params, _onPageChange }) {
         {/* CLIENT FAQ TAB */}
         {activeTab === 'faq' && (
           <div className="space-y-6">
-            <h3 className="text-lg font-bold text-luxury-text font-serif uppercase tracking-wide">Frequently Asked Questions</h3>
+            <h3 className="text-lg font-bold text-luxury-text font-serif uppercase tracking-wide">
+              {faqSection?.title || 'Frequently Asked Questions'}
+            </h3>
             <div className="space-y-4">
-              {faqData.map((faq, idx) => (
+              {displayFaqData.map((faq, idx) => (
                 <div key={idx} className="border border-luxury-text/10 rounded overflow-hidden">
                   <button
                     onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}

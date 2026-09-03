@@ -1,5 +1,5 @@
 import express from 'express';
-import { protect, adminOnly } from '../_middleware/auth.js';
+import { protect, adminOnly, requirePermission } from '../_middleware/auth.js';
 import { mediaUpload } from '../_middleware/upload.js';
 import Media from '../_models/Media.js';
 import { v2 as cloudinary } from 'cloudinary';
@@ -7,7 +7,7 @@ import { v2 as cloudinary } from 'cloudinary';
 const router = express.Router();
 
 // POST /api/admin/media - upload images/videos (field name: files or any)
-router.post('/', protect, adminOnly, (req, res, next) => {
+router.post('/', protect, requirePermission('homepage_media'), (req, res, next) => {
   mediaUpload.any()(req, res, async (err) => {
     if (err) return next(err);
 
@@ -37,7 +37,7 @@ router.post('/', protect, adminOnly, (req, res, next) => {
 });
 
 // GET /api/admin/media - list, optional ?section=...
-router.get('/', protect, adminOnly, async (req, res) => {
+router.get('/', protect, requirePermission('homepage_media'), async (req, res) => {
   try {
     const filter = {};
     if (req.query.section) filter.section = req.query.section;
@@ -50,7 +50,7 @@ router.get('/', protect, adminOnly, async (req, res) => {
 });
 
 // DELETE /api/admin/media/:id - deletes DB entry and attempts Cloudinary deletion
-router.delete('/:id', protect, adminOnly, async (req, res) => {
+router.delete('/:id', protect, requirePermission('homepage_media'), async (req, res) => {
   try {
     const media = await Media.findById(req.params.id);
     if (!media) return res.status(404).json({ success: false, message: 'Media not found' });

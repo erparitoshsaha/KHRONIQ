@@ -1,6 +1,6 @@
 import express from 'express';
 import FilterCategory from '../_models/FilterCategory.js';
-import { protect, adminOnly } from '../_middleware/auth.js';
+import { protect, requirePermission } from '../_middleware/auth.js';
 
 const router = express.Router();
 
@@ -157,7 +157,7 @@ router.get('/', async (req, res, next) => {
 // @route   GET /api/filters/admin
 // @desc    Get all filter categories & options (including inactive) for Admin Panel
 // @access  Private/Admin
-router.get('/admin', protect, adminOnly, async (req, res, next) => {
+router.get('/admin', protect, requirePermission('catalog_filters'), async (req, res, next) => {
   try {
     const categories = await FilterCategory.find({}).sort({ order: 1, name: 1 });
     res.json({ success: true, categories });
@@ -170,7 +170,7 @@ router.get('/admin', protect, adminOnly, async (req, res, next) => {
 // @route   POST /api/filters/seed-defaults
 // @desc    Idempotently seed default filter categories & options
 // @access  Private/Admin
-router.post('/seed-defaults', protect, adminOnly, async (req, res, next) => {
+router.post('/seed-defaults', protect, requirePermission('catalog_filters'), async (req, res, next) => {
   try {
     await seedDefaultFiltersSafe();
     const categories = await FilterCategory.find({}).sort({ order: 1, name: 1 });
@@ -184,7 +184,7 @@ router.post('/seed-defaults', protect, adminOnly, async (req, res, next) => {
 // @route   POST /api/filters/categories
 // @desc    Create a new filter category
 // @access  Private/Admin
-router.post('/categories', protect, adminOnly, async (req, res, next) => {
+router.post('/categories', protect, requirePermission('catalog_filters'), async (req, res, next) => {
   try {
     const { name, slug, type, order, isActive } = req.body;
     if (!name || !name.trim()) {
@@ -231,7 +231,7 @@ router.post('/categories', protect, adminOnly, async (req, res, next) => {
 // @route   PUT /api/filters/categories/:id
 // @desc    Update a filter category (name, slug, type, order, isActive)
 // @access  Private/Admin
-router.put('/categories/:id', protect, adminOnly, async (req, res, next) => {
+router.put('/categories/:id', protect, requirePermission('catalog_filters'), async (req, res, next) => {
   try {
     const { name, slug, type, order, isActive } = req.body;
     const category = await FilterCategory.findById(req.params.id);
@@ -278,7 +278,7 @@ router.put('/categories/:id', protect, adminOnly, async (req, res, next) => {
 // @route   DELETE /api/filters/categories/:id
 // @desc    Delete a filter category
 // @access  Private/Admin
-router.delete('/categories/:id', protect, adminOnly, async (req, res, next) => {
+router.delete('/categories/:id', protect, requirePermission('catalog_filters'), async (req, res, next) => {
   try {
     const category = await FilterCategory.findById(req.params.id);
     if (!category) {
@@ -296,7 +296,7 @@ router.delete('/categories/:id', protect, adminOnly, async (req, res, next) => {
 // @route   POST /api/filters/categories/:categoryId/options
 // @desc    Add an option to a filter category
 // @access  Private/Admin
-router.post('/categories/:categoryId/options', protect, adminOnly, async (req, res, next) => {
+router.post('/categories/:categoryId/options', protect, requirePermission('catalog_filters'), async (req, res, next) => {
   try {
     const { name, slug, value, order, isActive } = req.body;
     if (!name || !name.trim()) {
@@ -344,7 +344,7 @@ router.post('/categories/:categoryId/options', protect, adminOnly, async (req, r
 // @route   PUT /api/filters/categories/:categoryId/options/:optionId
 // @desc    Update a filter option
 // @access  Private/Admin
-router.put('/categories/:categoryId/options/:optionId', protect, adminOnly, async (req, res, next) => {
+router.put('/categories/:categoryId/options/:optionId', protect, requirePermission('catalog_filters'), async (req, res, next) => {
   try {
     const { name, slug, value, order, isActive } = req.body;
     const category = await FilterCategory.findById(req.params.categoryId);
@@ -395,7 +395,7 @@ router.put('/categories/:categoryId/options/:optionId', protect, adminOnly, asyn
 // @route   DELETE /api/filters/categories/:categoryId/options/:optionId
 // @desc    Delete a filter option
 // @access  Private/Admin
-router.delete('/categories/:categoryId/options/:optionId', protect, adminOnly, async (req, res, next) => {
+router.delete('/categories/:categoryId/options/:optionId', protect, requirePermission('catalog_filters'), async (req, res, next) => {
   try {
     const category = await FilterCategory.findById(req.params.categoryId);
     if (!category) {

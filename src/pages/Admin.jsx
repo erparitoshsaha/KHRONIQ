@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { 
-  updateOrderStatus, 
-  updateItemWarranty, 
-  addProduct, 
-  editProduct, 
-  deleteProduct, 
-  addCoupon, 
-  deleteCoupon, 
+import {
+  updateOrderStatus,
+  updateItemWarranty,
+  addProduct,
+  editProduct,
+  deleteProduct,
+  addCoupon,
+  deleteCoupon,
   moderateReview,
   fetchAnalytics,
   selectCurrentCurrency,
@@ -40,10 +40,14 @@ import {
   fetchActiveSessions,
   fetchLoginActivity,
   revokeAdminSession,
-  revokeAllOtherSessions
+  revokeAllOtherSessions,
+  fetchAdminContentSections
 } from '../store/slices/watchSlice';
-import { 
-  BarChart3, Plus, Edit, Trash2, Check, X, Tag, Star, 
+import WebsiteContentManager from '../components/admin/WebsiteContentManager';
+import AdminManagement from '../components/admin/AdminManagement';
+import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
+import {
+  BarChart3, Plus, Edit, Trash2, Check, X, Tag, Star,
   Package, AlertTriangle, ShieldAlert, ArrowLeft, ArrowUpRight,
   CheckCircle2, LogOut, Newspaper, ImagePlus, BookOpen, Gift, Download,
   SlidersHorizontal,
@@ -102,8 +106,41 @@ export default function Admin({ onPageChange }) {
   const blogs = useSelector(state => state.watch.blogs || []);
   const adminFilters = useSelector(state => state.watch.adminFilters || []);
 
+  // Role & Permissions Determination
+  const isSuperAdmin = isSuperAdminRole(currentUser?.role);
+  const userPermissions = Array.isArray(currentUser?.permissions) ? currentUser.permissions : [];
+
+  const ALL_ADMIN_TABS = [
+    { key: 'analytics', label: 'Store Analytics', icon: BarChart3, permission: 'analytics' },
+    { key: 'products', label: 'Timepiece Section', icon: Package, permission: 'products' },
+    { key: 'orders', label: 'Order Dispatcher', icon: CheckCircle2, permission: 'orders' },
+    { key: 'coupons', label: 'Coupon Builder', icon: Tag, permission: 'coupons' },
+    { key: 'reviews', label: 'Reviews Manager', icon: Star, permission: 'reviews' },
+    { key: 'content', label: 'Website Content', icon: Globe, permission: 'website_content' },
+    { key: 'filters', label: 'Catalog Filters', icon: SlidersHorizontal, permission: 'catalog_filters' },
+    { key: 'footer', label: 'Footer Management', icon: LayoutTemplate, permission: 'footer_management' },
+    { key: 'security', label: 'Login Activity', icon: ShieldCheck, permission: 'login_activity' },
+    // ADMIN MANAGEMENT: Only visible to Super Admin! Placed right near Login Activity
+    { key: 'admin_management', label: 'Admin Management', icon: ShieldAlert, superAdminOnly: true },
+    { key: 'updates', label: 'Brand Updates', icon: Newspaper, permission: 'brand_updates' },
+    { key: 'media', label: 'Homepage Media', icon: ImagePlus, permission: 'homepage_media' },
+    { key: 'blogs', label: 'Blogs Editorial', icon: BookOpen, permission: 'blogs' },
+  ];
+
+  const visibleTabs = ALL_ADMIN_TABS.filter(tab => {
+    if (isSuperAdmin) return true;
+    if (tab.superAdminOnly) return false;
+    return userPermissions.includes(tab.permission);
+  });
+
   // Active Admin Sub-Tab
-  const [activeTab, setActiveTab] = useState('analytics'); // analytics | products | orders | coupons | reviews | updates | blogs
+  const [activeTab, setActiveTab] = useState('analytics');
+
+  useEffect(() => {
+    if (visibleTabs.length > 0 && !visibleTabs.some(t => t.key === activeTab)) {
+      setActiveTab(visibleTabs[0].key);
+    }
+  }, [visibleTabs, activeTab]);
 
   // Filter Management State
   const [selectedCatForOptions, setSelectedCatForOptions] = useState(null);
@@ -177,6 +214,9 @@ export default function Admin({ onPageChange }) {
     if (activeTab === 'footer') {
       dispatch(fetchAdminFooterSections());
     }
+    if (activeTab === 'content') {
+      dispatch(fetchAdminContentSections());
+    }
   }, [activeTab, dispatch]);
 
   useEffect(() => {
@@ -249,8 +289,8 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
   const [tempCasePrice, setTempCasePrice] = useState('');
   const [tempDialColor, setTempDialColor] = useState('#ffffff');
   const [tempDialPrice, setTempDialPrice] = useState('');
-  
-  
+
+
 
   const handleTempStrapImageChange = async (e) => {
     const file = e.target.files[0];
@@ -452,7 +492,7 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
   const [analytics, setAnalytics] = useState(null);
 
   useEffect(() => {
-    if (currentUser?.role === 'admin') {
+    if (isAdminRole(currentUser?.role)) {
       dispatch(fetchAnalytics()).then((data) => {
         if (data) setAnalytics(data);
       });
@@ -500,7 +540,7 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
   ];
 
   useEffect(() => {
-    if (currentUser?.role === 'admin' && activeTab === 'media') {
+    if (isAdminRole(currentUser?.role) && activeTab === 'media') {
       const token = localStorage.getItem('khroniq_token');
       fetch('/api/admin/media', {
         headers: { ...getAuthHeaders() }
@@ -605,7 +645,7 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
     } else {
       updatedStraps = [...currentStraps, strapName];
     }
-    
+
     if (isEdit) {
       setEditForm({
         ...editForm,
@@ -634,7 +674,7 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
     } else {
       updatedColors = [...currentColors, colorHex];
     }
-    
+
     if (isEdit) {
       setEditForm({
         ...editForm,
@@ -673,7 +713,7 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
   };
 
   useEffect(() => {
-    if (currentUser && currentUser.role === 'admin') {
+    if (currentUser && isAdminRole(currentUser.role)) {
       dispatch(fetchOrders());
       if (activeTab === 'updates') {
         fetchAdminUpdates();
@@ -903,7 +943,7 @@ const handleEditBlogImageUpload = async (e) => {
 
 
   // Validation checking for security
-  if (!currentUser || currentUser.role !== 'admin') {
+  if (!currentUser || !isAdminRole(currentUser.role)) {
     const hasToken = typeof window !== 'undefined' && localStorage.getItem('khroniq_token');
     if (hasToken && !currentUser) {
       return (
@@ -984,8 +1024,8 @@ const handleImageUpload = async (e) => {
     const token = localStorage.getItem('khroniq_token');
     const res = await fetch('/api/upload', {
       method: 'POST',
-      headers: { 
-        Authorization: `Bearer ${token}` 
+      headers: {
+        Authorization: `Bearer ${token}`
       },
       body: formData
     });
@@ -1015,8 +1055,8 @@ const handleEditImageUpload = async (e) => {
     const token = localStorage.getItem('khroniq_token');
     const res = await fetch('/api/upload', {
       method: 'POST',
-      headers: { 
-        Authorization: `Bearer ${token}` 
+      headers: {
+        Authorization: `Bearer ${token}`
       },
       body: formData
     });
@@ -1082,8 +1122,8 @@ const handleEditImageUpload = async (e) => {
 
   const handleEditProductInit = (product) => {
     setEditingId(product.id);
-    setEditForm({ 
-      ...product, 
+    setEditForm({
+      ...product,
       modelNo: product.modelNo || '',
       serialNo: product.serialNo || '',
       uniqueCode: product.uniqueCode || '',
@@ -1120,7 +1160,7 @@ const handleEditImageUpload = async (e) => {
   };
 
   const handleUpdateProduct = async (e) => {
-    
+
     e.preventDefault();
     let customOpts = { ...(editForm.customizationOptions || {}) };
     if (customOpts.customStrapName && !customOpts.strapMaterials?.includes(customOpts.customStrapName)) {
@@ -1178,7 +1218,7 @@ const handleEditImageUpload = async (e) => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
-  
+
 
   const handleDeleteProductClick = (id) => {
     if (window.confirm('Delete this timepiece from store inventory?')) {
@@ -1206,14 +1246,29 @@ const handleEditImageUpload = async (e) => {
 
   return (
     <div className="space-y-8 pb-12">
-      
+
       {/* Dashboard Top Banner */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-6">
         <div>
-          <h1 className="font-serif text-3xl font-bold uppercase text-white tracking-widest">Admin Control Center</h1>
-          <p className="text-gray-400 text-xs mt-1">Configure Khroniq store parameters, monitor sales trends, and verify stock thresholds.</p>
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-serif text-3xl font-bold uppercase text-white tracking-widest">
+              {isSuperAdmin ? 'Super Admin Control Center' : 'Admin Control Center'}
+            </h1>
+            <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded tracking-widest ${
+              isSuperAdmin
+                ? 'bg-luxury-gold text-black'
+                : 'bg-luxury-red text-white'
+            }`}>
+              {isSuperAdmin ? 'SUPER ADMINISTRATOR' : 'STAFF ADMINISTRATOR'}
+            </span>
+          </div>
+          <p className="text-gray-400 text-xs mt-1">
+            {isSuperAdmin
+              ? 'Universal administrative authority: store analytics, timepiece inventory, system configurations, and staff accounts.'
+              : `Restricted administration scope for ${currentUser?.location || 'Assigned Store'}. Assigned modules: ${visibleTabs.length}.`}
+          </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <button
             onClick={() => onPageChange('home')}
@@ -1222,7 +1277,7 @@ const handleEditImageUpload = async (e) => {
             <ArrowLeft size={12} />
             <span>Exit Dashboard</span>
           </button>
-          
+
           <button
             onClick={() => {
               dispatch(logoutUser());
@@ -1238,38 +1293,34 @@ const handleEditImageUpload = async (e) => {
 
       {/* Admin Tab Selectors */}
       <div className="flex flex-wrap gap-2 text-xs border-b border-white/5 pb-4">
-        {[
-          { key: 'analytics', label: 'Store Analytics', icon: BarChart3 },
-          { key: 'products', label: 'Timepiece Section', icon: Package },
-          { key: 'orders', label: 'Order Dispatcher', icon: CheckCircle2 },
-          { key: 'coupons', label: 'Coupon Builder', icon: Tag },
-          { key: 'reviews', label: 'Reviews Manager', icon: Star },
-          
-          { key: 'filters', label: 'Catalog Filters', icon: SlidersHorizontal },
-          { key: 'footer', label: 'Footer Management', icon: LayoutTemplate },
-          { key: 'security', label: 'Login Activity', icon: ShieldCheck },
-          { key: 'updates', label: 'Brand Updates', icon: Newspaper },
-          { key: 'media', label: 'Homepage Media', icon: ImagePlus },
-          { key: 'blogs', label: 'Blogs Editorial', icon: BookOpen },
-        ].map((tab) => {
+        {visibleTabs.map((tab) => {
           const Icon = tab.icon;
+          const isCurrent = activeTab === tab.key;
+          const isSuperTab = tab.key === 'admin_management';
           return (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`py-2.5 px-4 font-black uppercase tracking-widest cursor-pointer transition flex items-center space-x-1.5 rounded-sm border ${
-                activeTab === tab.key 
-                  ? 'bg-black text-white' 
-                  : 'bg-white text-black hover:bg-neutral-200'
+                isCurrent
+                  ? 'bg-black text-white'
+                  : isSuperTab
+                    ? 'bg-luxury-gold/15 text-luxury-gold border-luxury-gold/30 hover:bg-luxury-gold/25'
+                    : 'bg-white text-black hover:bg-neutral-200'
               }`}
               style={{
-                color: activeTab === tab.key ? '#ffffff' : '#000000',
-                backgroundColor: activeTab === tab.key ? '#000000' : '#ffffff',
-                borderColor: activeTab === tab.key ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'
+                color: isCurrent ? '#ffffff' : (isSuperTab ? '#c8a96a' : '#000000'),
+                backgroundColor: isCurrent ? '#000000' : (isSuperTab ? 'rgba(200, 169, 106, 0.12)' : '#ffffff'),
+                borderColor: isCurrent ? 'rgba(255,255,255,0.2)' : (isSuperTab ? 'rgba(200, 169, 106, 0.4)' : 'rgba(0,0,0,0.1)')
               }}
             >
-              <Icon size={14} style={{ color: activeTab === tab.key ? '#ffffff' : '#000000' }} />
-              <span style={{ color: activeTab === tab.key ? '#ffffff' : '#000000' }}>{tab.label}</span>
+              <Icon size={14} style={{ color: isCurrent ? '#ffffff' : (isSuperTab ? '#c8a96a' : '#000000') }} />
+              <span style={{ color: isCurrent ? '#ffffff' : (isSuperTab ? '#c8a96a' : '#000000') }}>{tab.label}</span>
+              {isSuperTab && (
+                <span className="bg-luxury-gold text-black text-[8px] font-black px-1.5 py-0.5 rounded tracking-widest uppercase ml-1">
+                  SUPER
+                </span>
+              )}
               {tab.key === 'reviews' && activeReviews.length > 0 && (
                 <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-sans font-medium ml-1">
                   {activeReviews.length}
@@ -1280,6 +1331,15 @@ const handleEditImageUpload = async (e) => {
         })}
       </div>
 
+      {/* ─── TAB CONTENT: ADMIN MANAGEMENT (SUPER ADMIN ONLY) ─────────────────── */}
+      {activeTab === 'admin_management' && isSuperAdmin && (
+        <AdminManagement />
+      )}
+
+      {/* ─── TAB CONTENT: WEBSITE CONTENT MANAGEMENT ───────────────────────────── */}
+      {activeTab === 'content' && (
+        <WebsiteContentManager />
+      )}
 
                   {/* ─── TAB CONTENT: CATALOG FILTERS ───────────────────────────── */}
       {activeTab === 'filters' && (
@@ -1292,8 +1352,8 @@ const handleEditImageUpload = async (e) => {
                 <span>{selectedCatForOptions ? `${selectedCatForOptions.name} Options` : 'Catalog Filters'}</span>
               </h3>
               <p className="text-gray-400 text-xs mt-1">
-                {selectedCatForOptions 
-                  ? `Managing filter options for ${selectedCatForOptions.name}. Any changes synchronize with the customer catalog.` 
+                {selectedCatForOptions
+                  ? `Managing filter options for ${selectedCatForOptions.name}. Any changes synchronize with the customer catalog.`
                   : 'Manage customer-facing filter categories (Gender, Collection, Movement, Strap, Dial, Case) and options.'}
               </p>
             </div>
@@ -1310,10 +1370,10 @@ const handleEditImageUpload = async (e) => {
                   </button>
                   <button
                     onClick={() => {
-                      setNewOptForm({ 
-                        name: '', 
-                        order: (selectedCatForOptions.options?.length || 0) + 1, 
-                        isActive: true 
+                      setNewOptForm({
+                        name: '',
+                        order: (selectedCatForOptions.options?.length || 0) + 1,
+                        isActive: true
                       });
                       setShowAddOptModal(true);
                     }}
@@ -1360,8 +1420,8 @@ const handleEditImageUpload = async (e) => {
           {/* Feedback Message Notification */}
           {filterActionMsg && (
             <div className={`p-4 rounded border text-xs font-bold flex items-center justify-between transition-all ${
-              filterActionMsg.type === 'success' 
-                ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300' 
+              filterActionMsg.type === 'success'
+                ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300'
                 : 'bg-red-950/90 border-red-500 text-red-300'
             }`}
             style={{
@@ -1426,7 +1486,7 @@ const handleEditImageUpload = async (e) => {
                             {opt.order || 0}
                           </td>
                           <td className="p-4 text-center">
-                            <span 
+                            <span
                               className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-sm"
                               style={{
                                 backgroundColor: opt.isActive ? '#022c22' : '#171717',
@@ -1581,7 +1641,7 @@ const handleEditImageUpload = async (e) => {
                               {cat.order || 0}
                             </td>
                             <td className="p-4 text-center">
-                              <span 
+                              <span
                                 className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-sm"
                                 style={{
                                   backgroundColor: cat.isActive ? '#022c22' : '#171717',
@@ -1996,7 +2056,7 @@ const handleEditImageUpload = async (e) => {
         </div>
       )}
 
-      
+
       {/* ─── TAB CONTENT: FOOTER MANAGEMENT ───────────────────────────── */}
       {activeTab === 'footer' && (
         <div className="space-y-6">
@@ -2008,8 +2068,8 @@ const handleEditImageUpload = async (e) => {
                 <span>{selectedSecForLinks ? `${selectedSecForLinks.title} Links` : 'Footer Management'}</span>
               </h3>
               <p className="text-gray-400 text-xs mt-1">
-                {selectedSecForLinks 
-                  ? `Managing footer links for ${selectedSecForLinks.title}. Changes synchronize live with the customer website.` 
+                {selectedSecForLinks
+                  ? `Managing footer links for ${selectedSecForLinks.title}. Changes synchronize live with the customer website.`
                   : 'Manage customer-facing footer navigation sections and custom links. Dynamic Collections section automatically stays synchronized with Catalog Filters.'}
               </p>
             </div>
@@ -2026,15 +2086,15 @@ const handleEditImageUpload = async (e) => {
                   </button>
                   <button
                     onClick={() => {
-                      setNewLinkForm({ 
-                        label: '', 
+                      setNewLinkForm({
+                        label: '',
                         linkType: 'static',
-                        page: 'static', 
+                        page: 'static',
                         url: '',
                         argsView: 'contact',
                         action: '',
-                        order: (selectedSecForLinks.links?.length || 0) + 1, 
-                        isActive: true 
+                        order: (selectedSecForLinks.links?.length || 0) + 1,
+                        isActive: true
                       });
                       setShowAddLinkModal(true);
                     }}
@@ -2081,8 +2141,8 @@ const handleEditImageUpload = async (e) => {
           {/* Feedback Message Notification */}
           {footerActionMsg && (
             <div className={`p-4 rounded border text-xs font-bold flex items-center justify-between transition-all ${
-              footerActionMsg.type === 'success' 
-                ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300' 
+              footerActionMsg.type === 'success'
+                ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300'
                 : 'bg-red-950/90 border-red-500 text-red-300'
             }`}
             style={{
@@ -2128,15 +2188,15 @@ const handleEditImageUpload = async (e) => {
                           <p>No links found for this section.</p>
                           <button
                             onClick={() => {
-                              setNewLinkForm({ 
-                                label: '', 
+                              setNewLinkForm({
+                                label: '',
                                 linkType: 'static',
-                                page: 'static', 
+                                page: 'static',
                                 url: '',
                                 argsView: 'contact',
                                 action: '',
-                                order: 1, 
-                                isActive: true 
+                                order: 1,
+                                isActive: true
                               });
                               setShowAddLinkModal(true);
                             }}
@@ -2173,7 +2233,7 @@ const handleEditImageUpload = async (e) => {
                               {link.order || 0}
                             </td>
                             <td className="p-4 text-center">
-                              <span 
+                              <span
                                 className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-sm"
                                 style={{
                                   backgroundColor: link.isActive ? '#022c22' : '#171717',
@@ -2337,8 +2397,8 @@ const handleEditImageUpload = async (e) => {
                             <td className="p-4">
                               <div className="font-bold text-white text-sm">{sec.title}</div>
                               <div className="text-[10px] text-gray-400 mt-0.5">
-                                {isDynamic 
-                                  ? 'Automatically synchronizes with active Catalog Filter Collections' 
+                                {isDynamic
+                                  ? 'Automatically synchronizes with active Catalog Filter Collections'
                                   : `${totalLinks} link${totalLinks !== 1 ? 's' : ''} configured`}
                               </div>
                             </td>
@@ -2357,7 +2417,7 @@ const handleEditImageUpload = async (e) => {
                               {sec.order || 0}
                             </td>
                             <td className="p-4 text-center">
-                              <span 
+                              <span
                                 className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-sm"
                                 style={{
                                   backgroundColor: sec.isActive ? '#022c22' : '#171717',
@@ -3001,7 +3061,7 @@ const handleEditImageUpload = async (e) => {
       )}
 
 
-      
+
           {/* ─── MODAL: MOVE FOOTER LINK ───────────────────────────── */}
           {movingLink && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -3214,17 +3274,17 @@ const handleEditImageUpload = async (e) => {
           )}
 
 
-      
+
             {/* ─── TAB CONTENT: LOGIN ACTIVITY & SESSIONS ───────────────────────────── */}
       {activeTab === 'security' && (
         <div className="space-y-8">
           {/* Header Banner */}
-          <div 
+          <div
             className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-neutral-200 p-6 rounded-lg shadow-sm"
             style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}
           >
             <div>
-              <h3 
+              <h3
                 className="font-serif text-lg font-bold text-neutral-900 uppercase tracking-wider flex items-center space-x-2"
                 style={{ color: '#111827' }}
               >
@@ -3281,9 +3341,9 @@ const handleEditImageUpload = async (e) => {
               }}
             >
               <span>{sessionActionMsg.text}</span>
-              <button 
-                type="button" 
-                onClick={() => setSessionActionMsg(null)} 
+              <button
+                type="button"
+                onClick={() => setSessionActionMsg(null)}
                 className="cursor-pointer text-neutral-500 hover:text-neutral-800"
               >
                 <X size={14} />
@@ -3295,7 +3355,7 @@ const handleEditImageUpload = async (e) => {
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-neutral-200 pb-3">
               <div>
-                <h4 
+                <h4
                   className="text-neutral-900 text-sm font-bold uppercase tracking-wider flex items-center space-x-2"
                   style={{ color: '#111827' }}
                 >
@@ -3311,7 +3371,7 @@ const handleEditImageUpload = async (e) => {
             </div>
 
             {activeSessions.length === 0 ? (
-              <div 
+              <div
                 className="p-8 text-center bg-white border border-neutral-200 rounded-lg text-neutral-500 text-xs italic shadow-sm"
                 style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb', color: '#6b7280' }}
               >
@@ -3349,7 +3409,7 @@ const handleEditImageUpload = async (e) => {
                       <div className="space-y-3">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center space-x-3">
-                            <div 
+                            <div
                               className="p-2.5 rounded border flex items-center justify-center shadow-xs"
                               style={{
                                 backgroundColor: isCurrent ? '#ecfdf5' : '#f3f4f6',
@@ -3366,13 +3426,13 @@ const handleEditImageUpload = async (e) => {
                               )}
                             </div>
                             <div>
-                              <div 
+                              <div
                                 className="font-bold text-base tracking-tight"
                                 style={{ color: '#111827' }}
                               >
                                 {session.browser} · {session.os}
                               </div>
-                              <div 
+                              <div
                                 className="text-xs flex items-center space-x-1 mt-0.5 font-medium"
                                 style={{ color: '#4b5563' }}
                               >
@@ -3384,23 +3444,23 @@ const handleEditImageUpload = async (e) => {
 
                           <div>
                             {isCurrent ? (
-                              <span 
+                              <span
                                 className="inline-flex items-center px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider border shadow-xs"
-                                style={{ 
-                                  backgroundColor: '#dcfce7', 
-                                  color: '#15803d', 
-                                  borderColor: '#86efac' 
+                                style={{
+                                  backgroundColor: '#dcfce7',
+                                  color: '#15803d',
+                                  borderColor: '#86efac'
                                 }}
                               >
                                 CURRENT DEVICE
                               </span>
                             ) : (
-                              <span 
+                              <span
                                 className="inline-flex items-center px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider border shadow-xs"
-                                style={{ 
-                                  backgroundColor: '#f3f4f6', 
-                                  color: '#374151', 
-                                  borderColor: '#d1d5db' 
+                                style={{
+                                  backgroundColor: '#f3f4f6',
+                                  color: '#374151',
+                                  borderColor: '#d1d5db'
                                 }}
                               >
                                 ACTIVE
@@ -3410,7 +3470,7 @@ const handleEditImageUpload = async (e) => {
                         </div>
 
                         {/* Metadata Box: IP, Method, Last Active */}
-                        <div 
+                        <div
                           className="grid grid-cols-2 gap-2 text-xs p-3.5 rounded border font-mono"
                           style={{
                             backgroundColor: '#f9fafb',
@@ -3418,13 +3478,13 @@ const handleEditImageUpload = async (e) => {
                           }}
                         >
                           <div>
-                            <span 
+                            <span
                               className="text-[10px] uppercase block font-sans font-bold"
                               style={{ color: '#6b7280' }}
                             >
                               IP Address
                             </span>
-                            <span 
+                            <span
                               className="font-bold text-xs"
                               style={{ color: '#111827' }}
                             >
@@ -3432,30 +3492,30 @@ const handleEditImageUpload = async (e) => {
                             </span>
                           </div>
                           <div>
-                            <span 
+                            <span
                               className="text-[10px] uppercase block font-sans font-bold"
                               style={{ color: '#6b7280' }}
                             >
                               Login Method
                             </span>
-                            <span 
+                            <span
                               className="font-medium text-xs"
                               style={{ color: '#111827' }}
                             >
                               {session.loginMethod || 'Password + OTP'}
                             </span>
                           </div>
-                          <div 
+                          <div
                             className="col-span-2 pt-2 mt-1 border-t flex justify-between items-center"
                             style={{ borderColor: '#e5e7eb' }}
                           >
-                            <span 
+                            <span
                               className="text-[11px] font-sans font-semibold"
                               style={{ color: '#4b5563' }}
                             >
                               Last Active:
                             </span>
-                            <span 
+                            <span
                               className="font-bold text-xs"
                               style={{ color: '#b45309' }}
                             >
@@ -3467,12 +3527,12 @@ const handleEditImageUpload = async (e) => {
 
                       <div className="pt-1 flex justify-end">
                         {isCurrent ? (
-                          <div 
+                          <div
                             className="px-3.5 py-1.5 rounded text-xs font-bold uppercase tracking-wider border select-none flex items-center space-x-1"
-                            style={{ 
-                              backgroundColor: '#f0fdf4', 
-                              color: '#15803d', 
-                              borderColor: '#bbf7d0' 
+                            style={{
+                              backgroundColor: '#f0fdf4',
+                              color: '#15803d',
+                              borderColor: '#bbf7d0'
                             }}
                           >
                             <span>[ THIS DEVICE ]</span>
@@ -3482,10 +3542,10 @@ const handleEditImageUpload = async (e) => {
                             type="button"
                             onClick={() => setRevokingSession(session)}
                             className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider rounded transition cursor-pointer shadow-sm border border-red-700"
-                            style={{ 
-                              backgroundColor: '#dc2626', 
-                              color: '#ffffff', 
-                              borderColor: '#b91c1c' 
+                            style={{
+                              backgroundColor: '#dc2626',
+                              color: '#ffffff',
+                              borderColor: '#b91c1c'
                             }}
                           >
                             [ LOG OUT ]
@@ -3503,7 +3563,7 @@ const handleEditImageUpload = async (e) => {
           <div className="space-y-4 pt-4 border-t border-neutral-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div>
-                <h4 
+                <h4
                   className="text-neutral-900 text-sm font-bold uppercase tracking-wider flex items-center space-x-2"
                   style={{ color: '#111827' }}
                 >
@@ -3518,13 +3578,13 @@ const handleEditImageUpload = async (e) => {
               </div>
             </div>
 
-            <div 
+            <div
               className="bg-white border border-neutral-200 rounded-lg overflow-hidden shadow-sm"
               style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}
             >
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead 
+                  <thead
                     className="text-[10px] font-bold uppercase tracking-widest border-b"
                     style={{ backgroundColor: '#f3f4f6', color: '#4b5563', borderColor: '#e5e7eb' }}
                   >
@@ -3539,8 +3599,8 @@ const handleEditImageUpload = async (e) => {
                   <tbody className="divide-y divide-neutral-200" style={{ borderColor: '#e5e7eb' }}>
                     {loginActivities.length === 0 ? (
                       <tr>
-                        <td 
-                          colSpan={5} 
+                        <td
+                          colSpan={5}
                           className="p-12 text-center text-neutral-500 italic"
                           style={{ color: '#6b7280' }}
                         >
@@ -3562,36 +3622,36 @@ const handleEditImageUpload = async (e) => {
                         };
 
                         return (
-                          <tr 
-                            key={activity.id || activity._id} 
+                          <tr
+                            key={activity.id || activity._id}
                             className="hover:bg-neutral-50 transition"
                           >
                             <td className="p-4">
                               {isSuccess ? (
-                                <span 
+                                <span
                                   className="inline-block px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider border shadow-xs"
-                                  style={{ 
-                                    backgroundColor: '#dcfce7', 
-                                    color: '#15803d', 
-                                    borderColor: '#86efac' 
+                                  style={{
+                                    backgroundColor: '#dcfce7',
+                                    color: '#15803d',
+                                    borderColor: '#86efac'
                                   }}
                                 >
                                   SUCCESSFUL
                                 </span>
                               ) : (
                                 <div className="space-y-1">
-                                  <span 
+                                  <span
                                     className="inline-block px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider border shadow-xs"
-                                    style={{ 
-                                      backgroundColor: '#fee2e2', 
-                                      color: '#b91c1c', 
-                                      borderColor: '#fca5a5' 
+                                    style={{
+                                      backgroundColor: '#fee2e2',
+                                      color: '#b91c1c',
+                                      borderColor: '#fca5a5'
                                     }}
                                   >
                                     FAILED
                                   </span>
                                   {activity.failureReason && (
-                                    <div 
+                                    <div
                                       className="text-[10px] font-semibold"
                                       style={{ color: '#dc2626' }}
                                     >
@@ -3602,13 +3662,13 @@ const handleEditImageUpload = async (e) => {
                               )}
                             </td>
                             <td className="p-4">
-                              <div 
+                              <div
                                 className="font-bold text-sm"
                                 style={{ color: '#111827' }}
                               >
                                 {activity.browser} · {activity.os}
                               </div>
-                              <div 
+                              <div
                                 className="text-[11px] mt-0.5 font-medium"
                                 style={{ color: '#6b7280' }}
                               >
@@ -3616,13 +3676,13 @@ const handleEditImageUpload = async (e) => {
                               </div>
                             </td>
                             <td className="p-4">
-                              <div 
+                              <div
                                 className="font-medium"
                                 style={{ color: '#374151' }}
                               >
                                 {activity.location || 'India / approximate location'}
                               </div>
-                              <div 
+                              <div
                                 className="text-[11px] font-mono mt-0.5"
                                 style={{ color: '#6b7280' }}
                               >
@@ -3630,14 +3690,14 @@ const handleEditImageUpload = async (e) => {
                               </div>
                             </td>
                             <td className="p-4">
-                              <div 
+                              <div
                                 className="font-medium"
                                 style={{ color: '#374151' }}
                               >
                                 {activity.loginMethod || 'Password + OTP'}
                               </div>
                               {activity.logoutAt && (
-                                <div 
+                                <div
                                   className="text-[10px] mt-0.5 font-mono font-bold"
                                   style={{ color: '#b45309' }}
                                 >
@@ -3645,7 +3705,7 @@ const handleEditImageUpload = async (e) => {
                                 </div>
                               )}
                             </td>
-                            <td 
+                            <td
                               className="p-4 text-right font-mono font-medium"
                               style={{ color: '#374151' }}
                             >
@@ -3664,21 +3724,21 @@ const handleEditImageUpload = async (e) => {
           {/* ─── MODAL: LOG OUT SPECIFIC SESSION ───────────────────────────── */}
           {revokingSession && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-              <div 
+              <div
                 className="bg-white border border-neutral-200 p-6 rounded-lg w-full max-w-md space-y-4 shadow-2xl"
                 style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}
               >
                 <div className="flex justify-between items-center border-b border-neutral-200 pb-3">
-                  <h3 
+                  <h3
                     className="text-sm font-bold uppercase tracking-wider flex items-center space-x-2"
                     style={{ color: '#dc2626' }}
                   >
                     <LogOut size={16} />
                     <span>Log Out Device</span>
                   </h3>
-                  <button 
-                    type="button" 
-                    onClick={() => setRevokingSession(null)} 
+                  <button
+                    type="button"
+                    onClick={() => setRevokingSession(null)}
                     className="text-neutral-400 hover:text-neutral-700 cursor-pointer"
                   >
                     <X size={16} />
@@ -3689,7 +3749,7 @@ const handleEditImageUpload = async (e) => {
                   <p className="font-semibold text-sm" style={{ color: '#111827' }}>
                     Log out this device session?
                   </p>
-                  <div 
+                  <div
                     className="border p-3.5 rounded space-y-1.5 font-mono text-xs"
                     style={{ backgroundColor: '#f9fafb', borderColor: '#e5e7eb' }}
                   >
@@ -3737,21 +3797,21 @@ const handleEditImageUpload = async (e) => {
           {/* ─── MODAL: LOG OUT ALL OTHER SESSIONS ───────────────────────────── */}
           {showRevokeAllModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-              <div 
+              <div
                 className="bg-white border border-amber-300 p-6 rounded-lg w-full max-w-md space-y-4 shadow-2xl"
                 style={{ backgroundColor: '#ffffff', borderColor: '#fcd34d' }}
               >
                 <div className="flex justify-between items-center border-b border-neutral-200 pb-3">
-                  <h3 
+                  <h3
                     className="text-sm font-bold uppercase tracking-wider flex items-center space-x-2"
                     style={{ color: '#b45309' }}
                   >
                     <AlertTriangle size={16} />
                     <span>Log Out All Other Sessions</span>
                   </h3>
-                  <button 
-                    type="button" 
-                    onClick={() => setShowRevokeAllModal(false)} 
+                  <button
+                    type="button"
+                    onClick={() => setShowRevokeAllModal(false)}
                     className="text-neutral-400 hover:text-neutral-700 cursor-pointer"
                   >
                     <X size={16} />
@@ -3812,7 +3872,7 @@ const handleEditImageUpload = async (e) => {
 <p className="text-2xl font-extrabold text-white">{formatPrice(analytics?.totalRevenue ?? totalSales, currentCurrency)}</p>
               <span className="text-[9px] text-gray-500 font-light">Excludes cancelled orders</span>
             </div>
-            
+
             <div className="bg-luxury-gray border border-white/5 p-6 rounded-md space-y-2">
               <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Total Orders</span>
               <p className="text-2xl font-extrabold text-white">{analytics?.totalOrders ?? totalOrdersCount}</p>
@@ -3983,13 +4043,13 @@ const handleEditImageUpload = async (e) => {
             </div>
           </div>
           </div>
-          
+
       )}
 
       {/* --- TAB CONTENT: INVENTORY MANAGER (CRUD) --- */}
       {activeTab === 'products' && (
         <div className="space-y-6">
-          
+
           {/* Header & Add Button */}
           <div className="flex justify-between items-center flex-wrap gap-3">
             <h3 className="text-xs font-bold uppercase tracking-widest text-white">Watch Database</h3>
@@ -4015,7 +4075,7 @@ const handleEditImageUpload = async (e) => {
           {showAddForm && (
             <div className="bg-luxury-gray border border-white/5 p-6 rounded-md space-y-4">
               <h4 className="text-xs font-bold uppercase tracking-widest text-white border-b border-white/5 pb-2">New Timepiece Profile</h4>
-              
+
               <form onSubmit={handleCreateProduct} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Watch Name</label>
@@ -4305,8 +4365,8 @@ const handleEditImageUpload = async (e) => {
                       type="button"
                       onClick={() => {
                         const val = !newProduct.customizable;
-                        setNewProduct({ 
-                          ...newProduct, 
+                        setNewProduct({
+                          ...newProduct,
                           customizable: val,
                           allowStrapCustomization: val ? (newProduct.allowStrapCustomization ?? true) : false,
                           allowCaseCustomization: val ? (newProduct.allowCaseCustomization ?? true) : false,
@@ -4327,7 +4387,7 @@ const handleEditImageUpload = async (e) => {
                   {newProduct.customizable && (
                     <div className="pt-2 border-t border-white/5 space-y-3">
                       <p className="text-[9px] font-bold uppercase tracking-widest text-luxury-gold mb-1">Tailoring Capabilities</p>
-                      
+
                       <div className="space-y-2">
                         <div className="flex items-center space-x-2.5">
                           <input
@@ -4826,7 +4886,7 @@ const handleEditImageUpload = async (e) => {
                       />
                     )}
                   </div>
-                  
+
 
                   <div className="space-y-1.5">
                     <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Collection</label>
@@ -4936,8 +4996,8 @@ const handleEditImageUpload = async (e) => {
                         type="button"
                         onClick={() => {
                           const val = !editForm.customizable;
-                          setEditForm({ 
-                            ...editForm, 
+                          setEditForm({
+                            ...editForm,
                             customizable: val,
                             allowStrapCustomization: val ? (editForm.allowStrapCustomization ?? true) : false,
                             allowCaseCustomization: val ? (editForm.allowCaseCustomization ?? true) : false,
@@ -4958,7 +5018,7 @@ const handleEditImageUpload = async (e) => {
                     {editForm.customizable && (
                       <div className="pt-2 border-t border-white/5 space-y-3">
                         <p className="text-[9px] font-bold uppercase tracking-widest text-luxury-gold mb-1">Tailoring Capabilities</p>
-                        
+
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2.5">
                             <input
@@ -5172,7 +5232,7 @@ const handleEditImageUpload = async (e) => {
                                     </label>
                                   );
                                 })}
-                                
+
                               </div>
 
                               {/* Add Custom Dial Color */}
@@ -5324,13 +5384,13 @@ const handleEditImageUpload = async (e) => {
             </table>
           </div>
         </div>
-      )} 
+      )}
 
       {/* --- TAB CONTENT: ORDER DISPATCHER (MANAGE STATUSES) --- */}
       {activeTab === 'orders' && (
         <div className="space-y-6">
           <h3 className="text-xs font-bold uppercase tracking-widest text-white">Client Invoice Dispatcher</h3>
-          
+
           {orders.length === 0 ? (
             <p className="text-gray-400 text-xs italic p-4 text-center border border-dashed border-white/10 rounded">No order records found in simulated database.</p>
           ) : (
@@ -5397,7 +5457,7 @@ const handleEditImageUpload = async (e) => {
                           value={o.status}
                           onChange={(e) => dispatch(updateOrderStatus(o.id, e.target.value))}
                           className={`bg-luxury-dark text-xs border rounded px-2.5 py-1 font-semibold focus:outline-none ${
-                            o.status === 'Delivered' 
+                            o.status === 'Delivered'
                               ? 'border-emerald-500 text-emerald-400'
                               : o.status === 'Cancelled'
                               ? 'border-red-500 text-red-400'
@@ -5441,11 +5501,11 @@ const handleEditImageUpload = async (e) => {
       {/* --- TAB CONTENT: COUPON BUILDER --- */}
       {activeTab === 'coupons' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
+
           {/* Left: Create Form */}
           <div className="lg:col-span-5 bg-luxury-gray border border-white/5 p-6 rounded-md space-y-4 h-fit">
             <h4 className="text-xs font-bold uppercase tracking-widest text-white border-b border-white/5 pb-2">Assemble Promo Codes</h4>
-            
+
             <form onSubmit={handleCreateCoupon} className="space-y-4 text-xs">
               <div className="space-y-1.5">
                 <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Coupon Name/Code</label>
@@ -5496,7 +5556,7 @@ const handleEditImageUpload = async (e) => {
           {/* Right: List active coupons */}
           <div className="lg:col-span-7 space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-widest text-white">Active Promo Database</h4>
-            
+
             <div className="bg-luxury-gray border border-white/5 rounded-md divide-y divide-white/5">
               {coupons.map((c) => (
                 <div key={c.code} className="flex justify-between items-center p-4">
@@ -5509,7 +5569,7 @@ const handleEditImageUpload = async (e) => {
                     </div>
                     <p className="text-[10px] text-gray-500">{c.description || 'No description tag provided'}</p>
                   </div>
-                  
+
                   <button
                     onClick={() => dispatch(deleteCoupon(c.code))}
                     className="p-1.5 text-gray-500 hover:text-luxury-red transition hover:bg-white/5 rounded"
@@ -5528,7 +5588,7 @@ const handleEditImageUpload = async (e) => {
       {activeTab === 'reviews' && (
         <div className="space-y-6">
           <h3 className="text-xs font-bold uppercase tracking-widest text-white">Client Review Manager</h3>
-          
+
           {activeReviews.length === 0 ? (
             <p className="text-gray-400 text-xs italic p-4 text-center border border-dashed border-white/10 rounded">No published reviews found.</p>
           ) : (
@@ -5540,13 +5600,13 @@ const handleEditImageUpload = async (e) => {
                       <span className="text-white text-xs font-semibold">{item.review.userName}</span>
                       <span className="text-[10px] text-gray-500">on {item.productName}</span>
                     </div>
-                    
+
                     <div className="flex text-luxury-gold">
                       {[...Array(5)].map((_, i) => (
-                        <Star 
-                          key={i} 
-                          size={10} 
-                          fill={i < item.review.rating ? "var(--color-luxury-gold)" : "none"} 
+                        <Star
+                          key={i}
+                          size={10}
+                          fill={i < item.review.rating ? "var(--color-luxury-gold)" : "none"}
                           className="stroke-1"
                         />
                       ))}
@@ -5768,7 +5828,7 @@ const handleEditImageUpload = async (e) => {
           {/* List of existing updates */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-widest text-neutral-900">Brand Updates Database</h4>
-            
+
             {adminUpdates.length === 0 ? (
               <p className="text-neutral-600 text-xs italic p-6 text-center border border-dashed border-black/10 rounded">No brand updates found in database.</p>
             ) : (
@@ -5781,8 +5841,8 @@ const handleEditImageUpload = async (e) => {
                         <button
                           onClick={() => handleToggleUpdateApproval(up._id || up.id, up.approved)}
                           className={`text-[9px] font-bold px-2 py-0.5 rounded border transition cursor-pointer ${
-                            up.approved 
-                              ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20' 
+                            up.approved
+                              ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
                               : 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20'
                           }`}
                         >
@@ -5871,7 +5931,7 @@ const handleEditImageUpload = async (e) => {
           {showAddBlogForm && (
             <div className="bg-luxury-gray border border-white/5 p-6 rounded-md space-y-4">
               <h4 className="text-xs font-bold uppercase tracking-widest text-white border-b border-white/5 pb-2">Publish New Article</h4>
-              
+
               <form onSubmit={handleCreateBlog} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Article Title</label>
@@ -5957,7 +6017,7 @@ const handleEditImageUpload = async (e) => {
           {editingBlogId && editBlogForm && (
             <div className="bg-[#1a1a1a] border border-luxury-gold/20 p-6 rounded-md space-y-4">
               <h4 className="text-xs font-bold uppercase tracking-widest text-luxury-gold border-b border-white/5 pb-2">Edit Article</h4>
-              
+
               <form onSubmit={handleUpdateBlogSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Article Title</label>
@@ -6054,16 +6114,16 @@ const handleEditImageUpload = async (e) => {
           {/* Blogs list */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-widest text-white">Articles Database</h4>
-            
+
             {blogs.length === 0 ? (
               <p className="text-gray-400 text-xs italic p-6 text-center border border-dashed border-white/10 rounded">No blog posts found.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {blogs.map((blog) => (
                   <div key={blog.id || blog._id} className="bg-luxury-gray border border-white/5 p-4 rounded-md flex gap-4 items-start">
-                    <img 
-                      src={blog.image || '/assets/lifestyle_black_cafe.jpg'} 
-                      alt={blog.title} 
+                    <img
+                      src={blog.image || '/assets/lifestyle_black_cafe.jpg'}
+                      alt={blog.title}
                       className="w-20 h-20 object-cover rounded border border-white/10 bg-black flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0 space-y-1">

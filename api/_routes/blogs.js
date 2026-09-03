@@ -1,6 +1,6 @@
 import express from 'express';
 import Blog from '../_models/Blog.js';
-import { protect, adminOnly } from '../_middleware/auth.js';
+import { protect, adminOnly, requirePermission } from '../_middleware/auth.js';
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 // @route   POST /api/blogs
 // @desc    Create a blog post
 // @access  Private/Admin
-router.post('/', protect, adminOnly, async (req, res) => {
+router.post('/', protect, requirePermission('blogs'), async (req, res) => {
   const { title, content, author, image, category } = req.body;
 
   try {
@@ -47,7 +47,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
 // @route   DELETE /api/blogs/:id
 // @desc    Delete a blog post
 // @access  Private/Admin
-router.delete('/:id', protect, adminOnly, async (req, res) => {
+router.delete('/:id', protect, requirePermission('blogs'), async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
 
@@ -66,7 +66,7 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
 // @route   PUT /api/blogs/:id
 // @desc    Update a blog post
 // @access  Private/Admin
-router.put('/:id', protect, adminOnly, async (req, res) => {
+router.put('/:id', protect, requirePermission('blogs'), async (req, res) => {
   const { title, content, author, image, category } = req.body;
 
   try {
