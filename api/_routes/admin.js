@@ -286,19 +286,22 @@ router.get('/users', protect, requireSuperAdmin, async (req, res) => {
 
     res.json({
       success: true,
-      admins: admins.map(a => ({
-        id: a._id.toString(),
-        _id: a._id.toString(),
-        name: a.name,
-        email: a.email,
-        role: a.role,
-        location: a.location || 'Main Store',
-        locationId: a.locationId || 'loc-flagship',
-        permissions: a.permissions || [],
-        isActive: a.isActive !== false,
-        lastLogin: a.lastLogin || a.updatedAt || null,
-        createdAt: a.createdAt
-      }))
+      admins: admins.map(a => {
+        const isSuper = a.email === 'er.paritoshsaha@gmail.com' || a.role === 'super_admin';
+        return {
+          id: a._id.toString(),
+          _id: a._id.toString(),
+          name: isSuper ? 'Super Admin' : (a.name === 'Master Admin' ? 'Khroniq Admin' : a.name),
+          email: a.email,
+          role: isSuper ? 'super_admin' : 'admin',
+          location: a.location || 'Main Boutique (Flagship)',
+          locationId: a.locationId || 'loc-flagship',
+          permissions: isSuper ? ['all'] : (a.permissions || []),
+          isActive: a.isActive !== false,
+          lastLogin: a.lastLogin || a.updatedAt || null,
+          createdAt: a.createdAt
+        };
+      })
     });
   } catch (error) {
     console.error('Fetch admin users error:', error);

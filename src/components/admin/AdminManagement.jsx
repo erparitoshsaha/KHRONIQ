@@ -419,7 +419,7 @@ export default function AdminManagement() {
                 </tr>
               ) : (
                 filteredAdmins.map((admin) => {
-                  const isSuper = admin.role === 'super_admin';
+                  const isSuper = admin.role === 'super_admin' || admin.email === 'er.paritoshsaha@gmail.com';
                   const isSelf = admin._id === currentUser?.id || admin.id === currentUser?.id;
                   const perms = admin.permissions || [];
 
@@ -437,7 +437,7 @@ export default function AdminManagement() {
                           </div>
                           <div>
                             <div className="font-semibold text-white flex items-center space-x-1.5">
-                              <span>{admin.name}</span>
+                              <span>{isSuper ? 'Super Admin' : (admin.name === 'Master Admin' ? 'Khroniq Admin' : admin.name)}</span>
                               {isSelf && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.2 bg-luxury-gold text-black rounded uppercase">
                                   You
@@ -452,14 +452,14 @@ export default function AdminManagement() {
                       {/* Role Badge */}
                       <td className="py-4 px-4 whitespace-nowrap">
                         {isSuper ? (
-                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-luxury-gold/20 text-luxury-gold border border-luxury-gold/40">
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-luxury-gold/20 text-luxury-gold border border-luxury-gold/40">
                             <Shield size={10} className="stroke-[2.5]" />
-                            <span>Super Admin</span>
+                            <span>SUPER ADMIN</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30">
                             <ShieldCheck size={10} />
-                            <span>Admin</span>
+                            <span>ADMIN</span>
                           </span>
                         )}
                       </td>
@@ -475,12 +475,15 @@ export default function AdminManagement() {
                       {/* Permissions Summary */}
                       <td className="py-4 px-4">
                         {isSuper ? (
-                          <span className="text-[11px] text-luxury-gold font-semibold tracking-wide">
-                            Full Unrestricted Access (All 12 Modules)
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-luxury-gold text-black">
+                              FULL ACCESS
+                            </span>
+                            <span className="text-[11px] text-gray-300 font-medium">All Modules & System Controls</span>
+                          </div>
                         ) : perms.length === 0 ? (
                           <span className="text-[11px] text-red-400/80 italic">
-                            No permissions granted
+                            No permissions assigned
                           </span>
                         ) : (
                           <div className="flex flex-wrap gap-1 max-w-xs">

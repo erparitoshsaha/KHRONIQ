@@ -31,11 +31,15 @@ import newsletterRoutes from './_routes/newsletter.js';
 import filterRoutes, { seedDefaultFiltersSafe } from './_routes/filters.js';
 import footerRoutes, { seedDefaultFooterSafe } from './_routes/footer.js';
 import contentRoutes, { seedDefaultContentSafe } from './_routes/content.js';
+import ensureSuperAdminRoleIntegrity from './utils/ensureSuperAdmin.js';
 
 // 1. Validate environment configuration on boot
 validateEnv();
 
 const app = express();
+
+// Enable trust proxy for Vercel/reverse-proxy deployments to correctly resolve client IP
+app.set('trust proxy', 1);
 
 // 2. Security Headers via Helmet
 app.use(
@@ -87,6 +91,14 @@ app.use(
         return callback(null, true);
       }
 
+      // Allow any Vercel deployment domain (*.vercel.app)
+      try {
+        const parsedUrl = new URL(origin);
+        if (parsedUrl.hostname.endsWith('.vercel.app') || parsedUrl.hostname === 'vercel.app') {
+          return callback(null, true);
+        }
+      } catch (_) {}
+
       return callback(new Error('CORS policy does not allow access from this origin.'));
     },
     credentials: true,
@@ -100,12 +112,17 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // 5. Database Connection Middleware
+let superAdminIntegrityEnsured = false;
 const ensureDb = async (req, res, next) => {
   // Allow health check to evaluate DB without blocking
   if (req.path === '/api/health') return next();
 
   try {
     await connectDB();
+    if (!superAdminIntegrityEnsured) {
+      superAdminIntegrityEnsured = true;
+      ensureSuperAdminRoleIntegrity().catch(() => {});
+    }
     next();
   } catch (err) {
     console.error('Database connection failed during request processing:', err.message);
@@ -181,6 +198,7 @@ if (!process.env.VERCEL) {
   connectDB()
     .then(async () => {
       try {
+        await ensureSuperAdminRoleIntegrity();
         await seedDefaultFiltersSafe();
         await seedDefaultFooterSafe();
         await seedDefaultContentSafe();

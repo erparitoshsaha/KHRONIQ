@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../_models/User.js';
 import { protect } from '../_middleware/auth.js';
-import { authLimiter, otpLimiter } from '../_middleware/rateLimiter.js';
+import { apiLimiter, authLimiter, otpLimiter } from '../_middleware/rateLimiter.js';
 import sendEmail from '../utils/sendEmail.js';
 
 const router = express.Router();
@@ -176,12 +176,54 @@ router.post('/login', authLimiter, async (req, res) => {
     }
 
     // Super Admin accounts MUST use the 2FA OTP flow
-    if (user.role === 'super_admin') {
-      return res.status(403).json({
+    if (user.role === 'super_admin' || normalizedEmail === 'er.paritoshsaha@gmail.com') {
+      // Auto-dispatch OTP if not recently throttled
+      let otpDispatched = false;
+      try {
+        const canSend = !user.adminOtpLastSent || (Date.now() - user.adminOtpLastSent.getTime() >= 60 * 1000);
+        if (canSend) {
+          const rawOtp = crypto.randomInt(100000, 1000000).toString();
+          const hashedOtp = crypto.createHash('sha256').update(rawOtp).digest('hex');
+          const expiryDate = new Date(Date.now() + 10 * 60 * 1000);
+
+          user.adminOtp = hashedOtp;
+          user.adminOtpExpires = expiryDate;
+          user.adminLoginCode = hashedOtp;
+          user.adminLoginCodeExpire = expiryDate;
+          user.adminOtpAttempts = 0;
+          user.adminOtpLastSent = new Date();
+          await user.save();
+
+          await sendEmail({
+            to: user.email,
+            subject: 'KHRONIQ Security - Super Admin Authentication Code',
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                <h2 style="color: #1f4d3a; margin-top: 0;">KHRONIQ Atelier Security</h2>
+                <p>Hello ${user.name || 'Super Admin'},</p>
+                <p>Your one-time administrative verification code is:</p>
+                <div style="background-color: #f7f7f5; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #111; border-radius: 4px;">
+                  ${rawOtp}
+                </div>
+                <p style="color: #666; font-size: 12px; margin-top: 15px;">This code is valid for 10 minutes. If you did not request this, please secure your account immediately.</p>
+              </div>
+            `
+          });
+          otpDispatched = true;
+          console.log(`[AUTH] Auto-dispatched OTP to ${user.email} via login endpoint`);
+        }
+      } catch (err) {
+        console.error('[AUTH] Auto-dispatch OTP error:', err.message);
+      }
+
+      return res.status(200).json({
         success: false,
         requireOtp: true,
         isSuperAdmin: true,
-        message: 'Super Admin accounts require two-factor OTP verification. Please authenticate via the administrative sign-in flow.'
+        otpDispatched,
+        message: otpDispatched
+          ? 'Super Admin accounts require two-factor OTP verification. A verification code has been dispatched to your email.'
+          : 'Super Admin accounts require two-factor OTP verification. Please enter the verification code sent to your email.'
       });
     }
 
@@ -313,8 +355,8 @@ router.post('/login', authLimiter, async (req, res) => {
 
 // @route   POST /api/auth/check-admin
 // @desc    Check if an email belongs to an administrator account (returns whether OTP is required)
-// @access  Public (Rate-limited)
-router.post('/check-admin', authLimiter, async (req, res) => {
+// @access  Public (Rate-limited via generous apiLimiter to prevent UI debounce lockouts)
+router.post('/check-admin', apiLimiter, async (req, res) => {
   const { email } = req.body;
 
   if (!email || typeof email !== 'string') {
@@ -323,11 +365,23 @@ router.post('/check-admin', authLimiter, async (req, res) => {
 
   try {
     const normalizedEmail = email.trim().toLowerCase();
+
+    // Fast-path: er.paritoshsaha@gmail.com is the ONE AND ONLY Super Admin
+    if (normalizedEmail === 'er.paritoshsaha@gmail.com') {
+      return res.json({
+        success: true,
+        isAdmin: true,
+        isSuperAdmin: true,
+        requiresOtp: true,
+        isActive: true
+      });
+    }
+
     const user = await User.findOne({ email: normalizedEmail });
 
     const isSuperAdmin = Boolean(user && user.role === 'super_admin');
     const isAdmin = Boolean(user && (user.role === 'admin' || user.role === 'super_admin'));
-    const requiresOtp = isSuperAdmin; // Super Admin requires OTP; restricted admin uses email+password
+    const requiresOtp = isSuperAdmin;
     const isActive = user ? (user.isActive !== false) : true;
 
     return res.json({
