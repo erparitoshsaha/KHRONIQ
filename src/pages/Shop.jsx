@@ -320,8 +320,23 @@ export default function Shop({ onPageChange, filterParams }) {
         return String(a.name || '').localeCompare(String(b.name || ''));
       case 'name-desc':
         return String(b.name || '').localeCompare(String(a.name || ''));
-      default: // Featured / Normal sorting
-        return Number(a.id) - Number(b.id);
+      default: { // Featured / Default: newest added watch appears first
+        const getTime = (p) => {
+          if (p.createdAt) {
+            const t = new Date(p.createdAt).getTime();
+            if (!isNaN(t)) return t;
+          }
+          const idStr = String(p._id || p.id || '');
+          if (idStr.length === 24 && /^[0-9a-fA-F]{24}$/.test(idStr)) {
+            return parseInt(idStr.substring(0, 8), 16) * 1000;
+          }
+          return Number(p.id) || 0;
+        };
+        const timeA = getTime(a);
+        const timeB = getTime(b);
+        if (timeA !== timeB) return timeB - timeA;
+        return String(b._id || b.id || '').localeCompare(String(a._id || a.id || ''));
+      }
     }
   });
 

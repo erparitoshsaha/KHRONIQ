@@ -44,7 +44,7 @@ const generateUniqueClaimCode = async (excludeId = null) => {
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const products = await Product.find({});
+    const products = await Product.find({}).sort({ createdAt: -1, _id: -1 });
     res.json({ success: true, products });
   } catch (error) {
     console.error('Fetch products error:', error);
