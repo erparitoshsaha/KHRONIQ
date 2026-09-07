@@ -29,6 +29,8 @@ const productSchema = new mongoose.Schema({
   category: { type: String, required: true },
   gender: { type: String, enum: ['men', 'women', 'unisex'], default: 'unisex' },
   description: { type: String, required: true },
+  badge: { type: String, default: '' },
+  discountPercent: { type: Number, default: 0 },
   specs: {
     movement: { type: String, default: 'Automatic' },
     case: { type: String },

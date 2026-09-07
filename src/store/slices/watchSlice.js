@@ -1294,7 +1294,7 @@ export const addProduct = (productData) => async (dispatch) => {
     });
     const data = await res.json();
     if (data.success) {
-      dispatch(fetchProducts());
+      await dispatch(fetchProducts());
       return { success: true };
     } else {
       return { success: false, message: data.message };
@@ -1313,7 +1313,7 @@ export const editProduct = (productId, updatedData) => async (dispatch) => {
     });
     const data = await res.json();
     if (data.success) {
-      dispatch(fetchProducts());
+      await dispatch(fetchProducts());
       return { success: true };
     } else {
       return { success: false, message: data.message };

@@ -236,8 +236,20 @@ html {
    ========================================================================== */
 
 /* Overrides for text-white and text-gray classes to adapt them to light layouts */
-.text-white:not(button, button *, .bg-neutral-800, .bg-neutral-800 *, .bg-neutral-700, .bg-neutral-700 *, .bg-luxury-red *, .bg-luxury-red, .bg-red-500, .bg-red-500 *, .bg-red-600, .bg-red-600 *, .bg-red-700 *, .bg-red-700, .bg-red-800 *, .bg-red-800, .bg-\[\#1c1a17\] *, footer *, .bg-gradient-to-r *, .text-emerald-400 *, .font-mono *, .dark-panel *, header *) {
+.text-white:not(button, button *, .bg-neutral-900, .bg-neutral-900 *, .bg-neutral-950, .bg-neutral-950 *, .bg-black, .bg-black *, .product-card-badge, .product-card-badge *, .bg-neutral-800, .bg-neutral-800 *, .bg-neutral-700, .bg-neutral-700 *, .bg-luxury-red *, .bg-luxury-red, .bg-red-500, .bg-red-500 *, .bg-red-600, .bg-red-600 *, .bg-red-700 *, .bg-red-700, .bg-red-800 *, .bg-red-800, .bg-\[\#1c1a17\] *, footer *, .bg-gradient-to-r *, .text-emerald-400 *, .font-mono *, .dark-panel *, header *) {
   color: var(--color-luxury-text) !important;
+}
+
+/* Product card badges content contrast — ensure dark badges have crisp white text */
+.product-card-badge,
+.product-card-badge *,
+.bg-neutral-900.text-white,
+.bg-neutral-900 .text-white,
+.bg-neutral-950.text-white,
+.bg-neutral-950 .text-white,
+.bg-black.text-white,
+.bg-black .text-white {
+  color: #ffffff !important;
 }
 
 .text-gray-300:not(footer *, .bg-\[\#1c1a17\] *, button *, .bg-luxury-red *, .bg-red-700 *, .bg-red-800 *, .bg-black\/30 *, .bg-black\/35 *, .bg-gradient-to-r *, .dark-panel *) {

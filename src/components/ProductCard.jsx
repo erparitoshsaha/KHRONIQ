@@ -111,13 +111,13 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
           />
 
           {product.discountPercent > 0 && (
-            <div className="absolute top-2.5 left-2.5 bg-luxury-red text-white uppercase text-[9px] tracking-wider font-semibold px-2 py-0.5 rounded-sm shadow-md">
+            <div className="product-card-badge absolute top-2.5 left-2.5 bg-luxury-red !text-white uppercase text-[9px] tracking-wider font-semibold px-2 py-0.5 rounded-sm shadow-md">
               {product.discountPercent}% OFF
             </div>
           )}
 
           {product.badge && (
-            <div className="absolute top-2.5 right-2.5 bg-neutral-900 uppercase text-[9px] tracking-wider font-semibold px-2 py-0.5 rounded-sm shadow-md text-white">
+            <div className="product-card-badge absolute top-2.5 right-2.5 bg-neutral-900 uppercase text-[9px] tracking-wider font-semibold px-2 py-0.5 rounded-sm shadow-md !text-white">
               {product.badge}
             </div>
           )}

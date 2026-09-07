@@ -1227,7 +1227,11 @@ const handleEditImageUpload = async (e) => {
       uniqueCode: product.uniqueCode || '',
       discountPercent: product.discountPercent ?? 0,
       badge: product.badge ?? '',
-      badgeMode: ['New', 'Limited Edition', 'Bestseller'].includes(product.badge) ? product.badge : (product.badge ? 'custom' : 'none'),
+      badgeMode: (() => {
+        const standardBadges = ['New', 'Limited Edition', 'Bestseller'];
+        const matched = standardBadges.find(b => b.toLowerCase() === String(product.badge || '').trim().toLowerCase());
+        return matched || (product.badge ? 'custom' : 'none');
+      })(),
       existingUnitCodes: product.unitCodes || [],
       newUnitCodes: [],
       customizable: product.customizable ?? false,
