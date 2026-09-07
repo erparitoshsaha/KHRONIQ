@@ -506,29 +506,35 @@ const watchSlice = createSlice({
     },
     addToCartAction: (state, action) => {
       const { productId, quantity, price, customization } = action.payload;
-      const existing = state.cart.find(item => 
-        item.productId === productId && 
-        JSON.stringify(item.customization || {}) === JSON.stringify(customization || {})
-      );
+      const targetId = (productId?._id || productId)?.toString();
+      const existing = state.cart.find(item => {
+        const itemProdId = (item.productId?._id || item.productId)?.toString();
+        return itemProdId === targetId && 
+          JSON.stringify(item.customization || {}) === JSON.stringify(customization || {});
+      });
       if (existing) {
         existing.quantity += quantity;
       } else {
-        state.cart.push({ productId, quantity, price, customization });
+        state.cart.push({ productId: targetId, quantity, price, customization });
       }
     },
     removeFromCartAction: (state, action) => {
       const { productId, customization } = action.payload;
-      state.cart = state.cart.filter(item => 
-        !(item.productId === productId && 
-          JSON.stringify(item.customization || {}) === JSON.stringify(customization || {}))
-      );
+      const targetId = (productId?._id || productId)?.toString();
+      state.cart = state.cart.filter(item => {
+        const itemProdId = (item.productId?._id || item.productId)?.toString();
+        return !(itemProdId === targetId && 
+          JSON.stringify(item.customization || {}) === JSON.stringify(customization || {}));
+      });
     },
     updateCartQtyAction: (state, action) => {
       const { productId, qty, customization } = action.payload;
-      const existing = state.cart.find(item => 
-        item.productId === productId && 
-        JSON.stringify(item.customization || {}) === JSON.stringify(customization || {})
-      );
+      const targetId = (productId?._id || productId)?.toString();
+      const existing = state.cart.find(item => {
+        const itemProdId = (item.productId?._id || item.productId)?.toString();
+        return itemProdId === targetId && 
+          JSON.stringify(item.customization || {}) === JSON.stringify(customization || {});
+      });
       if (existing) {
         existing.quantity = qty;
       }
@@ -1024,18 +1030,29 @@ export const updateUserProfile = (name, email, shippingAddress) => async (dispat
 
 export const addToCart = (productId, quantity = 1, price = null, customization = null) => async (dispatch, getState) => {
   const { products, cart, currentUser } = getState().watch;
-  const product = products.find(p => p.id === productId);
+  const targetId = (productId?._id || productId)?.toString();
+  const product = products.find(p => (p.id && p.id.toString() === targetId) || (p._id && p._id.toString() === targetId));
   if (!product) return { success: false, message: 'Product not found' };
 
-  const cartItem = cart.find(item => 
-    item.productId === productId && 
-    JSON.stringify(item.customization || {}) === JSON.stringify(customization || {})
-  );
+  const availableStock = Math.max(0, product.stock ?? 0);
+  if (availableStock <= 0) {
+    return { success: false, message: 'This item is currently out of stock.' };
+  }
+
+  const cartItem = cart.find(item => {
+    const itemProdId = (item.productId?._id || item.productId)?.toString();
+    return itemProdId === targetId && 
+      JSON.stringify(item.customization || {}) === JSON.stringify(customization || {});
+  });
   const currentQty = cartItem ? cartItem.quantity : 0;
 
-  if (currentQty + quantity > product.stock) {
-    return { success: false, message: `Only ${product.stock} items in stock.` };
+  if (currentQty >= availableStock) {
+    return { success: false, message: `Maximum available stock (${availableStock}) is already in your cart.` };
   }
+
+  // Cap requested quantity to remaining available stock
+  const remainingStock = availableStock - currentQty;
+  const addQty = Math.min(quantity, remainingStock);
 
   const finalPrice = price !== null ? price : getDiscountedPrice(product);
 
@@ -1044,7 +1061,7 @@ export const addToCart = (productId, quantity = 1, price = null, customization =
       const res = await fetch('/api/cart/add', {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ productId, quantity, price: finalPrice, customization })
+        body: JSON.stringify({ productId: targetId, quantity: addQty, price: finalPrice, customization })
       });
       const data = await res.json();
       if (data.success) {
@@ -1056,23 +1073,31 @@ export const addToCart = (productId, quantity = 1, price = null, customization =
     }
   }
 
-  dispatch(addToCartAction({ productId, quantity, price: finalPrice, customization }));
+  dispatch(addToCartAction({ productId: targetId, quantity: addQty, price: finalPrice, customization }));
   return { success: true, message: 'Added to Cart' };
 };
 
 export const updateCartQty = (productId, qty, customization = null) => async (dispatch, getState) => {
   const { products, currentUser } = getState().watch;
-  const product = products.find(p => p.id === productId);
+  const targetId = (productId?._id || productId)?.toString();
+  const product = products.find(p => (p.id && p.id.toString() === targetId) || (p._id && p._id.toString() === targetId));
   if (!product) return;
+
+  const availableStock = Math.max(0, product.stock ?? 0);
 
   if (qty <= 0) {
     dispatch(removeFromCart(productId, customization));
     return;
   }
 
-  if (qty > product.stock) {
-    alert(`Only ${product.stock} items are in stock.`);
-    qty = product.stock;
+  let finalQty = qty;
+  if (finalQty > availableStock) {
+    finalQty = availableStock;
+  }
+
+  if (finalQty <= 0) {
+    dispatch(removeFromCart(productId, customization));
+    return;
   }
 
   if (currentUser) {
@@ -1080,7 +1105,7 @@ export const updateCartQty = (productId, qty, customization = null) => async (di
       const res = await fetch('/api/cart/update', {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ productId, qty, customization })
+        body: JSON.stringify({ productId: targetId, qty: finalQty, customization })
       });
       const data = await res.json();
       if (data.success) {
@@ -1092,18 +1117,19 @@ export const updateCartQty = (productId, qty, customization = null) => async (di
     }
   }
 
-  dispatch(updateCartQtyAction({ productId, qty, customization }));
+  dispatch(updateCartQtyAction({ productId: targetId, qty: finalQty, customization }));
 };
 
 export const removeFromCart = (productId, customization = null) => async (dispatch, getState) => {
   const { currentUser } = getState().watch;
+  const targetId = (productId?._id || productId)?.toString();
 
   if (currentUser) {
     try {
       const res = await fetch('/api/cart/remove', {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ productId, customization })
+        body: JSON.stringify({ productId: targetId, customization })
       });
       const data = await res.json();
       if (data.success) {
@@ -1115,7 +1141,7 @@ export const removeFromCart = (productId, customization = null) => async (dispat
     }
   }
 
-  dispatch(removeFromCartAction({ productId, customization }));
+  dispatch(removeFromCartAction({ productId: targetId, customization }));
 };
 
 export const toggleWishlist = (productId) => async (dispatch, getState) => {

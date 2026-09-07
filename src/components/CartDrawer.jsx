@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateCartQty, removeFromCart, selectCurrentCurrency, formatPrice, getDiscountedPrice  } from '../store/slices/watchSlice';
 import { X, Trash2, ShoppingBag, Plus, Minus, ArrowRight } from 'lucide-react';
@@ -13,12 +13,28 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
 
   // Calculate prices
   const cartItemsWithDetails = cart.map(item => {
-    const product = products.find(p => p.id === item.productId);
+    const itemProdId = (item.productId?._id || item.productId)?.toString();
+    const product = products.find(p => (p.id && p.id.toString() === itemProdId) || (p._id && p._id.toString() === itemProdId));
     return {
       ...item,
       product
     };
   }).filter(item => item.product !== undefined);
+
+  // Auto-clamp invalid quantities exceeding current stock when drawer is open
+  useEffect(() => {
+    if (!isOpen || products.length === 0) return;
+    cart.forEach(item => {
+      const itemProdId = (item.productId?._id || item.productId)?.toString();
+      const product = products.find(p => (p.id && p.id.toString() === itemProdId) || (p._id && p._id.toString() === itemProdId));
+      if (product) {
+        const availableStock = Math.max(0, product.stock ?? 0);
+        if (item.quantity > availableStock) {
+          dispatch(updateCartQty(item.productId, availableStock, item.customization));
+        }
+      }
+    });
+  }, [isOpen, cart, products, dispatch]);
 
   const subtotal = cartItemsWithDetails.reduce((sum, item) => sum + ((item.price !== undefined ? item.price : getDiscountedPrice(item.product)) * item.quantity), 0);
   const handleCheckoutClick = () => {
@@ -131,8 +147,15 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => dispatch(updateCartQty(item.productId, item.quantity + 1, item.customization))}
-                            className="p-1.5 text-luxury-muted hover:text-luxury-text transition cursor-pointer"
+                            onClick={() => {
+                              const maxStock = item.product?.stock ?? 0;
+                              if (item.quantity < maxStock) {
+                                dispatch(updateCartQty(item.productId, item.quantity + 1, item.customization));
+                              }
+                            }}
+                            disabled={item.quantity >= (item.product?.stock ?? 0)}
+                            className="p-1.5 text-luxury-muted hover:text-luxury-text disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+                            title={item.quantity >= (item.product?.stock ?? 0) ? "Maximum available stock reached" : "Increase quantity"}
                           >
                             <Plus size={12} />
                           </button>

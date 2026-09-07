@@ -54,6 +54,16 @@ export default function ProductDetail({ params, onPageChange }) {
 
   // States
   const [qty, setQty] = useState(1);
+
+  // Ensure qty is always between 1 and available stock
+  useEffect(() => {
+    if (product && product.stock !== undefined) {
+      setQty(prev => {
+        const maxStock = Math.max(1, product.stock);
+        return Math.max(1, Math.min(prev, maxStock));
+      });
+    }
+  }, [product?.id, product?.stock]);
   const [activeTab, setActiveTab] = useState('specs'); // specs | details
   const [ratingInput, setRatingInput] = useState(5);
   const [commentInput, setCommentInput] = useState('');
@@ -209,7 +219,8 @@ export default function ProductDetail({ params, onPageChange }) {
   const isDiscounted = Number(product.discountPercent) > 0 && discountedPrice < product.price;
 
   const handleAddToCart = async () => {
-    const result = await dispatch(addToCart(product.id, qty));
+    const targetId = product.id || product._id;
+    const result = await dispatch(addToCart(targetId, qty));
     if (result && result.success) {
       alert("ADDED TO CART");
     } else {
@@ -417,14 +428,16 @@ export default function ProductDetail({ params, onPageChange }) {
                   <div className="flex items-center border border-luxury-text/10 rounded bg-white">
                     <button
                       onClick={() => setQty(Math.max(1, qty - 1))}
-                      className="p-2 text-gray-400 hover:text-gray-700 cursor-pointer"
+                      disabled={qty <= 1}
+                      className="p-2 text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                     >
                       <Minus size={14} />
                     </button>
                     <span className="px-6 text-sm font-semibold text-luxury-text">{qty}</span>
                     <button
                       onClick={() => setQty(Math.min(product.stock, qty + 1))}
-                      className="p-2 text-gray-400 hover:text-gray-700 cursor-pointer"
+                      disabled={qty >= (product?.stock ?? 0)}
+                      className="p-2 text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                     >
                       <Plus size={14} />
                     </button>

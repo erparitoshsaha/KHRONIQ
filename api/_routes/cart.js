@@ -1,5 +1,6 @@
 import express from 'express';
 import User from '../_models/User.js';
+import Product from '../_models/Product.js';
 import { protect } from '../_middleware/auth.js';
 
 const router = express.Router();
@@ -14,18 +15,30 @@ router.get('/', protect, async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
     
-    // Format cart to send to client
+    let cartModified = false;
+    // Format cart to send to client and auto-clamp any item whose quantity exceeds available stock
     const cartItems = user.cart.map(item => {
       if (!item.productId) return null;
+      const availableStock = Math.max(0, item.productId.stock ?? 0);
+      let qty = item.quantity;
+      if (qty > availableStock) {
+        qty = availableStock;
+        item.quantity = qty;
+        cartModified = true;
+      }
       return {
         productId: item.productId._id,
         name: item.productId.name,
         image: item.productId.image,
         price: item.productId.price,
         stock: item.productId.stock,
-        quantity: item.quantity
+        quantity: qty
       };
     }).filter(Boolean);
+
+    if (cartModified) {
+      await user.save();
+    }
 
     res.json({ success: true, cart: cartItems });
   } catch (error) {
@@ -53,14 +66,21 @@ router.post('/sync', protect, async (req, res) => {
     const mergedCart = [...user.cart];
 
     for (const guestItem of guestCart) {
+      const product = await Product.findById(guestItem.productId);
+      if (!product) continue;
+      const availableStock = Math.max(0, product.stock ?? 0);
       const existingItem = mergedCart.find(item => item.productId.toString() === guestItem.productId);
-      if (existingItem) {
-        existingItem.quantity += guestItem.quantity;
-      } else {
-        mergedCart.push({
-          productId: guestItem.productId,
-          quantity: guestItem.quantity
-        });
+      const currentQty = existingItem ? existingItem.quantity : 0;
+      const targetQty = Math.min(currentQty + (guestItem.quantity || 1), availableStock);
+      if (targetQty > 0) {
+        if (existingItem) {
+          existingItem.quantity = targetQty;
+        } else {
+          mergedCart.push({
+            productId: guestItem.productId,
+            quantity: targetQty
+          });
+        }
       }
     }
 
@@ -105,14 +125,24 @@ router.post('/add', protect, async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const existingItem = user.cart.find(item => item.productId.toString() === productId);
-    if (existingItem) {
-      existingItem.quantity += qty;
-    } else {
-      user.cart.push({ productId, quantity: qty });
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    await user.save();
+    const availableStock = Math.max(0, product.stock ?? 0);
+    const existingItem = user.cart.find(item => item.productId.toString() === productId);
+    const currentQty = existingItem ? existingItem.quantity : 0;
+
+    if (currentQty < availableStock) {
+      const allowedAdd = Math.min(qty, availableStock - currentQty);
+      if (existingItem) {
+        existingItem.quantity += allowedAdd;
+      } else {
+        user.cart.push({ productId, quantity: allowedAdd });
+      }
+      await user.save();
+    }
 
     const populatedUser = await User.findById(user._id).populate('cart.productId');
     const cartItems = populatedUser.cart.map(item => {
@@ -155,9 +185,15 @@ router.post('/update', protect, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Item not in cart' });
     }
 
-    item.quantity = parseInt(qty);
-    if (item.quantity <= 0) {
+    const product = await Product.findById(productId);
+    const availableStock = product ? Math.max(0, product.stock ?? 0) : 0;
+    const requestedQty = parseInt(qty);
+    const finalQty = Math.min(requestedQty, availableStock);
+
+    if (finalQty <= 0) {
       user.cart = user.cart.filter(item => item.productId.toString() !== productId);
+    } else {
+      item.quantity = finalQty;
     }
 
     await user.save();
@@ -187,6 +223,41 @@ router.post('/update', protect, async (req, res) => {
 // @access  Private
 router.delete('/:productId', protect, async (req, res) => {
   const { productId } = req.params;
+
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    user.cart = user.cart.filter(item => item.productId.toString() !== productId);
+    await user.save();
+
+    const populatedUser = await User.findById(user._id).populate('cart.productId');
+    const cartItems = populatedUser.cart.map(item => {
+      if (!item.productId) return null;
+      return {
+        productId: item.productId._id,
+        name: item.productId.name,
+        image: item.productId.image,
+        price: item.productId.price,
+        stock: item.productId.stock,
+        quantity: item.quantity
+      };
+    }).filter(Boolean);
+
+    res.json({ success: true, cart: cartItems });
+  } catch (error) {
+    console.error('Remove from cart error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @route   POST /api/cart/remove
+// @desc    Remove item from cart (compatibility endpoint)
+// @access  Private
+router.post('/remove', protect, async (req, res) => {
+  const { productId } = req.body;
 
   try {
     const user = await User.findById(req.user.id);

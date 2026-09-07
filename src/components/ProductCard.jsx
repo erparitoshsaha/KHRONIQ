@@ -42,7 +42,8 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
 
   const handleAddToCart = async (e) => {
     e.stopPropagation();
-    const result = await dispatch(addToCart(product.id, 1));
+    const targetId = product.id || product._id;
+    const result = await dispatch(addToCart(targetId, 1));
     if (result && result.success) {
       alert("ADDED TO CART");
     } else {

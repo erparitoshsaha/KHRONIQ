@@ -140,9 +140,14 @@ export default function AdminMediaField({
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
             {onUpload && (
-              <label className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded border border-neutral-600 hover:border-white text-[10px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center space-x-1.5">
-                <Upload size={12} />
-                <span>{uploading ? 'Uploading...' : 'Upload / Replace'}</span>
+              <label
+                className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 !text-white text-white rounded border border-neutral-600 hover:border-white text-[10px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center space-x-1.5"
+                style={{ color: '#ffffff' }}
+              >
+                <Upload size={12} className="!text-white text-white shrink-0" style={{ color: '#ffffff' }} />
+                <span className="!text-white text-white" style={{ color: '#ffffff' }}>
+                  {uploading ? 'Uploading...' : 'Upload / Replace'}
+                </span>
                 <input
                   type="file"
                   accept={allowVideo ? 'image/*,video/*' : 'image/*'}

@@ -5,7 +5,7 @@ import { handleImageError } from '../utils/imageUtils';
 import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 
 import confetti from 'canvas-confetti';
-import { CheckCircle2, CreditCard, Landmark, ArrowRight, ShieldCheck, Gift, Check, Tag, X, Loader2 } from 'lucide-react';
+import { CheckCircle2, CreditCard, Landmark, ArrowRight, ArrowLeft, ShieldCheck, Gift, Check, Tag, X, Loader2 } from 'lucide-react';
 import BackButton from '../components/BackButton';
 
 export default function Checkout({ params, onPageChange }) {
@@ -731,9 +731,10 @@ export default function Checkout({ params, onPageChange }) {
                     }
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="py-4 px-6 border border-white/10 text-white font-bold text-xs tracking-widest uppercase hover:border-white transition w-1/3 cursor-pointer"
+                  className="py-4 px-6 bg-white border border-black text-black font-bold text-xs tracking-widest uppercase hover:bg-neutral-50 transition w-1/3 cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  Back
+                  <ArrowLeft size={14} />
+                  <span>Back</span>
                 </button>
                 <button
                   type="submit"
@@ -774,9 +775,10 @@ export default function Checkout({ params, onPageChange }) {
                 type="button"
                 onClick={() => setStep(2)}
                 disabled={processingPayment}
-                className="py-4 px-6 border border-white/10 text-white font-bold text-xs tracking-widest uppercase hover:border-white transition w-1/3 cursor-pointer disabled:opacity-50"
+                className="py-4 px-6 border border-white/10 text-black font-bold text-xs tracking-widest uppercase hover:border-black transition w-1/3 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
-                Back
+                <ArrowLeft size={14} className="text-black" />
+                <span>Back</span>
               </button>
               <button
                 type="button"
@@ -860,9 +862,9 @@ export default function Checkout({ params, onPageChange }) {
             </button>
             <button
               onClick={() => onPageChange('home')}
-              className="py-3.5 bg-transparent border border-white/10 text-white font-semibold text-xs tracking-widest uppercase hover:border-white transition cursor-pointer"
+              className="py-3.5 bg-white border border-black text-black font-bold text-xs tracking-widest uppercase hover:bg-neutral-50 transition cursor-pointer"
             >
-              Return Home
+              Continue Shopping
             </button>
           </div>
         </div>

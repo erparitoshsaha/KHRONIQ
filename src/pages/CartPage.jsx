@@ -33,8 +33,7 @@ export default function CartPage({ onPageChange }) {
     };
   }).filter(item => item.product !== undefined);
  
-  // Permanently prune stale cart entries (products that no longer exist) from Redux/localStorage,
-  // not just from what's displayed — keeps cart counts (e.g. Navbar badge) accurate everywhere.
+  // Permanently prune stale cart entries and auto-clamp invalid quantities exceeding current stock
   useEffect(() => {
     if (products.length === 0) return; // don't prune before products have loaded
     const staleItems = cart.filter(item => {
@@ -42,7 +41,18 @@ export default function CartPage({ onPageChange }) {
       return !products.some(p => (p.id && p.id.toString() === itemProdId) || (p._id && p._id.toString() === itemProdId));
     });
     staleItems.forEach(item => dispatch(removeFromCart(item.productId)));
-  }, [cart, products]);
+
+    cart.forEach(item => {
+      const itemProdId = (item.productId?._id || item.productId)?.toString();
+      const product = products.find(p => (p.id && p.id.toString() === itemProdId) || (p._id && p._id.toString() === itemProdId));
+      if (product) {
+        const availableStock = Math.max(0, product.stock ?? 0);
+        if (item.quantity > availableStock) {
+          dispatch(updateCartQty(item.productId, availableStock, item.customization));
+        }
+      }
+    });
+  }, [cart, products, dispatch]);
 
   // Compute prices
   const subtotal = cartItemsWithDetails.reduce((sum, item) => sum + (item.itemPrice * item.quantity), 0);
@@ -199,8 +209,15 @@ export default function CartPage({ onPageChange }) {
                     </button>
                     <span className="px-3 text-xs font-bold text-luxury-text">{item.quantity}</span>
                     <button
-                      onClick={() => dispatch(updateCartQty(item.productId, item.quantity + 1, item.customization))}
-                      className="p-1 text-luxury-muted hover:text-luxury-text cursor-pointer"
+                      onClick={() => {
+                        const maxStock = item.product?.stock ?? 0;
+                        if (item.quantity < maxStock) {
+                          dispatch(updateCartQty(item.productId, item.quantity + 1, item.customization));
+                        }
+                      }}
+                      disabled={item.quantity >= (item.product?.stock ?? 0)}
+                      className="p-1 text-luxury-muted hover:text-luxury-text disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                      title={item.quantity >= (item.product?.stock ?? 0) ? "Maximum available stock reached" : "Increase quantity"}
                     >
                       <Plus size={12} />
                     </button>
