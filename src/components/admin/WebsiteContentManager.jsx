@@ -15,6 +15,7 @@ import {
   seedDefaultContent
 } from '../../store/slices/watchSlice';
 import { DEFAULT_CONTENT_SECTIONS } from '../../constants/defaultContent.js';
+import AdminMediaField from './AdminMediaField';
 import {
   Globe,
   Plus,
@@ -35,6 +36,89 @@ import {
   SlidersHorizontal,
   Sparkles
 } from 'lucide-react';
+
+export const SECTION_METADATA_EXPLANATIONS = {
+  hero: {
+    name: 'Homepage Hero',
+    controls: 'Main homepage hero headline, narrative, primary/secondary CTA buttons, and background spotlight media'
+  },
+  marquee_a: {
+    name: 'Top Feature Marquee',
+    controls: 'Scrolling ticker banner highlighting warranty, Indian engineering, and luxury hallmarks'
+  },
+  gender_split: {
+    name: 'Shop By Gender Split',
+    controls: 'Dual-banner showcase directing clients to Men\'s and Women\'s collections'
+  },
+  marquee_b: {
+    name: 'Brand Philosophy Banner',
+    controls: 'Secondary marquee highlighting Khroniq caliber craftsmanship & precision manufacture'
+  },
+  story: {
+    name: 'Featured Collection Spotlight',
+    controls: 'Timepiece spotlight story with detailed narrative, background imagery, and primary CTA'
+  },
+  collections: {
+    name: 'Curated Collections Grid',
+    controls: 'Timepiece series and collections display on the homepage'
+  },
+  banner: {
+    name: 'Atelier Teaser Banner',
+    controls: 'Bespoke customization and craftsmanship banner linking to atelier journey'
+  },
+  lifestyle: {
+    name: 'Lifestyle & Heritage Showcase',
+    controls: 'Brand lifestyle imagery and horological heritage visual panels'
+  },
+  featured: {
+    name: 'Featured Masterpieces',
+    controls: 'Highlighted signature timepieces with individual pricing and details'
+  },
+  stats: {
+    name: 'Brand Milestones & Statistics',
+    controls: 'Trust metrics, warranty years, and precision craftsmanship figures'
+  },
+  brand_story: {
+    name: 'Brand Story & Heritage',
+    controls: 'About page founding narrative, philosophy, and artisan mission'
+  },
+  pillars: {
+    name: 'Atelier Pillars & Values',
+    controls: 'Core engineering standards, horological principles, and craftsmanship tenets'
+  },
+  concierge: {
+    name: 'Concierge & Contact',
+    controls: 'Client assistance info, concierge contact details, and inquiry channels'
+  },
+  faq_list: {
+    name: 'Frequently Asked Questions',
+    controls: 'Customer help questions, answers, and accordions'
+  },
+  header_nav: {
+    name: 'Header Navigation Menu',
+    controls: 'Top navigation bar links and menu hierarchy'
+  },
+  policy_terms: {
+    name: 'Terms of Service',
+    controls: 'Terms and conditions governing purchases and client agreements'
+  },
+  policy_privacy: {
+    name: 'Privacy Policy',
+    controls: 'Client privacy, data security, and confidentiality commitments'
+  },
+  policy_shipping: {
+    name: 'Shipping & Delivery Policy',
+    controls: 'Delivery timelines, courier security, insured transit, and order dispatch details'
+  },
+  policy_returns: {
+    name: 'Returns & Refunds Policy',
+    controls: 'Return eligibility, return windows, refund timelines, and exchange terms'
+  },
+  policy_warranty: {
+    name: 'Warranty Policy',
+    controls: '1-Year comprehensive warranty, movement coverage, and repair concierge terms'
+  }
+};
 
 const SUPPORTED_PAGES = [
   { key: 'home', label: 'Homepage' },
@@ -385,12 +469,19 @@ export default function WebsiteContentManager() {
 
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm font-black text-neutral-900 uppercase tracking-wide">
-                          {sec.name}
-                        </h3>
-                        <span className="text-[10px] bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded font-mono font-medium border border-neutral-200">
-                          {sec.sectionKey}
-                        </span>
+                        <div className="flex flex-col">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-sm font-black text-neutral-900 uppercase tracking-wide">
+                              {SECTION_METADATA_EXPLANATIONS[sec.sectionKey]?.name || sec.name}
+                            </h3>
+                            <span className="text-[10px] bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded font-mono font-medium border border-neutral-200">
+                              {sec.sectionKey}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-neutral-500 font-medium mt-0.5">
+                            Controls: {SECTION_METADATA_EXPLANATIONS[sec.sectionKey]?.controls || 'Specific website content area and layout'}
+                          </p>
+                        </div>
                         <span className="text-[10px] bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded uppercase font-semibold">
                           {sec.type}
                         </span>
@@ -711,12 +802,17 @@ export default function WebsiteContentManager() {
           <div className="bg-white border border-neutral-200 rounded-sm w-full max-w-xl p-6 space-y-4 shadow-xl my-8">
             <div className="flex items-center justify-between border-b pb-3">
               <div>
-                <h3 className="text-base font-black uppercase tracking-wider text-black">
-                  {sectionModal.isEdit ? 'EDIT SECTION' : 'CREATE SECTION'}
+                <h3 className="text-base font-black uppercase tracking-wider text-black flex items-center space-x-2">
+                  <span>{sectionModal.isEdit ? 'EDIT WEBSITE CONTENT SECTION' : 'CREATE WEBSITE CONTENT SECTION'}</span>
+                  {sectionModal.isEdit && (
+                    <span className="text-xs px-2 py-0.5 bg-neutral-100 border border-neutral-300 rounded font-bold text-neutral-800">
+                      {SECTION_METADATA_EXPLANATIONS[sectionModal.savedData?.sectionKey]?.name || sectionModal.savedData?.name}
+                    </span>
+                  )}
                 </h3>
                 {sectionModal.isEdit && (
-                  <p className="text-[11px] text-neutral-500 mt-0.5">
-                    Editing: <span className="font-semibold text-neutral-800">{sectionModal.savedData?.name}</span>
+                  <p className="text-[11px] text-neutral-600 mt-0.5 font-medium">
+                    Controls: <span className="text-neutral-900 font-semibold">{SECTION_METADATA_EXPLANATIONS[sectionModal.savedData?.sectionKey]?.controls || 'Website presentation and layout'}</span>
                   </p>
                 )}
               </div>
@@ -995,43 +1091,73 @@ export default function WebsiteContentManager() {
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-neutral-700 uppercase mb-1">Image URL / Upload</label>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    value={sectionModal.data.image || ''}
-                    onChange={(e) =>
+              <div className="space-y-4 pt-2 border-t border-neutral-200">
+                <span className="block text-[11px] font-black uppercase tracking-wider text-neutral-700">
+                  Section Media Assets
+                </span>
+                <AdminMediaField
+                  label="Primary Section Image"
+                  value={sectionModal.data.image || ''}
+                  onChange={(url) =>
+                    setSectionModal((prev) => ({
+                      ...prev,
+                      data: { ...prev.data, image: url }
+                    }))
+                  }
+                  onUpload={async (file) => {
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    const token = localStorage.getItem('khroniq_token');
+                    const res = await fetch('/api/upload', {
+                      method: 'POST',
+                      headers: token ? { Authorization: `Bearer ${token}` } : {},
+                      body: formData
+                    });
+                    const data = await res.json();
+                    return data.success ? data.imageUrl : null;
+                  }}
+                  uploading={uploadingImage}
+                  placeholder="e.g. /assets/spotlight_red_angled.png"
+                  helperText="Primary visual asset for this section across desktop and mobile devices"
+                />
+
+                {(sectionModal.data.sectionKey === 'hero' || sectionModal.data.metadata?.video || sectionModal.data.video) && (
+                  <AdminMediaField
+                    label="Background Video Showcase (Optional)"
+                    isVideo={true}
+                    allowVideo={true}
+                    value={sectionModal.data.metadata?.video || sectionModal.data.video || ''}
+                    onChange={(url) =>
                       setSectionModal((prev) => ({
                         ...prev,
-                        data: { ...prev.data, image: e.target.value }
+                        data: {
+                          ...prev.data,
+                          video: url,
+                          metadata: { ...(prev.data?.metadata || {}), video: url }
+                        }
                       }))
                     }
-                    placeholder="/assets/watch_green.jpg or https://..."
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-sm"
+                    placeholder="e.g. /assets/movement_teaser.mp4"
+                    helperText="Video media displayed in hero or horology motion showcases"
                   />
-                  <label className="px-3 py-2 bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 rounded-sm cursor-pointer flex items-center space-x-1 shrink-0">
-                    <Upload size={13} />
-                    <span>{uploadingImage ? 'Uploading...' : 'Upload'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) =>
-                        handleImageUpload(e, (url) =>
-                          setSectionModal((prev) => ({
-                            ...prev,
-                            data: { ...prev.data, image: url }
-                          }))
-                        )
-                      }
-                    />
-                  </label>
-                </div>
-                {sectionModal.isEdit && (
-                  <p className="text-[11px] text-neutral-500 mt-1 truncate">
-                    Current image: <span className="font-mono text-[10px] text-neutral-700">{sectionModal.savedData?.image || '(None)'}</span>
-                  </p>
+                )}
+
+                {(sectionModal.data.metadata?.badgeLogo !== undefined || sectionModal.data.sectionKey === 'hero') && (
+                  <AdminMediaField
+                    label="Section Badge / Emblem Logo (Optional)"
+                    value={sectionModal.data.metadata?.badgeLogo || ''}
+                    onChange={(url) =>
+                      setSectionModal((prev) => ({
+                        ...prev,
+                        data: {
+                          ...prev.data,
+                          metadata: { ...(prev.data?.metadata || {}), badgeLogo: url }
+                        }
+                      }))
+                    }
+                    placeholder="e.g. /assets/logo_text.png"
+                    helperText="Emblem or secondary mark displayed next to headline"
+                  />
                 )}
               </div>
 
@@ -1331,66 +1457,33 @@ export default function WebsiteContentManager() {
                 )}
               </div>
 
-              {/* Image with Preview & Replace Controls */}
+              {/* Image with Universal Media Preview */}
               <div>
-                <label className="block font-bold text-neutral-800 uppercase mb-1">
-                  Image & Replacement
-                </label>
-                <div className="flex items-start gap-3 p-3 bg-neutral-50 border border-neutral-200 rounded-sm">
-                  {/* Current image preview thumbnail */}
-                  <div className="w-16 h-16 bg-white border border-neutral-300 rounded flex items-center justify-center p-1 shrink-0 overflow-hidden">
-                    {itemModal.data.image ? (
-                      <img
-                        src={itemModal.data.image}
-                        alt="Thumbnail preview"
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    ) : (
-                      <span className="text-[9px] text-neutral-400">No Image</span>
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="text"
-                        value={itemModal.data.image || ''}
-                        onChange={(e) =>
-                          setItemModal((prev) => ({
-                            ...prev,
-                            data: { ...prev.data, image: e.target.value }
-                          }))
-                        }
-                        placeholder="/assets/... or https://..."
-                        className="w-full px-3 py-1.5 border border-neutral-300 rounded-sm text-xs focus:border-black focus:outline-none"
-                      />
-                      <label className="px-3 py-1.5 bg-white hover:bg-neutral-100 border border-neutral-300 text-neutral-800 rounded-sm cursor-pointer flex items-center space-x-1 shrink-0 font-bold uppercase tracking-wider text-[10px]">
-                        <Upload size={12} />
-                        <span>{uploadingImage ? 'Uploading...' : 'Replace Image'}</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          disabled={uploadingImage}
-                          className="hidden"
-                          onChange={(e) =>
-                            handleImageUpload(e, (url) =>
-                              setItemModal((prev) => ({
-                                ...prev,
-                                data: { ...prev.data, image: url }
-                              }))
-                            )
-                          }
-                        />
-                      </label>
-                    </div>
-
-                    {itemModal.isEdit && (
-                      <p className="text-[11px] text-neutral-500 truncate">
-                        Current image: <span className="font-mono text-[10px] text-neutral-700">{itemModal.savedData?.image || '(None)'}</span>
-                      </p>
-                    )}
-                  </div>
-                </div>
+                <AdminMediaField
+                  label="Card / Item Media Asset"
+                  value={itemModal.data.image || ''}
+                  onChange={(url) =>
+                    setItemModal((prev) => ({
+                      ...prev,
+                      data: { ...prev.data, image: url }
+                    }))
+                  }
+                  onUpload={async (file) => {
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    const token = localStorage.getItem('khroniq_token');
+                    const res = await fetch('/api/upload', {
+                      method: 'POST',
+                      headers: token ? { Authorization: `Bearer ${token}` } : {},
+                      body: formData
+                    });
+                    const data = await res.json();
+                    return data.success ? data.imageUrl : null;
+                  }}
+                  uploading={uploadingImage}
+                  placeholder="/assets/... or https://..."
+                  helperText="Visual asset displayed in this card or collection tile on customer website"
+                />
               </div>
 
               {/* Real-time Live Preview Card */}

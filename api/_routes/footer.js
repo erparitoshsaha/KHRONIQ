@@ -30,7 +30,7 @@ export const DEFAULT_FOOTER_DEFINITIONS = [
     links: [
       { label: 'Book an Appointment', page: 'static', args: { view: 'contact' }, order: 1, isActive: true },
       { label: 'Register My Watch', action: 'warranty', order: 2, isActive: true },
-      { label: 'Boutique Contact', page: 'static', args: { view: 'contact' }, order: 3, isActive: true }
+      { label: 'Contact', page: 'static', args: { view: 'contact' }, order: 3, isActive: true }
     ]
   },
   {
@@ -111,7 +111,7 @@ router.get('/', async (req, res, next) => {
         .sort((a, b) => a.order - b.order)
         .map(l => ({
           id: l._id ? l._id.toString() : l.id,
-          label: l.label,
+          label: l.label ? (l.label.replace(/\bboutique\s*/gi, '').trim() || l.label) : l.label,
           page: l.page,
           url: l.url,
           args: l.args,

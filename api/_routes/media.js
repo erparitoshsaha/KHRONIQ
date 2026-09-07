@@ -75,10 +75,17 @@ router.delete('/:id', protect, requirePermission('homepage_media'), async (req, 
 // GET /api/admin/media/public - public, returns the latest image per section as { section: url }
 router.get('/public', async (req, res) => {
   try {
-    const list = await Media.find({ type: 'image' }).sort({ createdAt: -1 });
+    const list = await Media.find({
+      type: 'image',
+      url: { $not: { $regex: '^data:' } }
+    })
+      .sort({ createdAt: -1 })
+      .select('section url')
+      .lean();
+
     const lookup = {};
     list.forEach(doc => {
-      if (!lookup[doc.section]) lookup[doc.section] = doc.url; // first hit per section = newest
+      if (!lookup[doc.section] && doc.url) lookup[doc.section] = doc.url; // first hit per section = newest
     });
     res.json({ success: true, media: lookup });
   } catch (err) {

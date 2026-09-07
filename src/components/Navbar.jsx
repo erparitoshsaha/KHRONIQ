@@ -144,7 +144,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-48 bg-[#111111] border border-white/10 rounded shadow-xl py-2 hidden group-hover:block transition duration-200 z-50 text-left">
                       {[
                         { label: 'Our Story', view: 'about' },
-                        { label: 'Boutique Contact', view: 'contact' },
+                        { label: 'Contact', view: 'contact' },
                         { label: 'Client FAQ', view: 'faq' },
                         { label: 'Blogs & Editorial', view: 'blogs' },
                         { label: 'Legal Policies', view: 'policies' }
@@ -511,7 +511,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                   </span>
                   {[
                     { label: 'Our Story', view: 'about' },
-                    { label: 'Boutique Contact', view: 'contact' },
+                    { label: 'Contact', view: 'contact' },
                     { label: 'Client FAQ', view: 'faq' },
                     { label: 'Blogs & Editorial', view: 'blogs' },
                     { label: 'Legal Policies', view: 'policies' }

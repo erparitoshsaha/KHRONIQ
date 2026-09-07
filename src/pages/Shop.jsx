@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import ProductCard from '../components/ProductCard';
+import BackButton from '../components/BackButton';
 import { getDiscountedPrice, selectCurrentCurrency, formatPrice, fetchFilters } from '../store/slices/watchSlice';
 import { SlidersHorizontal, Search, RotateCcw, X, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -94,7 +95,8 @@ function matchesOption(product, categorySlug, optionValue, optionName) {
     if (normVal === 'automatic') return pMovement.includes('automatic');
     if (normVal === 'quartz') return pMovement.includes('quartz') || String(pSpecs.glass || '').toLowerCase().includes('quartz');
     if (normVal === 'digital') return pMovement.includes('digital') || pDesc.includes('digital');
-    return pMovement.includes(normVal) || pDesc.includes(normVal);
+    if (normVal === 'mechanical') return pMovement.includes('mechanical') || pDesc.includes('mechanical');
+    return pMovement.includes(normVal) || pMovement.includes(normName) || pDesc.includes(normVal) || pDesc.includes(normName);
   }
 
   if (categorySlug === 'strap') {
@@ -110,7 +112,7 @@ function matchesOption(product, categorySlug, optionValue, optionName) {
     if (normVal === 'brass-alloy' || normVal === 'brass' || normVal === 'alloy') {
       return pStrap.includes('brass') || pStrap.includes('alloy');
     }
-    return pStrap.includes(normVal) || pDesc.includes(normVal);
+    return pStrap.includes(normVal) || pStrap.includes(normName) || pDesc.includes(normVal) || pDesc.includes(normName);
   }
 
   if (categorySlug === 'dial') {
@@ -164,11 +166,22 @@ export default function Shop({ onPageChange, filterParams }) {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const itemsPerPage = 12;
 
   useEffect(() => {
     document.title = 'Shop Luxury Watches | KHRONIQ';
   }, []);
+
+  // Prevent background scrolling when mobile filters drawer is open
+  useEffect(() => {
+    if (showFiltersMobile) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [showFiltersMobile]);
 
   // Listen to outer navigation category/gender updates
   useEffect(() => {
@@ -330,7 +343,7 @@ export default function Shop({ onPageChange, filterParams }) {
             placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white text-luxury-text text-xs px-3 py-2 pl-8 border border-luxury-text/10 rounded focus:outline-none focus:border-luxury-gold-dark"
+            className="w-full bg-white text-luxury-text text-xs px-3 py-2 pl-8 border border-luxury-text/10 rounded focus:outline-none focus:border-black"
           />
           <Search size={12} className="absolute left-2.5 top-3 text-luxury-muted" />
         </div>
@@ -422,7 +435,12 @@ export default function Shop({ onPageChange, filterParams }) {
   );
 
   return (
-    <div className="space-y-8 px-4 sm:px-8 lg:px-12 py-8 max-w-[100vw] overflow-x-hidden">
+    <div className="space-y-8 px-4 sm:px-6 lg:px-8 xl:px-10 py-8 max-w-[100vw] overflow-x-hidden">
+      {/* Back Button */}
+      <div>
+        <BackButton onPageChange={onPageChange} fallbackPage="home" label="BACK" />
+      </div>
+
       {/* Page Header */}
       <div className="border-b border-luxury-text/10 pb-6">
         <h1 className="font-serif text-3xl font-bold uppercase text-luxury-text tracking-widest">Khroniq Catalogue</h1>
@@ -430,11 +448,11 @@ export default function Shop({ onPageChange, filterParams }) {
       </div>
 
       {/* Main Grid: Filters & Products */}
-      <div className="flex flex-col lg:flex-row gap-10">
+      <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 items-start">
         
-        {/* Filters Panel (Desktop Sidebar) */}
-        <aside className="hidden lg:block w-64 flex-shrink-0 space-y-6">
-          <div className="flex items-center justify-between border-b border-luxury-text/10 pb-4">
+        {/* Filters Panel (Desktop Sidebar) - Independently Scrollable */}
+        <aside className="hidden lg:flex flex-col w-56 xl:w-60 flex-shrink-0 sticky top-24 max-h-[calc(100vh-7.5rem)] bg-white">
+          <div className="flex items-center justify-between border-b border-luxury-text/10 pb-4 shrink-0">
             <h2 className="text-xs font-bold uppercase tracking-widest text-luxury-text flex items-center space-x-2">
               <SlidersHorizontal size={14} className="text-luxury-text" />
               <span>Filters</span>
@@ -453,12 +471,15 @@ export default function Shop({ onPageChange, filterParams }) {
             </button>
           </div>
 
-          {renderFilterSections()}
+          {/* Independently Scrollable Filters List */}
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-2.5 pt-4 pb-6 filters-sidebar-scroll">
+            {renderFilterSections()}
+          </div>
         </aside>
 
         {/* Mobile Filters Trigger & Sorting Section */}
-        <div className="flex-1 space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white border border-luxury-text/10 px-6 py-4 rounded-md shadow-sm">
+        <div className="flex-1 min-w-0 space-y-5">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white border border-luxury-text/10 px-5 py-3.5 rounded-md shadow-sm">
             
             {/* Left Mobile Toggle */}
             <button
@@ -504,7 +525,7 @@ export default function Shop({ onPageChange, filterParams }) {
             </div>
           ) : (
             <div className="space-y-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4 xl:gap-4.5">
                 {currentProducts.map((product) => (
                   <ProductCard 
                     key={product.id} 
@@ -570,8 +591,8 @@ export default function Shop({ onPageChange, filterParams }) {
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowFiltersMobile(false)} />
           
-          <div className="relative w-80 max-w-sm bg-white border-r border-luxury-text/10 h-full p-6 overflow-y-auto space-y-6 flex flex-col z-10">
-            <div className="flex justify-between items-center border-b border-luxury-text/10 pb-4">
+          <div className="relative w-80 max-w-sm bg-white border-r border-luxury-text/10 h-full p-6 flex flex-col z-10">
+            <div className="flex justify-between items-center border-b border-luxury-text/10 pb-4 shrink-0">
               <h2 className="text-sm font-bold uppercase tracking-widest text-luxury-text flex items-center space-x-2">
                 <SlidersHorizontal size={16} />
                 <span>Filters</span>
@@ -581,18 +602,18 @@ export default function Shop({ onPageChange, filterParams }) {
                   </span>
                 )}
               </h2>
-              <button onClick={() => setShowFiltersMobile(false)} className="text-luxury-muted hover:text-luxury-text cursor-pointer">
+              <button onClick={() => setShowFiltersMobile(false)} className="text-neutral-600 hover:text-black transition cursor-pointer p-1" aria-label="Close filters">
                 <X size={20} />
               </button>
             </div>
 
-            {/* Mobile Filters Content */}
-            <div className="flex-1 overflow-y-auto pr-1">
+            {/* Mobile Filters Content - Independently scrollable */}
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-2.5 py-4 filters-sidebar-scroll">
               {renderFilterSections()}
             </div>
 
-            {/* Apply & Reset Buttons */}
-            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-luxury-text/10">
+            {/* Apply & Reset Buttons (Pinned) */}
+            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-luxury-text/10 shrink-0">
               <button
                 onClick={resetFilters}
                 className="py-2.5 border border-luxury-text/20 text-luxury-text font-semibold text-xs tracking-wider uppercase hover:bg-neutral-100 transition cursor-pointer"

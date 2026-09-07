@@ -44,10 +44,11 @@ import {
   fetchAdminContentSections
 } from '../store/slices/watchSlice';
 import WebsiteContentManager from '../components/admin/WebsiteContentManager';
+import AdminMediaField from '../components/admin/AdminMediaField';
 import AdminManagement from '../components/admin/AdminManagement';
 import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
 import {
-  BarChart3, Plus, Edit, Trash2, Check, X, Tag, Star,
+  Menu, BarChart3, Plus, Edit, Trash2, Check, X, Tag, Star,
   Package, AlertTriangle, ShieldAlert, ArrowLeft, ArrowUpRight,
   CheckCircle2, LogOut, Newspaper, ImagePlus, BookOpen, Gift, Download,
   SlidersHorizontal,
@@ -58,7 +59,12 @@ import {
   Globe,
   KeyRound,
   Laptop,
-  Tablet
+  Tablet,
+  Search,
+  ShoppingBag,
+  ChevronDown,
+  FileText,
+  Bell
 } from 'lucide-react';
 
 const PRESET_STRAPS = [
@@ -143,10 +149,56 @@ export default function Admin({ onPageChange }) {
   }, [visibleTabs, activeTab]);
 
   // Filter Management State
+  const toFilterSlug = (str) => {
+    if (!str) return '';
+    return String(str)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  };
+
   const [selectedCatForOptions, setSelectedCatForOptions] = useState(null);
   const [showAddCatModal, setShowAddCatModal] = useState(false);
-  const [newCatForm, setNewCatForm] = useState({ name: '', slug: '', type: 'multi', order: 0, isActive: true });
+  const [newCatForm, setNewCatForm] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    type: 'multi',
+    order: 0,
+    isActive: true,
+    options: []
+  });
+  const [newCatOptionInput, setNewCatOptionInput] = useState({ name: '', value: '', slug: '' });
+  const [newCatError, setNewCatError] = useState('');
+
   const [editingCat, setEditingCat] = useState(null);
+  const [newOptionInput, setNewOptionInput] = useState({ name: '', value: '', slug: '' });
+  const [editCatError, setEditCatError] = useState('');
+
+  const openCompleteCategoryEditor = (cat) => {
+    setEditingCat({
+      id: cat.id || cat._id,
+      _id: cat._id || cat.id,
+      name: cat.name || '',
+      slug: cat.slug || '',
+      description: cat.description || '',
+      order: cat.order !== undefined ? cat.order : 0,
+      isActive: cat.isActive !== false,
+      type: cat.type || 'multi',
+      options: (cat.options || []).map((o, idx) => ({
+        id: o.id || o._id || `opt-${idx}`,
+        _id: o._id || o.id,
+        name: o.name || '',
+        slug: o.slug || '',
+        value: o.value || o.slug || '',
+        order: o.order !== undefined ? o.order : idx + 1,
+        isActive: o.isActive !== false
+      }))
+    });
+    setNewOptionInput({ name: '', value: '', slug: '' });
+    setEditCatError('');
+  };
 
   const [showAddOptModal, setShowAddOptModal] = useState(false);
   const [newOptForm, setNewOptForm] = useState({ name: '', slug: '', value: '', order: 0, isActive: true });
@@ -240,7 +292,8 @@ export default function Admin({ onPageChange }) {
     category: 'Classic',
     gender: 'unisex',
     description: '',
-    image: '', // default copy
+    image: '', // primary image
+    images: [], // additional images
     specs: {
       movement: 'Automatic',
       case: '40mm',
@@ -486,10 +539,26 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
 
 
   // Analytics State
-
-
-  // Analytics State
   const [analytics, setAnalytics] = useState(null);
+  const [analyticsViewBy, setAnalyticsViewBy] = useState('collection'); // 'collection' | 'product' | 'gender'
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [adminSearchOpen, setAdminSearchOpen] = useState(false);
+  const [adminSearchQuery, setAdminSearchQuery] = useState('');
+  const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
+  const [ordersNotificationOpen, setOrdersNotificationOpen] = useState(false);
+
+  useEffect(() => {
+    const handleAdminHeaderClickOutside = (e) => {
+      if (!e.target.closest('#admin-account-dropdown-btn') && !e.target.closest('#admin-account-dropdown-menu')) {
+        setAccountDropdownOpen(false);
+      }
+      if (!e.target.closest('#admin-orders-btn') && !e.target.closest('#admin-orders-menu')) {
+        setOrdersNotificationOpen(false);
+      }
+    };
+    document.addEventListener('click', handleAdminHeaderClickOutside);
+    return () => document.removeEventListener('click', handleAdminHeaderClickOutside);
+  }, []);
 
   useEffect(() => {
     if (isAdminRole(currentUser?.role)) {
@@ -947,8 +1016,8 @@ const handleEditBlogImageUpload = async (e) => {
     const hasToken = typeof window !== 'undefined' && localStorage.getItem('khroniq_token');
     if (hasToken && !currentUser) {
       return (
-        <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-4 text-luxury-gold">
-          <div className="w-8 h-8 border-2 border-luxury-gold/30 border-t-luxury-gold rounded-full animate-spin" />
+        <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-4 text-white">
+          <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           <p className="text-xs text-gray-400 uppercase tracking-widest">Verifying Admin Session...</p>
         </div>
       );
@@ -963,7 +1032,7 @@ const handleEditBlogImageUpload = async (e) => {
         </div>
         <button
           onClick={() => onPageChange('login')}
-          className="px-6 py-2.5 bg-luxury-gold text-luxury-dark text-xs font-bold uppercase tracking-widest hover:bg-luxury-gold-dark transition"
+          className="px-6 py-2.5 bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-neutral-200 transition"
         >
           Authenticate Admin Account
         </button>
@@ -971,30 +1040,33 @@ const handleEditBlogImageUpload = async (e) => {
     );
   }
 
-  // --- ANALYTICS CALCULATIONS ---
-// --- ANALYTICS CALCULATIONS (fallback client-side values, used until backend analytics loads) ---
-  const totalSales = orders.filter(o => o.status !== 'Cancelled').reduce((sum, o) => sum + o.total, 0);
-  const totalOrdersCount = orders.length;
-  const outOfStockCount = products.filter(p => p.stock === 0).length;
+  // --- ANALYTICS CALCULATIONS (Backend as single source of truth) ---
+  const totalSales = analytics?.totalRevenue ?? 0;
+  const totalOrdersCount = analytics?.totalOrders ?? 0;
+  const outOfStockCount = analytics?.outOfStockCount ?? 0;
 
-  // Real category sales — sourced directly from backend analytics (analytics.salesByCategory),
-  // not recalculated client-side. No mock/fallback numbers — shows real 0 when there are no sales.
-  const categories = ['Khronomaster', 'Defy', 'Heritage', 'Elite'];
-  const displaySales = { Khronomaster: 0, Defy: 0, Heritage: 0, Elite: 0 };
+  // Selected multi-view dynamic sales data directly from backend analytics
+  const dynamicSalesData = (() => {
+    if (!analytics) return null;
+    if (analyticsViewBy === 'product') {
+      return analytics.salesByProduct || [];
+    }
+    if (analyticsViewBy === 'gender') {
+      return analytics.salesByGender || [];
+    }
+    // Default: 'collection'
+    return analytics.salesByCollection || analytics.salesByCategory || [];
+  })();
 
-  if (analytics?.salesByCategory) {
-    analytics.salesByCategory.forEach(entry => {
-      const rawCat = (entry._id || 'Heritage').toString().trim().toLowerCase();
-      const matchedKey = categories.find(c => c.toLowerCase() === rawCat);
-      if (matchedKey) {
-        displaySales[matchedKey] += entry.revenue || 0;
-      } else {
-        displaySales.Heritage += entry.revenue || 0; // unmatched/unknown categories bucket into Heritage
-      }
-    });
-  }
+  const categories = dynamicSalesData ? dynamicSalesData.map(d => d._id) : [];
+  const displaySales = dynamicSalesData ? dynamicSalesData.reduce((acc, d) => {
+    acc[d._id] = d.revenue || 0;
+    return acc;
+  }, {}) : {};
 
-  const maxVal = Math.max(...Object.values(displaySales), 1000);
+  const maxVal = dynamicSalesData && dynamicSalesData.length > 0
+    ? Math.max(...Object.values(displaySales), 1000)
+    : 1000;
 
   // Compile all active (approved) reviews for management
   const activeReviews = [];
@@ -1084,13 +1156,24 @@ const handleEditImageUpload = async (e) => {
       alert('Please fill out Name, Price and Stock.');
       return;
     }
+    const cleanPrimary = (newProduct.image || '').trim();
+    if (!cleanPrimary) {
+      alert('Please upload or provide a Primary Watch Image.');
+      return;
+    }
     // Auto append custom fields
     let customOpts = { ...(newProduct.customizationOptions || {}) };
     if (customOpts.customStrapName && !customOpts.strapMaterials?.includes(customOpts.customStrapName)) {
       customOpts.strapMaterials = [...(customOpts.strapMaterials || []), customOpts.customStrapName];
     }
+    const cleanAdditional = (newProduct.images || [])
+      .map(img => (typeof img === 'string' ? img.trim() : ''))
+      .filter(img => Boolean(img) && img !== cleanPrimary);
+
     const finalProduct = {
       ...newProduct,
+      image: cleanPrimary,
+      images: cleanAdditional,
       discountPercent: Number(newProduct.discountPercent) || 0,
       customizationOptions: customOpts
     };
@@ -1099,8 +1182,9 @@ const handleEditImageUpload = async (e) => {
       alert('Product created successfully!');
       setShowAddForm(false);
       setNewProduct({
-        name: '', modelNo: '', serialNo: '', uniqueCode: '', price: '', stock: '', discountPercent: 0, badge: '', badgeMode: 'none',unitCodes: [],  warrantyMonths: 12, category: 'Khronomaster', description: '',
+        name: '', modelNo: '', serialNo: '', uniqueCode: '', price: '', stock: '', discountPercent: 0, badge: '', badgeMode: 'none', unitCodes: [], warrantyMonths: 12, category: 'Khronomaster', description: '',
         image: '',
+        images: [],
         specs: { movement: 'Automatic', case: '40mm', strap: 'Leather', waterResistance: '50m', glass: 'Sapphire', dialColor: 'Black', caseMaterial: 'Stainless Steel', watchFunction: 'Hours, Minutes, Seconds', warrantyDetails: 'Manufacturer Warranty', collection: 'Khronomaster', warrantyPeriod: '2 Years' },
         customizable: true,
         allowStrapCustomization: true,
@@ -1113,7 +1197,6 @@ const handleEditImageUpload = async (e) => {
           customCaseName: '',
           customCaseColor: '#ffffff'
         },
-
       });
     } else {
       alert(res?.message || 'Failed to create product.');
@@ -1122,8 +1205,23 @@ const handleEditImageUpload = async (e) => {
 
   const handleEditProductInit = (product) => {
     setEditingId(product.id);
+    const initialImages = Array.isArray(product.images) && product.images.length > 0
+      ? product.images.map(s => (typeof s === 'string' ? s.trim() : '')).filter(Boolean)
+      : (product.image ? [product.image.trim()] : []);
+    const primaryImage = product.image || initialImages[0] || '';
+    let primarySkipped = false;
+    const additionalImages = initialImages.filter((img) => {
+      if (!primarySkipped && img === primaryImage) {
+        primarySkipped = true;
+        return false;
+      }
+      return true;
+    });
+
     setEditForm({
       ...product,
+      image: primaryImage,
+      images: additionalImages,
       modelNo: product.modelNo || '',
       serialNo: product.serialNo || '',
       uniqueCode: product.uniqueCode || '',
@@ -1160,14 +1258,24 @@ const handleEditImageUpload = async (e) => {
   };
 
   const handleUpdateProduct = async (e) => {
-
     e.preventDefault();
+    const cleanPrimary = (editForm.image || '').trim();
+    if (!cleanPrimary) {
+      alert('Please upload or provide a Primary Watch Image.');
+      return;
+    }
     let customOpts = { ...(editForm.customizationOptions || {}) };
     if (customOpts.customStrapName && !customOpts.strapMaterials?.includes(customOpts.customStrapName)) {
       customOpts.strapMaterials = [...(customOpts.strapMaterials || []), customOpts.customStrapName];
     }
+    const cleanAdditional = (editForm.images || [])
+      .map(img => (typeof img === 'string' ? img.trim() : ''))
+      .filter(img => Boolean(img) && img !== cleanPrimary);
+
     const finalProduct = {
       ...editForm,
+      image: cleanPrimary,
+      images: cleanAdditional,
       unitCodes: editForm.newUnitCodes || [],
       customizationOptions: customOpts
     };
@@ -1245,91 +1353,362 @@ const handleEditImageUpload = async (e) => {
   };
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="flex min-h-screen bg-[#f8f9fa] text-gray-900 font-sans antialiased">
+      {/* ─── MOBILE BACKDROP OVERLAY ─── */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
 
-      {/* Dashboard Top Banner */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-6">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="font-serif text-3xl font-bold uppercase text-white tracking-widest">
-              {isSuperAdmin ? 'Super Admin Control Center' : 'Admin Control Center'}
-            </h1>
-            <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded tracking-widest ${
-              isSuperAdmin
-                ? 'bg-luxury-gold text-black'
-                : 'bg-luxury-red text-white'
-            }`}>
-              {isSuperAdmin ? 'SUPER ADMINISTRATOR' : 'STAFF ADMINISTRATOR'}
-            </span>
-          </div>
-          <p className="text-gray-400 text-xs mt-1">
-            {isSuperAdmin
-              ? 'Universal administrative authority: store analytics, timepiece inventory, system configurations, and staff accounts.'
-              : `Restricted administration scope for ${currentUser?.location || 'Assigned Store'}. Assigned modules: ${visibleTabs.length}.`}
-          </p>
+      {/* ─── VERTICAL LEFT SIDEBAR ─── */}
+      <aside
+        className={`
+          dark-panel fixed inset-y-0 left-0 z-50 w-64 bg-[#09090b] border-r border-white/10 flex flex-col transition-transform duration-200 ease-in-out
+          lg:translate-x-0 lg:static lg:z-auto lg:h-screen lg:sticky lg:top-0 flex-shrink-0
+          ${mobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
+        `}
+      >
+        {/* Sidebar Header: KHRONIQ Logo */}
+        <div className="px-6 py-6 border-b border-white/5 flex items-center justify-between">
+          <span
+            className="text-lg font-bold tracking-[0.25em] text-white uppercase font-sans select-none"
+            style={{ color: '#ffffff' }}
+          >
+            KHRONIQ
+          </span>
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen(false)}
+            className="lg:hidden text-gray-400 hover:text-white p-1 rounded transition cursor-pointer"
+            aria-label="Close Sidebar"
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Sidebar Navigation Items */}
+        <nav
+          className="flex-1 overflow-y-auto px-3 py-4 space-y-1 custom-admin-scrollbar"
+          style={{ scrollbarWidth: 'thin', scrollbarColor: '#27272a transparent' }}
+        >
+          {visibleTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isCurrent = activeTab === tab.key;
+            const isSuperTab = tab.key === 'admin_management';
+
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setMobileSidebarOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer text-left ${
+                  isCurrent
+                    ? 'bg-[#18181b] text-white font-semibold shadow-xs border border-white/10'
+                    : 'text-[#9ca3af] hover:text-white hover:bg-white/[0.04]'
+                }`}
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <Icon size={17} className={`flex-shrink-0 ${isCurrent ? 'text-white' : 'text-[#71717a]'}`} />
+                  <span className="truncate tracking-wide">{tab.label}</span>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                  {isSuperTab && (
+                    <span className="bg-white text-black text-[8px] font-black px-1.5 py-0.5 rounded tracking-widest uppercase">
+                      SUPER
+                    </span>
+                  )}
+                  {tab.key === 'reviews' && activeReviews.length > 0 && (
+                    <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-sans font-semibold">
+                      {activeReviews.length}
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Sidebar Footer: Exit & Logout */}
+        <div className="p-3 border-t border-white/5 space-y-1 bg-[#09090b]">
           <button
+            type="button"
             onClick={() => onPageChange('home')}
-            className="px-4 py-2 border border-white/10 text-gray-300 hover:text-white text-xs font-semibold uppercase tracking-wider flex items-center space-x-1.5 transition cursor-pointer"
+            className="w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-lg text-[13px] font-medium text-[#9ca3af] hover:text-white hover:bg-white/[0.04] tracking-wide transition cursor-pointer"
           >
-            <ArrowLeft size={12} />
+            <ArrowLeft size={17} className="text-[#71717a] flex-shrink-0" />
             <span>Exit Dashboard</span>
           </button>
 
           <button
+            type="button"
             onClick={() => {
               dispatch(logoutUser());
               onPageChange('home');
             }}
-            className="px-4 py-2 bg-luxury-red hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider flex items-center space-x-1.5 transition cursor-pointer rounded-sm"
+            className="w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-lg text-[13px] font-medium text-[#9ca3af] hover:text-white hover:bg-white/[0.04] tracking-wide transition cursor-pointer"
           >
-            <LogOut size={12} />
+            <LogOut size={17} className="text-[#71717a] flex-shrink-0" />
             <span>Logout</span>
           </button>
         </div>
-      </div>
+      </aside>
 
-      {/* Admin Tab Selectors */}
-      <div className="flex flex-wrap gap-2 text-xs border-b border-white/5 pb-4">
-        {visibleTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isCurrent = activeTab === tab.key;
-          const isSuperTab = tab.key === 'admin_management';
-          return (
+      {/* ─── MAIN ADMIN CONTENT AREA ─── */}
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen bg-[#f8f9fa]">
+        {/* Top Header Bar */}
+        <header className="h-16 bg-white border-b border-gray-200/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-20">
+          <div className="flex items-center gap-3">
+            {/* Hamburger: Mobile/tablet only (hidden on desktop lg and above) */}
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`py-2.5 px-4 font-black uppercase tracking-widest cursor-pointer transition flex items-center space-x-1.5 rounded-sm border ${
-                isCurrent
-                  ? 'bg-black text-white'
-                  : isSuperTab
-                    ? 'bg-luxury-gold/15 text-luxury-gold border-luxury-gold/30 hover:bg-luxury-gold/25'
-                    : 'bg-white text-black hover:bg-neutral-200'
-              }`}
-              style={{
-                color: isCurrent ? '#ffffff' : (isSuperTab ? '#c8a96a' : '#000000'),
-                backgroundColor: isCurrent ? '#000000' : (isSuperTab ? 'rgba(200, 169, 106, 0.12)' : '#ffffff'),
-                borderColor: isCurrent ? 'rgba(255,255,255,0.2)' : (isSuperTab ? 'rgba(200, 169, 106, 0.4)' : 'rgba(0,0,0,0.1)')
-              }}
+              type="button"
+              onClick={() => setMobileSidebarOpen(prev => !prev)}
+              className="lg:hidden p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-lg transition cursor-pointer"
+              aria-label="Toggle navigation menu"
             >
-              <Icon size={14} style={{ color: isCurrent ? '#ffffff' : (isSuperTab ? '#c8a96a' : '#000000') }} />
-              <span style={{ color: isCurrent ? '#ffffff' : (isSuperTab ? '#c8a96a' : '#000000') }}>{tab.label}</span>
-              {isSuperTab && (
-                <span className="bg-luxury-gold text-black text-[8px] font-black px-1.5 py-0.5 rounded tracking-widest uppercase ml-1">
-                  SUPER
-                </span>
-              )}
-              {tab.key === 'reviews' && activeReviews.length > 0 && (
-                <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-sans font-medium ml-1">
-                  {activeReviews.length}
-                </span>
-              )}
+              <Menu size={20} />
             </button>
-          );
-        })}
-      </div>
+          </div>
+
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Search Icon / Expandable Bar */}
+            {adminSearchOpen ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (adminSearchQuery.trim()) {
+                    const q = adminSearchQuery.trim().toLowerCase();
+                    const matchingTab = visibleTabs.find(t =>
+                      t.label.toLowerCase().includes(q) || t.key.toLowerCase().includes(q)
+                    );
+                    if (matchingTab) {
+                      setActiveTab(matchingTab.key);
+                    } else {
+                      setActiveTab('products');
+                    }
+                  }
+                }}
+                className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 animate-fadeIn"
+              >
+                <Search size={15} className="text-gray-500 shrink-0" />
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Search admin modules or timepieces..."
+                  value={adminSearchQuery}
+                  onChange={(e) => setAdminSearchQuery(e.target.value)}
+                  className="bg-transparent text-xs text-black outline-none w-40 sm:w-60"
+                />
+                <button
+                  type="button"
+                  onClick={() => { setAdminSearchOpen(false); setAdminSearchQuery(''); }}
+                  className="text-gray-400 hover:text-black cursor-pointer"
+                  aria-label="Close search"
+                >
+                  <X size={14} />
+                </button>
+              </form>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAdminSearchOpen(true)}
+                className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-lg transition cursor-pointer"
+                aria-label="Search"
+                title="Search"
+              >
+                <Search size={18} />
+              </button>
+            )}
+
+            <div className="h-4 w-px bg-gray-200" />
+
+            {/* Super Admin Account Dropdown */}
+            <div className="relative">
+              <button
+                id="admin-account-dropdown-btn"
+                type="button"
+                onClick={() => setAccountDropdownOpen(prev => !prev)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-gray-900 hover:bg-gray-100 rounded-lg transition cursor-pointer select-none"
+                aria-label="Admin account menu"
+                title="Account Settings & Controls"
+              >
+                <ShieldCheck size={16} className="text-black" />
+                <span>{isSuperAdmin ? 'Super Admin' : (currentUser?.name || 'Staff Admin')}</span>
+                <ChevronDown size={14} className={`text-gray-400 transition-transform ${accountDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {accountDropdownOpen && (
+                <div
+                  id="admin-account-dropdown-menu"
+                  className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-50 animate-fadeIn"
+                >
+                  <div className="px-4 py-2 border-b border-gray-100">
+                    <div className="font-bold text-xs text-gray-900">{currentUser?.name || (isSuperAdmin ? 'Super Admin' : 'Staff Admin')}</div>
+                    <div className="text-[11px] text-gray-500 font-mono truncate">{currentUser?.email || 'admin@khroniq.com'}</div>
+                    <div className="mt-1.5">
+                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-black text-white">
+                        {isSuperAdmin ? 'SUPER ADMIN' : 'STAFF ADMIN'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {isSuperAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab('admin_management');
+                        setAccountDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:text-black font-medium transition cursor-pointer flex items-center gap-2"
+                    >
+                      <ShieldAlert size={14} className="text-gray-400" />
+                      <span>Admin Management</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAccountDropdownOpen(false);
+                      onPageChange('home');
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:text-black font-medium transition cursor-pointer flex items-center gap-2"
+                  >
+                    <ArrowLeft size={14} className="text-gray-400" />
+                    <span>Exit Dashboard</span>
+                  </button>
+
+                  <div className="border-t border-gray-100 my-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAccountDropdownOpen(false);
+                      dispatch(logoutUser());
+                      onPageChange('home');
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 font-semibold transition cursor-pointer flex items-center gap-2"
+                  >
+                    <LogOut size={14} className="text-red-500" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="h-4 w-px bg-gray-200" />
+
+            {/* Notification / Orders Bag Dropdown */}
+            <div className="relative">
+              <button
+                id="admin-orders-btn"
+                type="button"
+                onClick={() => setOrdersNotificationOpen(prev => !prev)}
+                className="relative p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-lg transition cursor-pointer"
+                title={`Order Notifications (${orders && orders.length > 0 ? orders.length : 0} active orders)`}
+                aria-label="Order notifications"
+              >
+                <ShoppingBag size={18} />
+                {orders && orders.length > 0 && (
+                  <span className="absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full leading-tight font-sans">
+                    {orders.length}
+                  </span>
+                )}
+              </button>
+
+              {ordersNotificationOpen && (
+                <div
+                  id="admin-orders-menu"
+                  className="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl p-3 z-50 animate-fadeIn"
+                >
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900">
+                      <Bell size={14} className="text-gray-500" />
+                      <span>Order Notifications</span>
+                    </div>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
+                      {orders && orders.length > 0 ? `${orders.length} New` : '0 New'}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {orders && orders.length > 0 ? (
+                      orders.slice(0, 4).map(ord => (
+                        <div
+                          key={ord._id || ord.id}
+                          onClick={() => {
+                            setActiveTab('orders');
+                            setOrdersNotificationOpen(false);
+                          }}
+                          className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition text-left"
+                        >
+                          <div className="flex justify-between items-center text-xs font-semibold text-gray-900">
+                            <span className="truncate max-w-[130px]">{ord.shippingAddress?.fullName || ord.user?.name || 'Customer'}</span>
+                            <span className="text-[11px] font-bold font-mono">{formatPrice(ord.total, currentCurrency)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[10px] text-gray-400 mt-0.5">
+                            <span>Order #{String(ord._id || ord.id).slice(-6)}</span>
+                            <span className="text-emerald-600 font-medium">{ord.status || 'Processing'}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-gray-400 py-3 text-center">No active orders</p>
+                    )}
+                  </div>
+
+                  <div className="border-t border-gray-100 pt-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab('orders');
+                        setOrdersNotificationOpen(false);
+                      }}
+                      className="w-full py-1.5 bg-black hover:bg-neutral-800 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition cursor-pointer text-center"
+                    >
+                      Go to Order Dispatcher →
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Content Body Container */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] w-full">
+          {/* Dashboard Title & Scope Header */}
+          <div className="pb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="font-serif text-2xl sm:text-3xl font-bold uppercase text-black tracking-wider">
+                    {isSuperAdmin ? 'Super Admin Control Center' : 'Admin Control Center'}
+                  </h1>
+                  <span
+                    className="text-[10px] font-bold uppercase px-2.5 py-1 rounded tracking-widest border"
+                    style={{
+                      backgroundColor: '#0a0a0a',
+                      color: '#ffffff',
+                      borderColor: 'rgba(255,255,255,0.2)'
+                    }}
+                  >
+                    {isSuperAdmin ? 'SUPER ADMINISTRATOR' : 'STAFF ADMINISTRATOR'}
+                  </span>
+                </div>
+                <p className="text-gray-500 text-xs mt-1">
+                  {isSuperAdmin
+                    ? 'Universal administrative authority: store analytics, timepiece inventory, system configurations, and staff accounts.'
+                    : `Restricted administration scope for ${currentUser?.location || 'Assigned Store'}. Assigned modules: ${visibleTabs.length}.`}
+                </p>
+              </div>
+            </div>
+          </div>
 
       {/* ─── TAB CONTENT: ADMIN MANAGEMENT (SUPER ADMIN ONLY) ─────────────────── */}
       {activeTab === 'admin_management' && isSuperAdmin && (
@@ -1341,14 +1720,14 @@ const handleEditImageUpload = async (e) => {
         <WebsiteContentManager />
       )}
 
-                  {/* ─── TAB CONTENT: CATALOG FILTERS ───────────────────────────── */}
+      {/* ─── TAB CONTENT: CATALOG FILTERS ───────────────────────────── */}
       {activeTab === 'filters' && (
         <div className="space-y-6">
           {/* Header Banner */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-luxury-gray border border-white/10 p-6 rounded-md">
             <div>
               <h3 className="font-serif text-lg font-bold text-white uppercase tracking-wider flex items-center space-x-2">
-                <SlidersHorizontal size={18} className="text-luxury-gold" />
+                <SlidersHorizontal size={18} className="text-white" />
                 <span>{selectedCatForOptions ? `${selectedCatForOptions.name} Options` : 'Catalog Filters'}</span>
               </h3>
               <p className="text-gray-400 text-xs mt-1">
@@ -1361,7 +1740,12 @@ const handleEditImageUpload = async (e) => {
               {selectedCatForOptions ? (
                 <>
                   <button
-                    onClick={() => setSelectedCatForOptions(null)}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedCatForOptions(null);
+                    }}
                     className="px-4 py-2 bg-neutral-900 border border-neutral-600 hover:border-white text-white font-bold text-xs uppercase tracking-wider transition rounded shadow-sm hover:bg-neutral-800 flex items-center space-x-1.5 cursor-pointer"
                     style={{ backgroundColor: '#171717', color: '#ffffff', borderColor: '#525252' }}
                   >
@@ -1369,16 +1753,21 @@ const handleEditImageUpload = async (e) => {
                     <span>Back to All Categories</span>
                   </button>
                   <button
-                    onClick={() => {
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       setNewOptForm({
                         name: '',
+                        slug: '',
+                        value: '',
                         order: (selectedCatForOptions.options?.length || 0) + 1,
                         isActive: true
                       });
                       setShowAddOptModal(true);
                     }}
-                    className="px-4 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] text-xs font-black uppercase tracking-wider transition rounded shadow flex items-center space-x-1.5 cursor-pointer border border-[#d4af37]"
-                    style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                    className="px-4 py-2 bg-white text-black hover:bg-neutral-200 text-xs font-black uppercase tracking-wider transition rounded shadow flex items-center space-x-1.5 cursor-pointer border border-white"
+                    style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                   >
                     <Plus size={14} style={{ strokeWidth: 3, color: '#000000' }} />
                     <span>Add Option</span>
@@ -1387,7 +1776,10 @@ const handleEditImageUpload = async (e) => {
               ) : (
                 <>
                   <button
-                    onClick={async () => {
+                    type="button"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       const res = await dispatch(seedDefaultFilters());
                       if (res.success) {
                         setFilterActionMsg({ type: 'success', text: 'Default filter categories verified and active.' });
@@ -1402,12 +1794,25 @@ const handleEditImageUpload = async (e) => {
                     Verify / Seed Defaults
                   </button>
                   <button
-                    onClick={() => {
-                      setNewCatForm({ name: '', order: adminFilters.length + 1, isActive: true });
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setNewCatForm({
+                        name: '',
+                        slug: '',
+                        description: '',
+                        type: 'multi',
+                        order: adminFilters.length + 1,
+                        isActive: true,
+                        options: []
+                      });
+                      setNewCatOptionInput({ name: '', value: '', slug: '' });
+                      setNewCatError('');
                       setShowAddCatModal(true);
                     }}
-                    className="px-4 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] text-xs font-black uppercase tracking-wider transition rounded shadow flex items-center space-x-1.5 cursor-pointer border border-[#d4af37]"
-                    style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                    className="px-4 py-2 bg-white text-black hover:bg-neutral-200 text-xs font-black uppercase tracking-wider transition rounded shadow flex items-center space-x-1.5 cursor-pointer border border-white"
+                    style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                   >
                     <Plus size={14} style={{ strokeWidth: 3, color: '#000000' }} />
                     <span>Add New Category</span>
@@ -1430,7 +1835,15 @@ const handleEditImageUpload = async (e) => {
               color: filterActionMsg.type === 'success' ? '#6ee7b7' : '#fca5a5'
             }}>
               <span>{filterActionMsg.text}</span>
-              <button onClick={() => setFilterActionMsg(null)} className="cursor-pointer text-white/60 hover:text-white">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setFilterActionMsg(null);
+                }}
+                className="cursor-pointer text-white/60 hover:text-white"
+              >
                 <X size={14} />
               </button>
             </div>
@@ -1445,7 +1858,7 @@ const handleEditImageUpload = async (e) => {
                     <span className="text-white text-xs font-bold uppercase tracking-widest">{selectedCatForOptions.name} Options</span>
                     <span className="text-[10px] text-gray-400">({(selectedCatForOptions.options || []).length} total)</span>
                   </div>
-                  <span className="text-[10px] text-luxury-gold font-bold uppercase tracking-wider">
+                  <span className="text-[10px] text-white font-bold uppercase tracking-wider">
                     Click 'Edit' to rename, or 'Disable' to hide from customers
                   </span>
                 </div>
@@ -1465,12 +1878,15 @@ const handleEditImageUpload = async (e) => {
                         <td colSpan={4} className="p-12 text-center text-gray-500 italic space-y-2">
                           <p>No options found for this category.</p>
                           <button
-                            onClick={() => {
-                              setNewOptForm({ name: '', order: 1, isActive: true });
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setNewOptForm({ name: '', slug: '', value: '', order: 1, isActive: true });
                               setShowAddOptModal(true);
                             }}
-                            className="px-4 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] rounded text-xs font-extrabold cursor-pointer transition shadow border border-[#d4af37]"
-                            style={{ backgroundColor: '#d4af37', color: '#000000' }}
+                            className="px-4 py-2 bg-white text-black hover:bg-neutral-200 rounded text-xs font-extrabold cursor-pointer transition shadow border border-white"
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                           >
                             + Add the first option
                           </button>
@@ -1499,11 +1915,16 @@ const handleEditImageUpload = async (e) => {
                           </td>
                           <td className="p-4 text-right space-x-2">
                             <button
-                              onClick={() => {
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 setEditingOpt({
                                   catId: selectedCatForOptions.id || selectedCatForOptions._id,
                                   optId: opt.id || opt._id,
                                   name: opt.name,
+                                  slug: opt.slug || '',
+                                  value: opt.value || opt.slug || '',
                                   order: opt.order || 0,
                                   isActive: opt.isActive
                                 });
@@ -1514,7 +1935,10 @@ const handleEditImageUpload = async (e) => {
                               Edit
                             </button>
                             <button
-                              onClick={async () => {
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 const catId = selectedCatForOptions.id || selectedCatForOptions._id;
                                 const optId = opt.id || opt._id;
                                 const res = await dispatch(updateFilterOption(catId, optId, { isActive: !opt.isActive }));
@@ -1541,7 +1965,10 @@ const handleEditImageUpload = async (e) => {
                               {opt.isActive ? 'Disable' : 'Enable'}
                             </button>
                             <button
-                              onClick={async () => {
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 if (window.confirm(`Are you sure you want to delete the "${opt.name}" option?\n(Existing products using this attribute will not be deleted)`)) {
                                   const catId = selectedCatForOptions.id || selectedCatForOptions._id;
                                   const optId = opt.id || opt._id;
@@ -1597,14 +2024,17 @@ const handleEditImageUpload = async (e) => {
                         <td colSpan={5} className="p-12 text-center text-gray-400 space-y-4">
                           <p className="text-sm">No filter categories loaded from database.</p>
                           <button
-                            onClick={async () => {
+                            type="button"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
                               const res = await dispatch(seedDefaultFilters());
                               if (res.success) {
                                 setFilterActionMsg({ type: 'success', text: 'Default categories initialized.' });
                               }
                             }}
-                            className="px-5 py-2.5 bg-[#d4af37] text-black hover:bg-[#e5c158] text-xs font-black uppercase tracking-wider rounded cursor-pointer transition shadow border border-[#d4af37]"
-                            style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                            className="px-5 py-2.5 bg-white text-black hover:bg-neutral-200 text-xs font-black uppercase tracking-wider rounded cursor-pointer transition shadow border border-white"
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                           >
                             Initialize Default Categories
                           </button>
@@ -1613,7 +2043,6 @@ const handleEditImageUpload = async (e) => {
                     ) : (
                       adminFilters.map((cat) => {
                         const totalOpts = (cat.options || []).length;
-                        const activeOpts = (cat.options || []).filter(o => o.isActive).length;
                         const previewNames = (cat.options || [])
                           .slice(0, 3)
                           .map(o => o.name)
@@ -1654,28 +2083,23 @@ const handleEditImageUpload = async (e) => {
                             </td>
                             <td className="p-4 text-right space-x-2">
                               <button
-                                onClick={() => setSelectedCatForOptions(cat)}
-                                className="px-3.5 py-1.5 bg-[#d4af37] text-black hover:bg-[#e5c158] rounded text-[11px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm border border-[#d4af37]"
-                                style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
-                              >
-                                Manage Options
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setEditingCat({
-                                    id: cat.id || cat._id,
-                                    name: cat.name,
-                                    order: cat.order || 0,
-                                    isActive: cat.isActive
-                                  });
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  openCompleteCategoryEditor(cat);
                                 }}
-                                className="px-3.5 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-600 hover:border-white rounded text-[11px] font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
-                                style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                                className="px-3.5 py-1.5 bg-white text-black hover:bg-neutral-200 rounded text-[11px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm border border-white inline-flex items-center space-x-1"
+                                style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                               >
-                                Edit
+                                <Edit size={12} />
+                                <span>Edit Category & Options</span>
                               </button>
                               <button
-                                onClick={async () => {
+                                type="button"
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                   const res = await dispatch(updateFilterCategory(cat.id || cat._id, { isActive: !cat.isActive }));
                                   if (res.success) {
                                     setFilterActionMsg({
@@ -1695,7 +2119,10 @@ const handleEditImageUpload = async (e) => {
                                 {cat.isActive ? 'Disable' : 'Enable'}
                               </button>
                               <button
-                                onClick={async () => {
+                                type="button"
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                   if (window.confirm(`Are you sure you want to delete the "${cat.name}" filter category?\n(Existing products will not be deleted)`)) {
                                     const res = await dispatch(deleteFilterCategory(cat.id || cat._id));
                                     if (res.success) {
@@ -1722,79 +2149,313 @@ const handleEditImageUpload = async (e) => {
             </div>
           )}
 
-          {/* ─── MODAL: ADD FILTER CATEGORY ───────────────────────────── */}
+          {/* ─── MODAL: ADD NEW FILTER CATEGORY ───────────────────────────── */}
           {showAddCatModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-              <div className="bg-luxury-dark border border-white/10 p-6 rounded-md w-full max-w-md space-y-4 shadow-2xl">
-                <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                  <h3 className="text-white text-sm font-bold uppercase tracking-wider">Add New Filter Category</h3>
-                  <button onClick={() => setShowAddCatModal(false)} className="text-gray-400 hover:text-white cursor-pointer">
-                    <X size={16} />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+              <div className="bg-luxury-gray border border-white/20 p-6 rounded-lg w-full max-w-3xl space-y-5 shadow-2xl my-8">
+                <div className="flex justify-between items-start border-b border-white/10 pb-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <SlidersHorizontal size={18} className="text-white" />
+                      <h3 className="text-white text-base font-black uppercase tracking-wider">
+                        ADD NEW FILTER CATEGORY
+                      </h3>
+                    </div>
+                    <p className="text-gray-400 text-xs mt-1">
+                      Configure a new timepiece filter attribute and define its available customer options.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowAddCatModal(false);
+                    }}
+                    className="text-gray-400 hover:text-white cursor-pointer p-1"
+                  >
+                    <X size={20} />
                   </button>
                 </div>
+
+                {newCatError && (
+                  <div className="bg-red-950/90 border border-red-500 text-red-300 p-3 rounded text-xs flex items-center justify-between">
+                    <span>{newCatError}</span>
+                    <button
+                      type="button"
+                      onClick={() => setNewCatError('')}
+                      className="text-red-400 hover:text-white ml-2 cursor-pointer"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
-                    if (!newCatForm.name.trim()) return;
-                    const res = await dispatch(createFilterCategory(newCatForm));
+                    e.stopPropagation();
+                    setNewCatError('');
+                    const cleanName = (newCatForm.name || '').trim();
+                    if (!cleanName) {
+                      setNewCatError('Category name is required.');
+                      return;
+                    }
+                    if (!newCatForm.options || newCatForm.options.length === 0) {
+                      setNewCatError('Please add at least one filter option before saving.');
+                      return;
+                    }
+                    const cleanSlug = toFilterSlug(newCatForm.slug || cleanName);
+                    // Check duplicate category name or slug
+                    const catDup = adminFilters.some(
+                      c => toFilterSlug(c.slug || c.name) === cleanSlug || c.name.toLowerCase().trim() === cleanName.toLowerCase()
+                    );
+                    if (catDup) {
+                      setNewCatError(`Category "${cleanName}" already exists. Please choose a different name.`);
+                      return;
+                    }
+                    // Check duplicate options within list
+                    const seen = new Set();
+                    for (const opt of newCatForm.options) {
+                      const k = opt.name.toLowerCase().trim();
+                      if (seen.has(k)) {
+                        setNewCatError(`This option already exists in ${cleanName}.`);
+                        return;
+                      }
+                      seen.add(k);
+                    }
+
+                    const res = await dispatch(createFilterCategory({
+                      name: cleanName,
+                      slug: cleanSlug,
+                      description: (newCatForm.description || '').trim(),
+                      type: newCatForm.type || 'multi',
+                      order: Number(newCatForm.order) || (adminFilters.length + 1),
+                      isActive: newCatForm.isActive !== false,
+                      options: newCatForm.options
+                    }));
+
                     if (res.success) {
                       setShowAddCatModal(false);
-                      setFilterActionMsg({ type: 'success', text: `Category "${newCatForm.name}" created successfully.` });
+                      setFilterActionMsg({
+                        type: 'success',
+                        text: `Category "${cleanName}" created successfully with ${newCatForm.options.length} options.`
+                      });
                       setTimeout(() => setFilterActionMsg(null), 4000);
                     } else {
+                      setNewCatError(res.message || 'Failed to create filter category.');
                       setFilterActionMsg({ type: 'error', text: res.message || 'Failed to create filter category.' });
                       setTimeout(() => setFilterActionMsg(null), 5000);
                     }
                   }}
-                  className="space-y-4 text-xs"
+                  className="space-y-5 text-xs"
                 >
-                  <div className="space-y-1">
-                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Category Name *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g., Material, Bezel, Collection"
-                      value={newCatForm.name}
-                      onChange={(e) => setNewCatForm({ ...newCatForm, name: e.target.value })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
-                    />
+                  <div className="bg-black/30 border border-white/5 p-4 rounded-md space-y-4">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-white border-b border-white/5 pb-2">
+                      1. Category Details
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">
+                          Category Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g., Bezel, Water Resistance"
+                          value={newCatForm.name}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setNewCatForm({
+                              ...newCatForm,
+                              name: val,
+                              slug: toFilterSlug(val)
+                            });
+                          }}
+                          className="w-full bg-luxury-dark border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white text-xs"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">
+                          Category Slug / Key
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g., bezel, water-resistance"
+                          value={newCatForm.slug}
+                          onChange={(e) => setNewCatForm({ ...newCatForm, slug: e.target.value })}
+                          className="w-full bg-luxury-dark border border-white/20 text-white font-mono px-3 py-2 rounded focus:outline-none focus:border-white text-xs"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">
+                          Display Order
+                        </label>
+                        <input
+                          type="number"
+                          value={newCatForm.order}
+                          onChange={(e) => setNewCatForm({ ...newCatForm, order: Number(e.target.value) })}
+                          className="w-full bg-luxury-dark border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">
+                        Description (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Filter timepieces by bezel material and styling"
+                        value={newCatForm.description}
+                        onChange={(e) => setNewCatForm({ ...newCatForm, description: e.target.value })}
+                        className="w-full bg-luxury-dark border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white text-xs"
+                      />
+                    </div>
+
+                    <div className="flex items-center space-x-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="newCatActiveCheckbox"
+                        checked={newCatForm.isActive}
+                        onChange={(e) => setNewCatForm({ ...newCatForm, isActive: e.target.checked })}
+                        className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-white cursor-pointer"
+                      />
+                      <label htmlFor="newCatActiveCheckbox" className="text-gray-300 text-xs cursor-pointer select-none font-medium">
+                        Active (Visible on Customer Catalog)
+                      </label>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Display Order</label>
-                    <input
-                      type="number"
-                      value={newCatForm.order}
-                      onChange={(e) => setNewCatForm({ ...newCatForm, order: Number(e.target.value) })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
-                    />
+
+                  <div className="bg-black/30 border border-white/5 p-4 rounded-md space-y-4">
+                    <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                      <h4 className="text-xs font-black uppercase tracking-widest text-white">
+                        2. Filter Options ({newCatForm.options?.length || 0})
+                      </h4>
+                      <span className="text-[10px] text-gray-400">
+                        At least 1 option required
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-white/[0.02] border border-white/10 rounded space-y-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 block">
+                        Add an Option
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Option Name (e.g. Ceramic)"
+                          value={newCatOptionInput.name}
+                          onChange={(e) => {
+                            const nameVal = e.target.value;
+                            const slugVal = toFilterSlug(nameVal);
+                            setNewCatOptionInput({ name: nameVal, value: slugVal, slug: slugVal });
+                          }}
+                          className="bg-luxury-dark border border-white/20 text-white px-3 py-1.5 rounded text-xs focus:outline-none focus:border-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Value / Slug (e.g. ceramic)"
+                          value={newCatOptionInput.value}
+                          onChange={(e) => setNewCatOptionInput({ ...newCatOptionInput, value: e.target.value, slug: e.target.value })}
+                          className="bg-luxury-dark border border-white/20 text-white font-mono px-3 py-1.5 rounded text-xs focus:outline-none focus:border-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!newCatOptionInput.name.trim()) return;
+                            const cleanName = newCatOptionInput.name.trim();
+                            const cleanSlug = toFilterSlug(newCatOptionInput.slug || cleanName);
+                            const normName = cleanName.toLowerCase();
+
+                            const exists = (newCatForm.options || []).some(
+                              o => o.name.toLowerCase().trim() === normName || toFilterSlug(o.slug || o.name) === cleanSlug
+                            );
+                            if (exists) {
+                              setNewCatError(`This option already exists in ${newCatForm.name.trim() || 'this category'}.`);
+                              return;
+                            }
+
+                            setNewCatError('');
+                            const newOpt = {
+                              name: cleanName,
+                              slug: cleanSlug,
+                              value: (newCatOptionInput.value && newCatOptionInput.value.trim()) ? newCatOptionInput.value.trim() : cleanSlug,
+                              order: (newCatForm.options?.length || 0) + 1,
+                              isActive: true
+                            };
+                            setNewCatForm({
+                              ...newCatForm,
+                              options: [...(newCatForm.options || []), newOpt]
+                            });
+                            setNewCatOptionInput({ name: '', value: '', slug: '' });
+                          }}
+                          className="px-4 py-1.5 bg-white text-black hover:bg-neutral-200 font-bold text-xs uppercase tracking-wider rounded transition cursor-pointer flex items-center justify-center space-x-1"
+                        >
+                          <Plus size={13} />
+                          <span>Add Option</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="border border-white/10 rounded overflow-hidden">
+                      {(!newCatForm.options || newCatForm.options.length === 0) ? (
+                        <div className="p-4 text-center text-gray-500 italic text-xs">
+                          No options added yet. Type an option name above and click "+ Add Option".
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-white/5">
+                          {newCatForm.options.map((opt, idx) => (
+                            <div key={idx} className="p-2.5 px-4 flex items-center justify-between hover:bg-white/[0.02]">
+                              <div className="flex items-center space-x-3">
+                                <span className="font-mono text-xs text-gray-500 w-5">{idx + 1}.</span>
+                                <span className="font-bold text-white text-xs">{opt.name}</span>
+                                <span className="text-[10px] font-mono text-gray-400 bg-white/5 px-2 py-0.5 rounded">
+                                  {opt.value || opt.slug}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const updated = newCatForm.options.filter((_, i) => i !== idx);
+                                  updated.forEach((o, i) => o.order = i + 1);
+                                  setNewCatForm({ ...newCatForm, options: updated });
+                                }}
+                                className="text-red-400 hover:text-red-300 hover:bg-red-950/40 p-1 rounded transition cursor-pointer flex items-center space-x-1 text-[11px]"
+                              >
+                                <Trash2 size={13} />
+                                <span>Remove</span>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2 pt-2">
-                    <input
-                      type="checkbox"
-                      id="newCatActive"
-                      checked={newCatForm.isActive}
-                      onChange={(e) => setNewCatForm({ ...newCatForm, isActive: e.target.checked })}
-                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
-                    />
-                    <label htmlFor="newCatActive" className="text-gray-300 text-xs cursor-pointer select-none">
-                      Active (Visible on Customer Catalog)
-                    </label>
-                  </div>
-                  <div className="flex justify-end space-x-3 pt-3 border-t border-white/10">
+
+                  <div className="flex justify-between items-center pt-3 border-t border-white/10">
                     <button
                       type="button"
-                      onClick={() => setShowAddCatModal(false)}
-                      className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
-                      style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowAddCatModal(false);
+                      }}
+                      className="px-5 py-2.5 bg-neutral-800 border border-neutral-600 hover:border-white text-white rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
-                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                      className="px-6 py-2.5 bg-white text-black hover:bg-neutral-200 font-black text-xs uppercase tracking-wider rounded transition cursor-pointer shadow border border-white"
                     >
-                      Create Category
+                      Create Filter Category
                     </button>
                   </div>
                 </form>
@@ -1804,76 +2465,424 @@ const handleEditImageUpload = async (e) => {
 
           {/* ─── MODAL: EDIT FILTER CATEGORY ───────────────────────────── */}
           {editingCat && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-              <div className="bg-luxury-dark border border-white/10 p-6 rounded-md w-full max-w-md space-y-4 shadow-2xl">
-                <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                  <h3 className="text-white text-sm font-bold uppercase tracking-wider">Edit Category</h3>
-                  <button onClick={() => setEditingCat(null)} className="text-gray-400 hover:text-white cursor-pointer">
-                    <X size={16} />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+              <div className="bg-luxury-gray border border-white/20 p-6 rounded-lg w-full max-w-4xl space-y-6 shadow-2xl my-8">
+                {/* Header */}
+                <div className="flex justify-between items-start border-b border-white/10 pb-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <SlidersHorizontal size={18} className="text-white" />
+                      <h3 className="text-white text-base font-black uppercase tracking-wider">
+                        EDIT FILTER CATEGORY
+                      </h3>
+                      <span className="text-[11px] px-2 py-0.5 rounded font-mono font-bold bg-white/10 text-white border border-white/30">
+                        {editingCat.name}
+                      </span>
+                    </div>
+                    <p className="text-gray-400 text-xs mt-1">
+                      Manage category details, description, display order, and all filter options belonging to this category.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setEditingCat(null);
+                    }}
+                    className="text-gray-400 hover:text-white cursor-pointer p-1"
+                  >
+                    <X size={20} />
                   </button>
                 </div>
+
+                {/* Status & Error Banners */}
+                <div className="bg-emerald-950/40 border border-emerald-500/40 rounded p-3 text-xs text-emerald-300 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
+                    <span>Currently saved database values are loaded. All changes synchronize across the catalog.</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+                    Slug: {editingCat.slug}
+                  </span>
+                </div>
+
+                {editCatError && (
+                  <div className="bg-red-950/90 border border-red-500 text-red-300 p-3 rounded text-xs flex items-center justify-between">
+                    <span>{editCatError}</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditCatError('')}
+                      className="text-red-400 hover:text-white ml-2 cursor-pointer"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
-                    if (!editingCat.name.trim()) return;
-                    const res = await dispatch(updateFilterCategory(editingCat.id, editingCat));
+                    e.stopPropagation();
+                    setEditCatError('');
+                    const cleanName = (editingCat.name || '').trim();
+                    if (!cleanName) {
+                      setEditCatError('Category name is required.');
+                      return;
+                    }
+                    const currentCatId = editingCat.id || editingCat._id;
+                    const cleanSlug = toFilterSlug(editingCat.slug || cleanName);
+
+                    // Check duplicate category name against other categories
+                    const catDup = adminFilters.some(
+                      c => (c.id || c._id) !== currentCatId &&
+                           (toFilterSlug(c.slug || c.name) === cleanSlug || c.name.toLowerCase().trim() === cleanName.toLowerCase())
+                    );
+                    if (catDup) {
+                      setEditCatError(`Category "${cleanName}" already exists. Please choose a different name.`);
+                      return;
+                    }
+
+                    // Check duplicate options within editingCat.options
+                    const seenNames = new Set();
+                    const seenSlugs = new Set();
+                    for (const opt of (editingCat.options || [])) {
+                      const norm = opt.name.toLowerCase().trim();
+                      const sl = toFilterSlug(opt.slug || opt.name);
+                      if (seenNames.has(norm) || seenSlugs.has(sl)) {
+                        setEditCatError(`This option already exists in ${cleanName}.`);
+                        return;
+                      }
+                      seenNames.add(norm);
+                      seenSlugs.add(sl);
+                    }
+
+                    const res = await dispatch(updateFilterCategory(currentCatId, {
+                      ...editingCat,
+                      name: cleanName,
+                      slug: cleanSlug,
+                      description: (editingCat.description || '').trim(),
+                      order: Number(editingCat.order) || 0,
+                      isActive: editingCat.isActive !== false,
+                      options: editingCat.options || []
+                    }));
+
                     if (res.success) {
                       setEditingCat(null);
-                      setFilterActionMsg({ type: 'success', text: 'Category updated successfully.' });
-                      setTimeout(() => setFilterActionMsg(null), 3000);
+                      setFilterActionMsg({
+                        type: 'success',
+                        text: `Category "${cleanName}" and all options updated successfully.`
+                      });
+                      setTimeout(() => setFilterActionMsg(null), 4000);
                     } else {
-                      setFilterActionMsg({ type: 'error', text: res.message || 'Failed to update category.' });
+                      setEditCatError(res.message || 'Failed to update filter category.');
+                      setFilterActionMsg({ type: 'error', text: res.message || 'Failed to update filter category.' });
                       setTimeout(() => setFilterActionMsg(null), 5000);
                     }
                   }}
-                  className="space-y-4 text-xs"
+                  className="space-y-6 text-xs"
                 >
-                  <div className="space-y-1">
-                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Category Name *</label>
-                    <input
-                      type="text"
-                      required
-                      value={editingCat.name}
-                      onChange={(e) => setEditingCat({ ...editingCat, name: e.target.value })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
-                    />
+                  {/* 1. Category Details Section */}
+                  <div className="bg-black/30 border border-white/5 p-4 rounded-md space-y-4">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-white border-b border-white/5 pb-2">
+                      1. Category Details
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">Category Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingCat.name}
+                          onChange={(e) => setEditingCat({ ...editingCat, name: e.target.value })}
+                          className="w-full bg-luxury-dark border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white text-xs"
+                          placeholder="e.g., Gender, Movement, Strap"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">Category Slug / Key</label>
+                        <input
+                          type="text"
+                          value={editingCat.slug}
+                          onChange={(e) => setEditingCat({ ...editingCat, slug: e.target.value })}
+                          className="w-full bg-luxury-dark border border-white/20 text-white font-mono px-3 py-2 rounded focus:outline-none focus:border-white text-xs"
+                          placeholder="e.g., gender, movement"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">Display Order</label>
+                        <input
+                          type="number"
+                          value={editingCat.order}
+                          onChange={(e) => setEditingCat({ ...editingCat, order: Number(e.target.value) })}
+                          className="w-full bg-luxury-dark border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">Description</label>
+                      <input
+                        type="text"
+                        value={editingCat.description || ''}
+                        onChange={(e) => setEditingCat({ ...editingCat, description: e.target.value })}
+                        className="w-full bg-luxury-dark border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white text-xs"
+                        placeholder="e.g. Filter timepieces by caliber mechanism and movement type"
+                      />
+                    </div>
+
+                    <div className="flex items-center space-x-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="editCatActiveUnified"
+                        checked={editingCat.isActive}
+                        onChange={(e) => setEditingCat({ ...editingCat, isActive: e.target.checked })}
+                        className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-white cursor-pointer"
+                      />
+                      <label htmlFor="editCatActiveUnified" className="text-gray-300 text-xs cursor-pointer select-none font-medium">
+                        Active (Visible in client catalog sidebar)
+                      </label>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold">Display Order</label>
-                    <input
-                      type="number"
-                      value={editingCat.order}
-                      onChange={(e) => setEditingCat({ ...editingCat, order: Number(e.target.value) })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
-                    />
+
+                  {/* 2. Options Management Section */}
+                  <div className="bg-black/30 border border-white/5 p-4 rounded-md space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-white/5 pb-2">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-white">
+                          2. Filter Options ({editingCat.options?.length || 0})
+                        </h4>
+                        <span className="text-[10px] text-gray-400">
+                          Options appear in customer filter menus and match product specs
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Quick Add Option Input Bar */}
+                    <div className="p-3 bg-white/[0.02] border border-white/10 rounded space-y-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 block">
+                        Add New Option to this Category
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Option Name (e.g. Mechanical)"
+                          value={newOptionInput.name}
+                          onChange={(e) => {
+                            const nameVal = e.target.value;
+                            const slugVal = toFilterSlug(nameVal);
+                            setNewOptionInput({ name: nameVal, value: slugVal, slug: slugVal });
+                          }}
+                          className="bg-luxury-dark border border-white/20 text-white px-3 py-1.5 rounded text-xs focus:outline-none focus:border-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Filter Value / Slug (e.g. mechanical)"
+                          value={newOptionInput.value}
+                          onChange={(e) => setNewOptionInput({ ...newOptionInput, value: e.target.value, slug: e.target.value })}
+                          className="bg-luxury-dark border border-white/20 text-white font-mono px-3 py-1.5 rounded text-xs focus:outline-none focus:border-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!newOptionInput.name.trim()) return;
+                            const cleanName = newOptionInput.name.trim();
+                            const cleanSlug = toFilterSlug(newOptionInput.slug || cleanName);
+                            const normName = cleanName.toLowerCase();
+
+                            // Duplicate option check
+                            const exists = (editingCat.options || []).some(
+                              o => o.name.toLowerCase().trim() === normName || toFilterSlug(o.slug || o.name) === cleanSlug
+                            );
+                            if (exists) {
+                              setEditCatError(`This option already exists in ${editingCat.name}.`);
+                              return;
+                            }
+
+                            setEditCatError('');
+                            const newOpt = {
+                              name: cleanName,
+                              slug: cleanSlug,
+                              value: (newOptionInput.value && newOptionInput.value.trim()) ? newOptionInput.value.trim() : cleanSlug,
+                              order: (editingCat.options?.length || 0) + 1,
+                              isActive: true
+                            };
+                            setEditingCat({
+                              ...editingCat,
+                              options: [...(editingCat.options || []), newOpt]
+                            });
+                            setNewOptionInput({ name: '', value: '', slug: '' });
+                          }}
+                          className="px-4 py-1.5 bg-white text-black hover:bg-neutral-200 font-bold text-xs uppercase tracking-wider rounded transition cursor-pointer flex items-center justify-center space-x-1"
+                        >
+                          <Plus size={13} />
+                          <span>Add Option</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Options Table */}
+                    <div className="border border-white/10 rounded overflow-hidden max-h-72 overflow-y-auto">
+                      <table className="w-full text-left text-xs text-gray-300">
+                        <thead className="bg-black/40 text-[10px] font-bold uppercase tracking-widest text-gray-400 border-b border-white/10 sticky top-0">
+                          <tr>
+                            <th className="p-2.5 w-16 text-center">Order</th>
+                            <th className="p-2.5">Option Label</th>
+                            <th className="p-2.5">Filter Value / Slug</th>
+                            <th className="p-2.5 text-center w-28">Status</th>
+                            <th className="p-2.5 text-right w-24">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {(!editingCat.options || editingCat.options.length === 0) ? (
+                            <tr>
+                              <td colSpan={5} className="p-6 text-center text-gray-500 italic">
+                                No options configured. Add options using the form above.
+                              </td>
+                            </tr>
+                          ) : (
+                            editingCat.options.map((opt, idx) => (
+                              <tr key={opt.id || opt._id || idx} className="hover:bg-white/[0.02]">
+                                {/* Reorder buttons & index */}
+                                <td className="p-2.5 text-center">
+                                  <div className="flex items-center justify-center space-x-1">
+                                    <button
+                                      type="button"
+                                      disabled={idx === 0}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const newOpts = [...editingCat.options];
+                                        const temp = newOpts[idx];
+                                        newOpts[idx] = newOpts[idx - 1];
+                                        newOpts[idx - 1] = temp;
+                                        newOpts.forEach((o, i) => o.order = i + 1);
+                                        setEditingCat({ ...editingCat, options: newOpts });
+                                      }}
+                                      className="p-0.5 text-gray-400 hover:text-white disabled:opacity-20 cursor-pointer"
+                                      title="Move Up"
+                                    >
+                                      ↑
+                                    </button>
+                                    <span className="font-mono text-[11px] text-white w-4">{idx + 1}</span>
+                                    <button
+                                      type="button"
+                                      disabled={idx === editingCat.options.length - 1}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const newOpts = [...editingCat.options];
+                                        const temp = newOpts[idx];
+                                        newOpts[idx] = newOpts[idx + 1];
+                                        newOpts[idx + 1] = temp;
+                                        newOpts.forEach((o, i) => o.order = i + 1);
+                                        setEditingCat({ ...editingCat, options: newOpts });
+                                      }}
+                                      className="p-0.5 text-gray-400 hover:text-white disabled:opacity-20 cursor-pointer"
+                                      title="Move Down"
+                                    >
+                                      ↓
+                                    </button>
+                                  </div>
+                                </td>
+
+                                {/* Option Label (inline editable) */}
+                                <td className="p-2.5">
+                                  <input
+                                    type="text"
+                                    value={opt.name}
+                                    onChange={(e) => {
+                                      const newOpts = [...editingCat.options];
+                                      newOpts[idx] = { ...newOpts[idx], name: e.target.value };
+                                      setEditingCat({ ...editingCat, options: newOpts });
+                                    }}
+                                    className="bg-black/40 border border-white/10 text-white px-2 py-1 rounded text-xs w-full focus:outline-none focus:border-white"
+                                  />
+                                </td>
+
+                                {/* Option Slug / Value (inline editable) */}
+                                <td className="p-2.5">
+                                  <input
+                                    type="text"
+                                    value={opt.value || opt.slug}
+                                    onChange={(e) => {
+                                      const newOpts = [...editingCat.options];
+                                      newOpts[idx] = { ...newOpts[idx], value: e.target.value, slug: e.target.value };
+                                      setEditingCat({ ...editingCat, options: newOpts });
+                                    }}
+                                    className="bg-black/40 border border-white/10 text-white font-mono px-2 py-1 rounded text-xs w-full focus:outline-none focus:border-white"
+                                  />
+                                </td>
+
+                                {/* Status Toggle */}
+                                <td className="p-2.5 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      const newOpts = [...editingCat.options];
+                                      newOpts[idx] = { ...newOpts[idx], isActive: !newOpts[idx].isActive };
+                                      setEditingCat({ ...editingCat, options: newOpts });
+                                    }}
+                                    className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition cursor-pointer border ${
+                                      opt.isActive
+                                        ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300'
+                                        : 'bg-neutral-900 border-neutral-600 text-neutral-400'
+                                    }`}
+                                  >
+                                    {opt.isActive ? 'Active' : 'Disabled'}
+                                  </button>
+                                </td>
+
+                                {/* Actions (Delete) */}
+                                <td className="p-2.5 text-right">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      const newOpts = editingCat.options.filter((_, i) => i !== idx);
+                                      newOpts.forEach((o, i) => o.order = i + 1);
+                                      setEditingCat({ ...editingCat, options: newOpts });
+                                    }}
+                                    className="p-1 text-red-400 hover:text-red-300 hover:bg-red-950/40 rounded transition cursor-pointer"
+                                    title="Delete Option"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2 pt-2">
-                    <input
-                      type="checkbox"
-                      id="editCatActive"
-                      checked={editingCat.isActive}
-                      onChange={(e) => setEditingCat({ ...editingCat, isActive: e.target.checked })}
-                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
-                    />
-                    <label htmlFor="editCatActive" className="text-gray-300 text-xs cursor-pointer select-none">
-                      Active (Visible on Customer Catalog)
-                    </label>
-                  </div>
-                  <div className="flex justify-end space-x-3 pt-3 border-t border-white/10">
+
+                  {/* Footer Buttons */}
+                  <div className="flex justify-between items-center pt-4 border-t border-white/10">
                     <button
                       type="button"
-                      onClick={() => setEditingCat(null)}
-                      className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
-                      style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEditingCat(null);
+                      }}
+                      className="px-5 py-2.5 bg-neutral-800 border border-neutral-600 hover:border-white text-white rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
-                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                      className="px-6 py-2.5 bg-white text-black hover:bg-neutral-200 font-black text-xs uppercase tracking-wider rounded transition cursor-pointer shadow border border-white"
                     >
-                      Save Changes
+                      Save All Category & Options Changes
                     </button>
                   </div>
                 </form>
@@ -1889,16 +2898,45 @@ const handleEditImageUpload = async (e) => {
                   <h3 className="text-white text-sm font-bold uppercase tracking-wider">
                     Add Option to {selectedCatForOptions.name}
                   </h3>
-                  <button onClick={() => setShowAddOptModal(false)} className="text-gray-400 hover:text-white cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowAddOptModal(false);
+                    }}
+                    className="text-gray-400 hover:text-white cursor-pointer"
+                  >
                     <X size={16} />
                   </button>
                 </div>
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     if (!newOptForm.name.trim()) return;
                     const catId = selectedCatForOptions.id || selectedCatForOptions._id;
-                    const res = await dispatch(createFilterOption(catId, newOptForm));
+                    const cleanName = newOptForm.name.trim();
+                    const cleanSlug = toFilterSlug(newOptForm.slug || cleanName);
+                    const normName = cleanName.toLowerCase();
+
+                    // Check for duplicate in selected category
+                    const exists = (selectedCatForOptions.options || []).some(
+                      o => o.name.toLowerCase().trim() === normName || toFilterSlug(o.slug || o.name) === cleanSlug
+                    );
+                    if (exists) {
+                      setFilterActionMsg({ type: 'error', text: `This option already exists in ${selectedCatForOptions.name}.` });
+                      setTimeout(() => setFilterActionMsg(null), 5000);
+                      return;
+                    }
+
+                    const res = await dispatch(createFilterOption(catId, {
+                      name: cleanName,
+                      slug: cleanSlug,
+                      value: newOptForm.value?.trim() || cleanSlug,
+                      order: Number(newOptForm.order) || ((selectedCatForOptions.options?.length || 0) + 1),
+                      isActive: newOptForm.isActive !== false
+                    }));
                     if (res.success) {
                       setShowAddOptModal(false);
                       const updatedCats = await dispatch(fetchAdminFilters());
@@ -1906,7 +2944,7 @@ const handleEditImageUpload = async (e) => {
                         const refreshed = updatedCats.categories.find(c => (c.id || c._id) === catId);
                         if (refreshed) setSelectedCatForOptions(refreshed);
                       }
-                      setFilterActionMsg({ type: 'success', text: `Option "${newOptForm.name}" added successfully.` });
+                      setFilterActionMsg({ type: 'success', text: `Option "${cleanName}" added successfully.` });
                       setTimeout(() => setFilterActionMsg(null), 3000);
                     } else {
                       setFilterActionMsg({ type: 'error', text: res.message || 'Failed to add option.' });
@@ -1920,10 +2958,13 @@ const handleEditImageUpload = async (e) => {
                     <input
                       type="text"
                       required
-                      placeholder="e.g., Automatic, Leather Strap, Deevaaz, Heritage"
+                      placeholder="e.g., Automatic, Leather Strap, Deevaaz"
                       value={newOptForm.name}
-                      onChange={(e) => setNewOptForm({ ...newOptForm, name: e.target.value })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setNewOptForm({ ...newOptForm, name: val, slug: toFilterSlug(val), value: toFilterSlug(val) });
+                      }}
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1932,7 +2973,7 @@ const handleEditImageUpload = async (e) => {
                       type="number"
                       value={newOptForm.order}
                       onChange={(e) => setNewOptForm({ ...newOptForm, order: Number(e.target.value) })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     />
                   </div>
                   <div className="flex items-center space-x-2 pt-2">
@@ -1941,7 +2982,7 @@ const handleEditImageUpload = async (e) => {
                       id="newOptActive"
                       checked={newOptForm.isActive}
                       onChange={(e) => setNewOptForm({ ...newOptForm, isActive: e.target.checked })}
-                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-white cursor-pointer"
                     />
                     <label htmlFor="newOptActive" className="text-gray-300 text-xs cursor-pointer select-none">
                       Active (Visible in Filter Sidebar)
@@ -1950,7 +2991,11 @@ const handleEditImageUpload = async (e) => {
                   <div className="flex justify-end space-x-3 pt-3 border-t border-white/10">
                     <button
                       type="button"
-                      onClick={() => setShowAddOptModal(false)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowAddOptModal(false);
+                      }}
                       className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
                       style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
                     >
@@ -1958,8 +3003,8 @@ const handleEditImageUpload = async (e) => {
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
-                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                      className="px-5 py-2 bg-white text-black hover:bg-neutral-200 border border-white rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                     >
                       Add Option
                     </button>
@@ -1975,15 +3020,46 @@ const handleEditImageUpload = async (e) => {
               <div className="bg-luxury-dark border border-white/10 p-6 rounded-md w-full max-w-md space-y-4 shadow-2xl">
                 <div className="flex justify-between items-center border-b border-white/10 pb-3">
                   <h3 className="text-white text-sm font-bold uppercase tracking-wider">Edit Filter Option</h3>
-                  <button onClick={() => setEditingOpt(null)} className="text-gray-400 hover:text-white cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setEditingOpt(null);
+                    }}
+                    className="text-gray-400 hover:text-white cursor-pointer"
+                  >
                     <X size={16} />
                   </button>
                 </div>
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     if (!editingOpt.name.trim()) return;
-                    const res = await dispatch(updateFilterOption(editingOpt.catId, editingOpt.optId, editingOpt));
+                    const cleanName = editingOpt.name.trim();
+                    const cleanSlug = toFilterSlug(editingOpt.slug || cleanName);
+                    const normName = cleanName.toLowerCase();
+
+                    // Check for duplicate in category options excluding self
+                    if (selectedCatForOptions) {
+                      const exists = (selectedCatForOptions.options || []).some(
+                        o => (o.id || o._id) !== editingOpt.optId &&
+                             (o.name.toLowerCase().trim() === normName || toFilterSlug(o.slug || o.name) === cleanSlug)
+                      );
+                      if (exists) {
+                        setFilterActionMsg({ type: 'error', text: `This option already exists in ${selectedCatForOptions.name}.` });
+                        setTimeout(() => setFilterActionMsg(null), 5000);
+                        return;
+                      }
+                    }
+
+                    const res = await dispatch(updateFilterOption(editingOpt.catId, editingOpt.optId, {
+                      ...editingOpt,
+                      name: cleanName,
+                      slug: cleanSlug,
+                      value: editingOpt.value?.trim() || cleanSlug
+                    }));
                     if (res.success) {
                       setEditingOpt(null);
                       const updatedCats = await dispatch(fetchAdminFilters());
@@ -2007,7 +3083,7 @@ const handleEditImageUpload = async (e) => {
                       required
                       value={editingOpt.name}
                       onChange={(e) => setEditingOpt({ ...editingOpt, name: e.target.value })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -2016,7 +3092,7 @@ const handleEditImageUpload = async (e) => {
                       type="number"
                       value={editingOpt.order}
                       onChange={(e) => setEditingOpt({ ...editingOpt, order: Number(e.target.value) })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     />
                   </div>
                   <div className="flex items-center space-x-2 pt-2">
@@ -2025,7 +3101,7 @@ const handleEditImageUpload = async (e) => {
                       id="editOptActive"
                       checked={editingOpt.isActive}
                       onChange={(e) => setEditingOpt({ ...editingOpt, isActive: e.target.checked })}
-                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-white cursor-pointer"
                     />
                     <label htmlFor="editOptActive" className="text-gray-300 text-xs cursor-pointer select-none">
                       Active (Visible in Filter Sidebar)
@@ -2034,7 +3110,11 @@ const handleEditImageUpload = async (e) => {
                   <div className="flex justify-end space-x-3 pt-3 border-t border-white/10">
                     <button
                       type="button"
-                      onClick={() => setEditingOpt(null)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEditingOpt(null);
+                      }}
                       className="px-4 py-2 bg-neutral-800 border border-neutral-600 hover:border-white text-white hover:bg-neutral-700 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
                       style={{ backgroundColor: '#262626', color: '#ffffff', borderColor: '#525252' }}
                     >
@@ -2042,8 +3122,8 @@ const handleEditImageUpload = async (e) => {
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
-                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                      className="px-5 py-2 bg-white text-black hover:bg-neutral-200 border border-white rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                     >
                       Save Changes
                     </button>
@@ -2056,15 +3136,14 @@ const handleEditImageUpload = async (e) => {
         </div>
       )}
 
-
-      {/* ─── TAB CONTENT: FOOTER MANAGEMENT ───────────────────────────── */}
+{/* ─── TAB CONTENT: FOOTER MANAGEMENT ───────────────────────────── */}
       {activeTab === 'footer' && (
         <div className="space-y-6">
           {/* Header Banner */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-luxury-gray border border-white/10 p-6 rounded-md">
             <div>
               <h3 className="font-serif text-lg font-bold text-white uppercase tracking-wider flex items-center space-x-2">
-                <LayoutTemplate size={18} className="text-luxury-gold" />
+                <LayoutTemplate size={18} className="text-white" />
                 <span>{selectedSecForLinks ? `${selectedSecForLinks.title} Links` : 'Footer Management'}</span>
               </h3>
               <p className="text-gray-400 text-xs mt-1">
@@ -2098,8 +3177,8 @@ const handleEditImageUpload = async (e) => {
                       });
                       setShowAddLinkModal(true);
                     }}
-                    className="px-4 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] text-xs font-black uppercase tracking-wider transition rounded shadow flex items-center space-x-1.5 cursor-pointer border border-[#d4af37]"
-                    style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                    className="px-4 py-2 bg-white text-black hover:bg-neutral-200 text-xs font-black uppercase tracking-wider transition rounded shadow flex items-center space-x-1.5 cursor-pointer border border-white"
+                    style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                   >
                     <Plus size={14} style={{ strokeWidth: 3, color: '#000000' }} />
                     <span>Add Link</span>
@@ -2127,8 +3206,8 @@ const handleEditImageUpload = async (e) => {
                       setNewSecForm({ title: '', order: adminFooterSections.length + 1, isActive: true });
                       setShowAddSecModal(true);
                     }}
-                    className="px-4 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] text-xs font-black uppercase tracking-wider transition rounded shadow flex items-center space-x-1.5 cursor-pointer border border-[#d4af37]"
-                    style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                    className="px-4 py-2 bg-white text-black hover:bg-neutral-200 text-xs font-black uppercase tracking-wider transition rounded shadow flex items-center space-x-1.5 cursor-pointer border border-white"
+                    style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                   >
                     <Plus size={14} style={{ strokeWidth: 3, color: '#000000' }} />
                     <span>Add Custom Section</span>
@@ -2166,7 +3245,7 @@ const handleEditImageUpload = async (e) => {
                     <span className="text-white text-xs font-bold uppercase tracking-widest">{selectedSecForLinks.title} Links</span>
                     <span className="text-[10px] text-gray-400">({(selectedSecForLinks.links || []).length} total)</span>
                   </div>
-                  <span className="text-[10px] text-luxury-gold font-bold uppercase tracking-wider">
+                  <span className="text-[10px] text-white font-bold uppercase tracking-wider">
                     Click 'Edit' to change destination/label, or 'Disable' to hide from customers
                   </span>
                 </div>
@@ -2200,8 +3279,8 @@ const handleEditImageUpload = async (e) => {
                               });
                               setShowAddLinkModal(true);
                             }}
-                            className="px-4 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] rounded text-xs font-extrabold cursor-pointer transition shadow border border-[#d4af37]"
-                            style={{ backgroundColor: '#d4af37', color: '#000000' }}
+                            className="px-4 py-2 bg-white text-black hover:bg-neutral-200 rounded text-xs font-extrabold cursor-pointer transition shadow border border-white"
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                           >
                             + Add the first link
                           </button>
@@ -2379,8 +3458,8 @@ const handleEditImageUpload = async (e) => {
                                 setFooterActionMsg({ type: 'success', text: 'Default footer sections initialized.' });
                               }
                             }}
-                            className="px-5 py-2.5 bg-[#d4af37] text-black hover:bg-[#e5c158] text-xs font-black uppercase tracking-wider rounded cursor-pointer transition shadow border border-[#d4af37]"
-                            style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                            className="px-5 py-2.5 bg-white text-black hover:bg-neutral-200 text-xs font-black uppercase tracking-wider rounded cursor-pointer transition shadow border border-white"
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                           >
                             Initialize Default Footer Sections
                           </button>
@@ -2433,8 +3512,8 @@ const handleEditImageUpload = async (e) => {
                                 <>
                                   <button
                                     onClick={() => setActiveTab('filters')}
-                                    className="px-3.5 py-1.5 bg-[#d4af37] text-black hover:bg-[#e5c158] rounded text-[11px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm border border-[#d4af37]"
-                                    style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                                    className="px-3.5 py-1.5 bg-white text-black hover:bg-neutral-200 rounded text-[11px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm border border-white"
+                                    style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                                   >
                                     Manage Collections
                                   </button>
@@ -2477,8 +3556,8 @@ const handleEditImageUpload = async (e) => {
                                 <>
                                   <button
                                     onClick={() => setSelectedSecForLinks(sec)}
-                                    className="px-3.5 py-1.5 bg-[#d4af37] text-black hover:bg-[#e5c158] rounded text-[11px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm border border-[#d4af37]"
-                                    style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                                    className="px-3.5 py-1.5 bg-white text-black hover:bg-neutral-200 rounded text-[11px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm border border-white"
+                                    style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                                   >
                                     Manage Links
                                   </button>
@@ -2595,7 +3674,7 @@ const handleEditImageUpload = async (e) => {
                       placeholder="e.g., Customer Care, About KHRONIQ"
                       value={newSecForm.title}
                       onChange={(e) => setNewSecForm({ ...newSecForm, title: e.target.value })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -2604,7 +3683,7 @@ const handleEditImageUpload = async (e) => {
                       type="number"
                       value={newSecForm.order}
                       onChange={(e) => setNewSecForm({ ...newSecForm, order: Number(e.target.value) })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     />
                   </div>
                   <div className="flex items-center space-x-2 pt-2">
@@ -2613,7 +3692,7 @@ const handleEditImageUpload = async (e) => {
                       id="newSecActive"
                       checked={newSecForm.isActive}
                       onChange={(e) => setNewSecForm({ ...newSecForm, isActive: e.target.checked })}
-                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-white cursor-pointer"
                     />
                     <label htmlFor="newSecActive" className="text-gray-300 text-xs cursor-pointer select-none">
                       Active (Visible on Customer Footer)
@@ -2630,8 +3709,8 @@ const handleEditImageUpload = async (e) => {
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
-                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                      className="px-5 py-2 bg-white text-black hover:bg-neutral-200 border border-white rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                     >
                       Create Section
                     </button>
@@ -2674,7 +3753,7 @@ const handleEditImageUpload = async (e) => {
                       required
                       value={editingSec.title}
                       onChange={(e) => setEditingSec({ ...editingSec, title: e.target.value })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -2683,7 +3762,7 @@ const handleEditImageUpload = async (e) => {
                       type="number"
                       value={editingSec.order}
                       onChange={(e) => setEditingSec({ ...editingSec, order: Number(e.target.value) })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     />
                   </div>
                   <div className="flex items-center space-x-2 pt-2">
@@ -2692,7 +3771,7 @@ const handleEditImageUpload = async (e) => {
                       id="editSecActive"
                       checked={editingSec.isActive}
                       onChange={(e) => setEditingSec({ ...editingSec, isActive: e.target.checked })}
-                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-white cursor-pointer"
                     />
                     <label htmlFor="editSecActive" className="text-gray-300 text-xs cursor-pointer select-none">
                       Active (Visible on Customer Footer)
@@ -2709,8 +3788,8 @@ const handleEditImageUpload = async (e) => {
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
-                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                      className="px-5 py-2 bg-white text-black hover:bg-neutral-200 border border-white rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                     >
                       Save Changes
                     </button>
@@ -2783,7 +3862,7 @@ const handleEditImageUpload = async (e) => {
                       placeholder="e.g., Shipping Policy, Contact Us"
                       value={newLinkForm.label}
                       onChange={(e) => setNewLinkForm({ ...newLinkForm, label: e.target.value })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     />
                   </div>
 
@@ -2792,7 +3871,7 @@ const handleEditImageUpload = async (e) => {
                     <select
                       value={newLinkForm.linkType}
                       onChange={(e) => setNewLinkForm({ ...newLinkForm, linkType: e.target.value })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     >
                       <option value="static">Static Policy / Info Page</option>
                       <option value="warranty">Watch Warranty Registration Action</option>
@@ -2807,7 +3886,7 @@ const handleEditImageUpload = async (e) => {
                       <select
                         value={newLinkForm.argsView}
                         onChange={(e) => setNewLinkForm({ ...newLinkForm, argsView: e.target.value })}
-                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                       >
                         <option value="contact">Contact & Appointment</option>
                         <option value="about">About & Heritage</option>
@@ -2838,7 +3917,7 @@ const handleEditImageUpload = async (e) => {
                         placeholder={newLinkForm.linkType === 'shop' ? 'e.g., deevaaz, classic, all' : 'e.g., https://instagram.com/...'}
                         value={newLinkForm.url}
                         onChange={(e) => setNewLinkForm({ ...newLinkForm, url: e.target.value })}
-                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                       />
                     </div>
                   )}
@@ -2849,7 +3928,7 @@ const handleEditImageUpload = async (e) => {
                       type="number"
                       value={newLinkForm.order}
                       onChange={(e) => setNewLinkForm({ ...newLinkForm, order: Number(e.target.value) })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     />
                   </div>
 
@@ -2859,7 +3938,7 @@ const handleEditImageUpload = async (e) => {
                       id="newLinkActive"
                       checked={newLinkForm.isActive}
                       onChange={(e) => setNewLinkForm({ ...newLinkForm, isActive: e.target.checked })}
-                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-white cursor-pointer"
                     />
                     <label htmlFor="newLinkActive" className="text-gray-300 text-xs cursor-pointer select-none">
                       Active (Visible in Footer)
@@ -2877,8 +3956,8 @@ const handleEditImageUpload = async (e) => {
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
-                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                      className="px-5 py-2 bg-white text-black hover:bg-neutral-200 border border-white rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                     >
                       Add Link
                     </button>
@@ -2952,7 +4031,7 @@ const handleEditImageUpload = async (e) => {
                       required
                       value={editingLink.label}
                       onChange={(e) => setEditingLink({ ...editingLink, label: e.target.value })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     />
                   </div>
 
@@ -2961,7 +4040,7 @@ const handleEditImageUpload = async (e) => {
                     <select
                       value={editingLink.linkType}
                       onChange={(e) => setEditingLink({ ...editingLink, linkType: e.target.value })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     >
                       <option value="static">Static Policy / Info Page</option>
                       <option value="warranty">Watch Warranty Registration Action</option>
@@ -2976,7 +4055,7 @@ const handleEditImageUpload = async (e) => {
                       <select
                         value={editingLink.argsView}
                         onChange={(e) => setEditingLink({ ...editingLink, argsView: e.target.value })}
-                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                       >
                         <option value="contact">Contact & Appointment</option>
                         <option value="about">About & Heritage</option>
@@ -3007,7 +4086,7 @@ const handleEditImageUpload = async (e) => {
                         placeholder={editingLink.linkType === 'shop' ? 'e.g., deevaaz, classic, all' : 'e.g., https://instagram.com/...'}
                         value={editingLink.url}
                         onChange={(e) => setEditingLink({ ...editingLink, url: e.target.value })}
-                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                       />
                     </div>
                   )}
@@ -3018,7 +4097,7 @@ const handleEditImageUpload = async (e) => {
                       type="number"
                       value={editingLink.order}
                       onChange={(e) => setEditingLink({ ...editingLink, order: Number(e.target.value) })}
-                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold"
+                      className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white"
                     />
                   </div>
 
@@ -3028,7 +4107,7 @@ const handleEditImageUpload = async (e) => {
                       id="editLinkActive"
                       checked={editingLink.isActive}
                       onChange={(e) => setEditingLink({ ...editingLink, isActive: e.target.checked })}
-                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-luxury-gold cursor-pointer"
+                      className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-white cursor-pointer"
                     />
                     <label htmlFor="editLinkActive" className="text-gray-300 text-xs cursor-pointer select-none">
                       Active (Visible in Footer)
@@ -3046,8 +4125,8 @@ const handleEditImageUpload = async (e) => {
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
-                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                      className="px-5 py-2 bg-white text-black hover:bg-neutral-200 border border-white rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                     >
                       Save Changes
                     </button>
@@ -3120,7 +4199,7 @@ const handleEditImageUpload = async (e) => {
                         value={movingLink.destSecId}
                         onChange={(e) => setMovingLink({ ...movingLink, destSecId: e.target.value })}
                         required
-                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold cursor-pointer"
+                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white cursor-pointer"
                       >
                         {adminFooterSections
                           .filter(s => s.type !== 'dynamic_collection' && s.slug !== 'collections' && (s.id || s._id) !== movingLink.secId)
@@ -3152,8 +4231,8 @@ const handleEditImageUpload = async (e) => {
                     <button
                       type="submit"
                       disabled={!movingLink.destSecId}
-                      className="px-5 py-2 bg-[#d4af37] text-black hover:bg-[#e5c158] border border-[#d4af37] disabled:opacity-50 rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
-                      style={{ backgroundColor: '#d4af37', color: '#000000', borderColor: '#d4af37', fontWeight: 900 }}
+                      className="px-5 py-2 bg-white text-black hover:bg-neutral-200 border border-white disabled:opacity-50 rounded text-xs font-black uppercase tracking-wider transition cursor-pointer shadow"
+                      style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff', fontWeight: 900 }}
                     >
                       Move Link
                     </button>
@@ -3179,7 +4258,7 @@ const handleEditImageUpload = async (e) => {
 
                 <div className="space-y-3 text-xs text-gray-300">
                   <p className="font-semibold text-white">
-                    The section <span className="text-luxury-gold font-bold">"{deleteSecPrompt.title}"</span> contains <span className="text-white font-bold">{deleteSecPrompt.linksCount} custom link{deleteSecPrompt.linksCount !== 1 ? 's' : ''}</span>.
+                    The section <span className="text-white font-bold">"{deleteSecPrompt.title}"</span> contains <span className="text-white font-bold">{deleteSecPrompt.linksCount} custom link{deleteSecPrompt.linksCount !== 1 ? 's' : ''}</span>.
                   </p>
                   <p className="text-gray-400">
                     To prevent accidental loss of footer links, choose whether to move all links to another section or delete them with the section:
@@ -3193,7 +4272,7 @@ const handleEditImageUpload = async (e) => {
                       <select
                         value={deleteSecPrompt.destSecId}
                         onChange={(e) => setDeleteSecPrompt({ ...deleteSecPrompt, destSecId: e.target.value })}
-                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-luxury-gold cursor-pointer"
+                        className="w-full bg-luxury-gray border border-white/20 text-white px-3 py-2 rounded focus:outline-none focus:border-white cursor-pointer"
                       >
                         {deleteSecPrompt.eligibleDests.map(d => {
                           const dId = d.id || d._id;
@@ -3866,146 +4945,247 @@ const handleEditImageUpload = async (e) => {
       {activeTab === 'analytics' && (
         <div className="space-y-8">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-luxury-gray border border-white/5 p-6 rounded-md space-y-2">
-              <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Gross Sales Revenue</span>
-<p className="text-2xl font-extrabold text-white">{formatPrice(analytics?.totalRevenue ?? totalSales, currentCurrency)}</p>
-              <span className="text-[9px] text-gray-500 font-light">Excludes cancelled orders</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="bg-white border border-gray-200/80 p-6 rounded-xl shadow-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Gross Sales Revenue</span>
+                <BarChart3 size={18} className="text-gray-400" />
+              </div>
+              <p className="text-2xl sm:text-3xl font-extrabold text-black font-sans">{formatPrice(analytics?.totalRevenue ?? totalSales, currentCurrency)}</p>
+              <span className="text-[10px] text-gray-400 font-normal">Excludes cancelled orders</span>
             </div>
 
-            <div className="bg-luxury-gray border border-white/5 p-6 rounded-md space-y-2">
-              <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Total Orders</span>
-              <p className="text-2xl font-extrabold text-white">{analytics?.totalOrders ?? totalOrdersCount}</p>
-              <span className="text-[9px] text-gray-500 font-light">All status types included</span>
+            <div className="bg-white border border-gray-200/80 p-6 rounded-xl shadow-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Total Orders</span>
+                <FileText size={18} className="text-gray-400" />
+              </div>
+              <p className="text-2xl sm:text-3xl font-extrabold text-black font-sans">{analytics?.totalOrders ?? totalOrdersCount}</p>
+              <span className="text-[10px] text-gray-400 font-normal">All status types included</span>
             </div>
 
-            <div className="bg-luxury-gray border border-white/5 p-6 rounded-md space-y-2">
-              <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Out of Stock Watches</span>
-              <p className="text-2xl font-extrabold text-white flex items-center space-x-2">
+            <div className="bg-white border border-gray-200/80 p-6 rounded-xl shadow-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Out of Stock Watches</span>
+                <Package size={18} className="text-gray-400" />
+              </div>
+              <p className="text-2xl sm:text-3xl font-extrabold text-black font-sans flex items-center space-x-2">
                 <span>{analytics?.outOfStockCount ?? outOfStockCount}</span>
-                {(analytics?.outOfStockCount ?? outOfStockCount) > 0 && <AlertTriangle size={18} className="text-luxury-red animate-pulse" />}
+                {(analytics?.outOfStockCount ?? outOfStockCount) > 0 && <AlertTriangle size={18} className="text-red-500" />}
               </p>
-              <span className="text-[9px] text-gray-500">Requires production triggers</span>
+              <span className="text-[10px] text-gray-400 font-normal">Requires production triggers</span>
             </div>
 
-            <div className="bg-luxury-gray border border-white/5 p-6 rounded-md space-y-2">
-              <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Low Stock Alerts</span>
-              <p className="text-2xl font-extrabold text-white">{analytics?.lowStockProducts?.length ?? 0}</p>
-              <span className="text-[9px] text-gray-500">Products under 5 units</span>
+            <div className="bg-white border border-gray-200/80 p-6 rounded-xl shadow-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Low Stock Alerts</span>
+                <Bell size={18} className="text-gray-400" />
+              </div>
+              <p className="text-2xl sm:text-3xl font-extrabold text-black font-sans">{analytics?.lowStockProducts?.length ?? 0}</p>
+              <span className="text-[10px] text-gray-400 font-normal">Products under 5 units</span>
             </div>
           </div>
 
-          {/* Sales by Category Chart (real data) */}
-          <div className="bg-luxury-gray border border-white/5 p-6 sm:p-8 rounded-md space-y-6">
-            <div className="flex justify-between items-center border-b border-white/5 pb-4">
+          {/* Sales Analytics Chart (Data-Driven Multi-View) */}
+          <div className="bg-white border border-gray-200/80 p-6 sm:p-8 rounded-xl shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-widest text-white">Sales by Category</h3>
-                <p className="text-[10px] text-gray-500 mt-0.5">Real revenue breakdown by watch collection</p>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-black">
+                  {analyticsViewBy === 'product'
+                    ? 'Sales by Individual Watch'
+                    : analyticsViewBy === 'gender'
+                    ? 'Sales by Gender'
+                    : 'Sales by Collection'}
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {analyticsViewBy === 'product'
+                    ? 'Real revenue breakdown for every timepiece in catalog'
+                    : analyticsViewBy === 'gender'
+                    ? 'Real revenue breakdown by product target gender'
+                    : 'Real revenue breakdown by timepiece collection'}
+                </p>
               </div>
-              <span className="bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-bold text-emerald-400 px-2.5 py-1 tracking-widest uppercase rounded">
-                Live Data
-              </span>
+
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Small View By Selector */}
+                <div className="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200 text-[10px]">
+                  <span className="text-gray-400 font-medium px-2 py-0.5 uppercase tracking-wider text-[9px]">View By:</span>
+                  {[
+                    { key: 'collection', label: 'Collection' },
+                    { key: 'product', label: 'Individual Watch' },
+                    { key: 'gender', label: 'Gender' }
+                  ].map(tab => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setAnalyticsViewBy(tab.key)}
+                      className={`px-2.5 py-1 rounded transition-colors font-bold tracking-wider uppercase text-[10px] cursor-pointer ${
+                        analyticsViewBy === tab.key
+                          ? 'bg-white text-black shadow-xs border border-black/10'
+                          : 'text-gray-500 hover:text-black'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <span className="bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700 px-2.5 py-1 tracking-wider uppercase rounded">
+                  Live Data
+                </span>
+              </div>
             </div>
 
-{/* Custom Interactive SVG Graph */}
-            <div className="relative pt-4 flex flex-col items-center w-full min-h-[380px]">
-              <svg width="100%" height="350" viewBox="0 0 600 350" className="overflow-visible font-sans">
-                {/* Horizontal Guide Lines */}
-                <line x1="55" y1="50" x2="550" y2="50" stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
-                <line x1="55" y1="133" x2="550" y2="133" stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
-                <line x1="55" y1="216" x2="550" y2="216" stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
-                <line x1="55" y1="300" x2="550" y2="300" stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
+            {/* Scrollable Graph Container (fixed max-height with horizontal & vertical scroll) */}
+            <div
+              className="relative pt-4 w-full max-h-[420px] overflow-y-auto overflow-x-auto rounded border border-gray-100 bg-transparent p-2"
+              style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent' }}
+            >
+              {!analytics ? (
+                <div className="flex flex-col items-center justify-center h-64 text-gray-400 text-xs space-y-3">
+                  <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  <span className="uppercase tracking-widest text-[10px]">Loading sales analytics...</span>
+                </div>
+              ) : categories.length === 0 ? (
+                <div className="flex items-center justify-center h-64 text-gray-400 text-xs italic">
+                  No records found for current {analyticsViewBy === 'product' ? 'watch catalog' : analyticsViewBy === 'gender' ? 'gender categories' : 'collections'}.
+                </div>
+              ) : (() => {
+                const numCategories = Math.max(categories.length, 1);
+                // Dynamic width allows unlimited items with dedicated space per bar without crowding
+                const chartWidth = Math.max(650, numCategories * 95 + 130);
+                const chartRightX = chartWidth - 50;
+                const availableWidth = chartRightX - 60;
+                const slotWidth = availableWidth / numCategories;
+                const barWidth = Math.min(48, Math.max(24, slotWidth * 0.55));
 
-                {/* Axes */}
-                <line x1="55" y1="300" x2="550" y2="300" stroke="#000000" strokeWidth="1.5" />
-                <line x1="55" y1="50" x2="55" y2="300" stroke="#000000" strokeWidth="1.5" />
+                return (
+                  <svg width={chartWidth} height="350" viewBox={`0 0 ${chartWidth} 350`} className="overflow-visible font-sans min-w-full">
+                    {/* Horizontal Guide Lines */}
+                    <line x1="55" y1="50" x2={chartRightX} y2="50" stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
+                    <line x1="55" y1="133" x2={chartRightX} y2="133" stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
+                    <line x1="55" y1="216" x2={chartRightX} y2="216" stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
+                    <line x1="55" y1="300" x2={chartRightX} y2="300" stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
 
-                {/* Bars - Mocking Category Sales: Khronomaster, Defy, Heritage, Elite */}
-                {categories.map((cat, idx) => {
-                  const val = displaySales[cat] || 0;
-                  const barHeight = (val / maxVal) * 250;
-                  const yPos = 300 - barHeight;
-                  const xPos = 90 + idx * 120;
+                    {/* Axes */}
+                    <line x1="55" y1="300" x2={chartRightX} y2="300" stroke="#000000" strokeWidth="1.5" />
+                    <line x1="55" y1="50" x2="55" y2="300" stroke="#000000" strokeWidth="1.5" />
 
-                  // Color palette: Gold, Red, Emerald Green, Charcoal
-                  const colors = ['#c5a880', '#ef4444', '#065f46', '#4b5563'];
-                  const barColor = colors[idx % colors.length];
+                    {/* Bars - Dynamic Data from Live Database */}
+                    {categories.map((cat, idx) => {
+                      const val = displaySales[cat] || 0;
+                      const barHeight = maxVal > 0 ? (val / maxVal) * 250 : 0;
+                      const yPos = 300 - barHeight;
+                      const centerX = 55 + (idx + 0.5) * slotWidth;
+                      const xPos = centerX - barWidth / 2;
 
-                  return (
-                    <g key={cat} className="group cursor-pointer">
-                      {/* Hover value tooltip tag */}
-                      <rect
-                        x={xPos - 11}
-                        y={yPos - 22}
-                        width="70"
-                        height="16"
-                        rx="2"
-                        fill="#000000"
-                        stroke="rgba(255,255,255,0.1)"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                      />
-                      <text
-                        x={xPos + 24}
-                        y={yPos - 11}
-                        fill="#c5a880"
-                        fontSize="8"
-                        fontWeight="bold"
-                        textAnchor="middle"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                      >
-                        {formatPrice(val, currentCurrency)}
-                      </text>
+                      // Admin neutral/black visual language — strictly NO GOLD
+                      const neutralColors = ['#111827', '#1f2937', '#374151', '#4b5563', '#6b7280', '#525252'];
+                      const barColor = neutralColors[idx % neutralColors.length];
 
-                      {/* The Bar */}
-                      <rect
-                        x={xPos}
-                        y={yPos}
-                        width="48"
-                        height={barHeight}
-                        fill={barColor}
-                        opacity="0.8"
-                        rx="2"
-                        className="group-hover:opacity-100 transition duration-200"
-                      />
+                      return (
+                        <g key={cat} className="group cursor-pointer">
+                          {/* Hover value tooltip tag */}
+                          <g className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none">
+                            <rect
+                              x={centerX - 50}
+                              y={val > 0 ? Math.max(10, yPos - 32) : 258}
+                              width="100"
+                              height="24"
+                              rx="3"
+                              fill="#000000"
+                            />
+                            <text
+                              x={centerX}
+                              y={val > 0 ? Math.max(22, yPos - 20) : 270}
+                              fill="#ffffff"
+                              fontSize="8"
+                              fontWeight="bold"
+                              textAnchor="middle"
+                            >
+                              {cat.length > 14 ? cat.substring(0, 12) + '..' : cat}
+                            </text>
+                            <text
+                              x={centerX}
+                              y={val > 0 ? Math.max(30, yPos - 12) : 278}
+                              fill="#9ca3af"
+                              fontSize="7.5"
+                              textAnchor="middle"
+                            >
+                              {formatPrice(val, currentCurrency)}
+                            </text>
+                          </g>
 
-                      {/* Display value on top of bar */}
-                      <text
-                        x={xPos + 24}
-                        y={yPos - 6}
-                        fill="#000000"
-                        fontSize="8"
-                        textAnchor="middle"
-                        className="font-mono font-bold"
-                      >
-                        {formatPrice(val, currentCurrency)}
-                      </text>
-                    </g>
-                  );
-                })}
+                          {/* The Bar */}
+                          {barHeight > 0 ? (
+                            <rect
+                              x={xPos}
+                              y={yPos}
+                              width={barWidth}
+                              height={barHeight}
+                              fill={barColor}
+                              opacity="0.9"
+                              rx="2"
+                              className="group-hover:opacity-100 transition duration-200"
+                            />
+                          ) : (
+                            <rect
+                              x={xPos}
+                              y={298}
+                              width={barWidth}
+                              height={2}
+                              fill={barColor}
+                              opacity="0.35"
+                              rx="1"
+                              className="group-hover:opacity-60 transition duration-200"
+                            />
+                          )}
 
-                {/* Y-axis Labels */}
-                <text x="47" y="54" fill="#000000" fontSize="8" textAnchor="end" className="font-bold">{formatPrice(maxVal, currentCurrency)}</text>
-                <text x="47" y="137" fill="#000000" fontSize="8" textAnchor="end" className="font-bold">{formatPrice(maxVal * 0.66, currentCurrency)}</text>
-                <text x="47" y="220" fill="#000000" fontSize="8" textAnchor="end" className="font-bold">{formatPrice(maxVal * 0.33, currentCurrency)}</text>
-                <text x="47" y="304" fill="#000000" fontSize="8" textAnchor="end" className="font-bold">{formatPrice(0, currentCurrency)}</text>
+                          {/* Display value on top of bar */}
+                          <text
+                            x={centerX}
+                            y={val > 0 ? yPos - 6 : 292}
+                            fill="#000000"
+                            fontSize="8"
+                            textAnchor="middle"
+                            className="font-mono font-bold"
+                          >
+                            {formatPrice(val, currentCurrency)}
+                          </text>
+                        </g>
+                      );
+                    })}
 
-                {/* X-axis Labels */}
-                {categories.map((cat, idx) => (
-                  <text
-                    key={cat}
-                    x={114 + idx * 120}
-                    y="322"
-                    fill="#000000"
-                    fontSize="9"
-                    fontWeight="bold"
-                    textAnchor="middle"
-                  >
-                    {cat.toUpperCase()}
-                  </text>
-                ))}
-              </svg>
+                    {/* Y-axis Labels */}
+                    <text x="47" y="54" fill="#000000" fontSize="8" textAnchor="end" className="font-bold">{formatPrice(maxVal, currentCurrency)}</text>
+                    <text x="47" y="137" fill="#000000" fontSize="8" textAnchor="end" className="font-bold">{formatPrice(maxVal * 0.66, currentCurrency)}</text>
+                    <text x="47" y="220" fill="#000000" fontSize="8" textAnchor="end" className="font-bold">{formatPrice(maxVal * 0.33, currentCurrency)}</text>
+                    <text x="47" y="304" fill="#000000" fontSize="8" textAnchor="end" className="font-bold">{formatPrice(0, currentCurrency)}</text>
+
+                    {/* X-axis Labels */}
+                    {categories.map((cat, idx) => {
+                      const centerX = 55 + (idx + 0.5) * slotWidth;
+                      const label = cat.length > 11 ? `${cat.substring(0, 9)}..` : cat;
+
+                      return (
+                        <text
+                          key={cat}
+                          x={centerX}
+                          y="322"
+                          fill="#000000"
+                          fontSize="9"
+                          fontWeight="bold"
+                          textAnchor="middle"
+                        >
+                          {label.toUpperCase()}
+                        </text>
+                      );
+                    })}
+                  </svg>
+                );
+              })()}
             </div>
-            </div>
+          </div>
             {/* Best Sellers & Low Stock */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-luxury-gray border border-white/5 p-6 rounded-md space-y-4">
@@ -4016,7 +5196,7 @@ const handleEditImageUpload = async (e) => {
                 <div className="space-y-3">
                   {analytics.bestSellers.map((item, idx) => (
                     <div key={item._id} className="flex justify-between items-center text-xs">
-                      <span className="text-gray-300"><span className="text-luxury-gold font-bold mr-2">#{idx + 1}</span>{item.name}</span>
+                      <span className="text-gray-300"><span className="text-white font-bold mr-2">#{idx + 1}</span>{item.name}</span>
                       <span className="text-white font-semibold">{item.totalQuantity} sold</span>
                     </div>
                   ))}
@@ -4056,14 +5236,14 @@ const handleEditImageUpload = async (e) => {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleDownloadInventoryCSV}
-                className="px-4 py-2 bg-luxury-gold/10 hover:bg-luxury-gold/20 border-black text-black text-[10px] font-black tracking-widest uppercase rounded flex items-center gap-2 cursor-pointer transition"
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 border-black text-black text-[10px] font-black tracking-widest uppercase rounded flex items-center gap-2 cursor-pointer transition"
               >
                 <Download size={13} />
                 Export Serial & Claim Codes (CSV)
               </button>
               <button
                 onClick={() => setShowAddForm(!showAddForm)}
-                className="px-4 py-2 bg-white hover:bg-luxury-gold text-luxury-dark text-xs font-bold uppercase tracking-widest transition flex items-center space-x-1.5 cursor-pointer"
+                className="px-4 py-2 bg-white hover:bg-neutral-200 text-black text-xs font-bold uppercase tracking-widest transition flex items-center space-x-1.5 cursor-pointer"
               >
                 <Plus size={14} />
                 <span>Add Timepiece</span>
@@ -4190,7 +5370,7 @@ const handleEditImageUpload = async (e) => {
                                 updated[idx] = generateUnitCodePair();
                                 setNewProduct({ ...newProduct, unitCodes: updated });
                               }}
-                              className="px-2 py-2 bg-luxury-gold/10 hover:bg-luxury-gold/20 border border-luxury-gold/30 text-luxury-gold text-[9px] font-black uppercase rounded cursor-pointer whitespace-nowrap"
+                              className="px-2 py-2 bg-white/10 hover:bg-white/20 border border-white/30 text-white text-[9px] font-black uppercase rounded cursor-pointer whitespace-nowrap"
                             >
                               Auto-Generate
                             </button>
@@ -4251,7 +5431,7 @@ const handleEditImageUpload = async (e) => {
                         placeholder="Enter custom badge text"
                         value={newProduct.badge}
                         onChange={(e) => setNewProduct({ ...newProduct, badge: e.target.value })}
-                        className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 mt-1.5 focus:outline-none focus:border-luxury-gold"
+                        className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 mt-1.5 focus:outline-none focus:border-white"
                       />
                     )}
                   </div>
@@ -4285,25 +5465,107 @@ const handleEditImageUpload = async (e) => {
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Watch Image</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-black text-xs p-2.5 focus:outline-none file:mr-3 file:py-1 file:px-3 file:border-0 file:text-xs file:bg-luxury-gold file:text-luxury-dark file:font-bold file:uppercase file:cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Or enter image path/URL manually (e.g. /assets/watch_red.jpg)"
+                {/* Product Images (Multi-Image Support) */}
+                <div className="md:col-span-2 space-y-3 p-4 bg-luxury-dark/60 border border-white/10 rounded-md">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div>
+                      <h4 className="text-[11px] font-bold uppercase tracking-widest text-white">Product Gallery Images</h4>
+                      <p className="text-[9px] text-gray-400">Primary image is shown on catalog cards; additional images appear in the Product Detail gallery.</p>
+                    </div>
+                    <span className="text-[9px] text-gray-400 font-mono">
+                      {1 + (newProduct.images?.length || 0)} {1 + (newProduct.images?.length || 0) === 1 ? 'image' : 'images'}
+                    </span>
+                  </div>
+
+                  {/* Primary Image 1 */}
+                  <AdminMediaField
+                    label="Image 1 (Main / Primary)"
                     value={newProduct.image || ''}
-                    onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 mt-1.5 focus:outline-none focus:border-luxury-gold"
+                    onChange={(url) => setNewProduct({ ...newProduct, image: url })}
+                    onUpload={async (file) => {
+                      const formData = new FormData();
+                      formData.append('image', file);
+                      const token = localStorage.getItem('khroniq_token');
+                      const res = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: token ? { Authorization: `Bearer ${token}` } : {},
+                        body: formData
+                      });
+                      const data = await res.json();
+                      if (data.success && data.imageUrl) {
+                        return data.imageUrl;
+                      }
+                      return null;
+                    }}
+                    uploading={uploadingImage}
+                    required={true}
+                    placeholder="e.g. /assets/spotlight_red_angled.png"
+                    helperText="Default main view for catalog and product detail"
                   />
-                  {uploadingImage && <p className="text-[10px] text-luxury-gold">Uploading image...</p>}
-                  {newProduct.image && !uploadingImage && (
-                    <img src={newProduct.image} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded border border-white/10" />
-                  )}
+
+                  {/* Additional Images (Image 2, Image 3, etc.) */}
+                  {(newProduct.images || []).map((imgUrl, idx) => (
+                    <div key={idx} className="relative pt-3 border-t border-white/10">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300">
+                          Image {idx + 2} (Additional Perspective)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = newProduct.images.filter((_, i) => i !== idx);
+                            setNewProduct({ ...newProduct, images: updated });
+                          }}
+                          className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition"
+                        >
+                          <X size={12} />
+                          <span>Remove</span>
+                        </button>
+                      </div>
+                      <AdminMediaField
+                        label={`Gallery Image #${idx + 2}`}
+                        value={imgUrl || ''}
+                        onChange={(url) => {
+                          const updated = [...newProduct.images];
+                          updated[idx] = url;
+                          setNewProduct({ ...newProduct, images: updated });
+                        }}
+                        onUpload={async (file) => {
+                          const formData = new FormData();
+                          formData.append('image', file);
+                          const token = localStorage.getItem('khroniq_token');
+                          const res = await fetch('/api/upload', {
+                            method: 'POST',
+                            headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            body: formData
+                          });
+                          const data = await res.json();
+                          if (data.success && data.imageUrl) {
+                            return data.imageUrl;
+                          }
+                          return null;
+                        }}
+                        uploading={uploadingImage}
+                        placeholder="e.g. https://res.cloudinary.com/... or /assets/..."
+                        helperText={`Gallery perspective #${idx + 2}`}
+                      />
+                    </div>
+                  ))}
+
+                  {/* Add More Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewProduct({
+                        ...newProduct,
+                        images: [...(newProduct.images || []), '']
+                      });
+                    }}
+                    className="w-full py-2 bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-[10px] uppercase tracking-wider rounded border border-white/20 hover:border-white transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm mt-2"
+                  >
+                    <Plus size={13} />
+                    <span>Add More Images</span>
+                  </button>
                 </div>
 
                 <div className="md:col-span-2 space-y-1.5">
@@ -4340,7 +5602,7 @@ const handleEditImageUpload = async (e) => {
                           placeholder={ph}
                           value={newProduct.specs?.[key] || ''}
                           onChange={(e) => setNewProduct({ ...newProduct, specs: { ...newProduct.specs, [key]: e.target.value } })}
-                          className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2 focus:outline-none focus:border-luxury-gold"
+                          className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2 focus:outline-none focus:border-white"
                         />
                       </div>
                     ))}
@@ -4386,7 +5648,7 @@ const handleEditImageUpload = async (e) => {
                   {/* Checkboxes shown ONLY when Customizable is checked */}
                   {newProduct.customizable && (
                     <div className="pt-2 border-t border-white/5 space-y-3">
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-luxury-gold mb-1">Tailoring Capabilities</p>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-white mb-1">Tailoring Capabilities</p>
 
                       <div className="space-y-2">
                         <div className="flex items-center space-x-2.5">
@@ -4395,7 +5657,7 @@ const handleEditImageUpload = async (e) => {
                             id="newAllowStrapCustomization"
                             checked={newProduct.allowStrapCustomization ?? true}
                             onChange={(e) => setNewProduct({ ...newProduct, allowStrapCustomization: e.target.checked })}
-                            className="w-4 h-4 accent-luxury-gold cursor-pointer"
+                            className="w-4 h-4 accent-white cursor-pointer"
                           />
                           <label htmlFor="newAllowStrapCustomization" className="text-xs text-black cursor-pointer select-none">
                             Allow Strap Customization
@@ -4415,7 +5677,7 @@ const handleEditImageUpload = async (e) => {
                                         type="checkbox"
                                         checked={isChecked}
                                         onChange={() => handleStrapCheckboxChange(s.name, false)}
-                                        className="w-3.5 h-3.5 accent-luxury-gold cursor-pointer"
+                                        className="w-3.5 h-3.5 accent-white cursor-pointer"
                                       />
                                       <img src={s.image} alt={s.name} className="w-6 h-6 object-contain rounded" />
                                       <span className="text-[10px] text-gray-300 font-medium">{s.name}</span>
@@ -4427,7 +5689,7 @@ const handleEditImageUpload = async (e) => {
 
                             {/* Multiple Custom Straps Addition */}
                             <div className="space-y-2 pt-2 border-t border-white/5">
-                              <label className="text-[9px] text-luxury-gold font-bold uppercase tracking-wider block">Add Custom Straps</label>
+                              <label className="text-[9px] text-white font-bold uppercase tracking-wider block">Add Custom Straps</label>
                               <div className="grid grid-cols-2 gap-2">
                                 <input
                                   type="text"
@@ -4446,7 +5708,7 @@ const handleEditImageUpload = async (e) => {
                               <button
                                 type="button"
                                 onClick={() => handleAddCustomStrap(false)}
-                                className="w-full py-1.5 bg-luxury-gold hover:bg-neutral-100 text-neutral-950 font-bold text-[9px] uppercase tracking-wider rounded transition cursor-pointer"
+                                className="w-full py-1.5 bg-white hover:bg-neutral-200 text-black font-bold text-[9px] uppercase tracking-wider rounded transition cursor-pointer border border-white shadow"
                               >
                                 Add Strap Option
                               </button>
@@ -4490,7 +5752,7 @@ const handleEditImageUpload = async (e) => {
                             id="newAllowCaseCustomization"
                             checked={newProduct.allowCaseCustomization ?? true}
                             onChange={(e) => setNewProduct({ ...newProduct, allowCaseCustomization: e.target.checked })}
-                            className="w-4 h-4 accent-luxury-gold cursor-pointer"
+                            className="w-4 h-4 accent-white cursor-pointer"
                           />
                           <label htmlFor="newAllowCaseCustomization" className="text-xs text-black cursor-pointer select-none">
                             Allow Case Finish Customization
@@ -4500,7 +5762,7 @@ const handleEditImageUpload = async (e) => {
                           <div className="pl-6 space-y-2 border-l border-white/10 my-2">
                             {/* Multiple Custom Cases Addition */}
                             <div className="space-y-1.5">
-                              <label className="text-[9px] text-luxury-gold font-bold uppercase tracking-wider block">Add Custom Case Finish (Optional)</label>
+                              <label className="text-[9px] text-white font-bold uppercase tracking-wider block">Add Custom Case Finish (Optional)</label>
                               <div className="grid grid-cols-3 gap-2">
                                 <input
                                   type="text"
@@ -4529,7 +5791,7 @@ const handleEditImageUpload = async (e) => {
                               <button
                                 type="button"
                                 onClick={() => handleAddCustomCase(false)}
-                                className="w-full py-1.5 bg-luxury-gold hover:bg-neutral-100 text-neutral-950 font-bold text-[9px] uppercase tracking-wider rounded transition cursor-pointer"
+                                className="w-full py-1.5 bg-white hover:bg-neutral-200 text-black font-bold text-[9px] uppercase tracking-wider rounded transition cursor-pointer border border-white shadow"
                               >
                                 Add Case Option
                               </button>
@@ -4576,7 +5838,7 @@ const handleEditImageUpload = async (e) => {
                             id="newAllowDialCustomization"
                             checked={newProduct.allowDialCustomization ?? true}
                             onChange={(e) => setNewProduct({ ...newProduct, allowDialCustomization: e.target.checked })}
-                            className="w-4 h-4 accent-luxury-gold cursor-pointer"
+                            className="w-4 h-4 accent-white cursor-pointer"
                           />
                           <label htmlFor="newAllowDialCustomization" className="text-xs text-black cursor-pointer select-none">
                             Allow Dial Color Customization
@@ -4594,7 +5856,7 @@ const handleEditImageUpload = async (e) => {
                                       type="checkbox"
                                       checked={isChecked}
                                       onChange={() => handleDialColorCheckboxChange(color.hex, false)}
-                                      className="w-3.5 h-3.5 accent-luxury-gold cursor-pointer"
+                                      className="w-3.5 h-3.5 accent-white cursor-pointer"
                                     />
                                     <span className="w-3.5 h-3.5 rounded-full border border-white/10" style={{ backgroundColor: color.hex }} />
                                     <span className="text-[10px] text-gray-300 font-medium">{color.name}</span>
@@ -4605,7 +5867,7 @@ const handleEditImageUpload = async (e) => {
 
                             {/* Add Custom Dial Color */}
                             <div className="space-y-1.5 pt-2 border-t border-white/5">
-                              <label className="text-[9px] text-luxury-gold font-bold uppercase tracking-wider block">Add Custom Dial Color (Optional)</label>
+                              <label className="text-[9px] text-white font-bold uppercase tracking-wider block">Add Custom Dial Color (Optional)</label>
                               <div className="grid grid-cols-2 gap-2">
                                 <div className="flex items-center space-x-2">
                                   <input
@@ -4627,7 +5889,7 @@ const handleEditImageUpload = async (e) => {
                               <button
                                 type="button"
                                 onClick={() => handleAddCustomDialColor(false)}
-                                className="w-full py-1.5 bg-luxury-gold hover:bg-neutral-100 text-neutral-950 font-bold text-[9px] uppercase tracking-wider rounded transition cursor-pointer"
+                                className="w-full py-1.5 bg-white hover:bg-neutral-200 text-black font-bold text-[9px] uppercase tracking-wider rounded transition cursor-pointer border border-white shadow"
                               >
                                 Add Dial Color
                               </button>
@@ -4821,7 +6083,7 @@ const handleEditImageUpload = async (e) => {
                                   updated[idx] = generateUnitCodePair();
                                   setEditForm({ ...editForm, newUnitCodes: updated });
                                 }}
-                                className="px-2 py-2 bg-luxury-gold/10 hover:bg-luxury-gold/20 border border-luxury-gold/30 text-luxury-gold text-[9px] font-black uppercase rounded cursor-pointer whitespace-nowrap"
+                                className="px-2 py-2 bg-white/10 hover:bg-white/20 border border-white/30 text-white text-[9px] font-black uppercase rounded cursor-pointer whitespace-nowrap"
                               >
                                 Auto-Generate
                               </button>
@@ -4882,7 +6144,7 @@ const handleEditImageUpload = async (e) => {
                         placeholder="Enter custom badge text"
                         value={editForm.badge}
                         onChange={(e) => setEditForm({ ...editForm, badge: e.target.value })}
-                        className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 mt-1.5 focus:outline-none focus:border-luxury-gold"
+                        className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 mt-1.5 focus:outline-none focus:border-white"
                       />
                     )}
                   </div>
@@ -4917,25 +6179,111 @@ const handleEditImageUpload = async (e) => {
                     </select>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Watch Image</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleEditImageUpload}
-                      className="w-full bg-luxury-dark border border-white/10 rounded text-black text-xs p-2.5 focus:outline-none file:mr-3 file:py-1 file:px-3 file:border-0 file:text-xs file:bg-luxury-gold file:text-luxury-dark file:font-bold file:uppercase file:cursor-pointer"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Or enter image path/URL manually (e.g. /assets/watch_red.jpg)"
+                  {/* Multi-Image Gallery Container */}
+                  <div className="col-span-full space-y-3 bg-white/5 p-4 rounded border border-white/10">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <div>
+                        <label className="text-[10px] text-white font-bold uppercase tracking-widest block">
+                          Product Image Gallery
+                        </label>
+                        <p className="text-[10px] text-gray-400">
+                          Image 1 is the primary catalogue & default display image. Add more views for angles, dial details, or case back.
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-mono text-gray-400 bg-black/40 px-2 py-0.5 rounded border border-white/10">
+                        {1 + (editForm.images?.length || 0)} {1 + (editForm.images?.length || 0) === 1 ? 'image' : 'images'}
+                      </span>
+                    </div>
+
+                    {/* Primary Image 1 */}
+                    <AdminMediaField
+                      label="Image 1 (Main / Primary)"
                       value={editForm.image || ''}
-                      onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
-                      className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 mt-1.5 focus:outline-none focus:border-luxury-gold"
+                      onChange={(url) => setEditForm({ ...editForm, image: url })}
+                      onUpload={async (file) => {
+                        const formData = new FormData();
+                        formData.append('image', file);
+                        const token = localStorage.getItem('khroniq_token');
+                        const res = await fetch('/api/upload', {
+                          method: 'POST',
+                          headers: token ? { Authorization: `Bearer ${token}` } : {},
+                          body: formData
+                        });
+                        const data = await res.json();
+                        if (data.success && data.imageUrl) {
+                          return data.imageUrl;
+                        }
+                        return null;
+                      }}
+                      uploading={uploadingImage}
+                      required={true}
+                      placeholder="e.g. /assets/spotlight_red_angled.png"
+                      helperText="Default main view for catalog and product detail"
                     />
-                    {uploadingImage && <p className="text-[10px] text-luxury-gold">Uploading image...</p>}
-                    {editForm.image && !uploadingImage && (
-                      <img src={editForm.image} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded border border-white/10" />
-                    )}
+
+                    {/* Additional Images (Image 2, Image 3, etc.) */}
+                    {(editForm.images || []).map((imgUrl, idx) => (
+                      <div key={idx} className="relative pt-3 border-t border-white/10">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300">
+                            Image {idx + 2} (Additional Perspective)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = editForm.images.filter((_, i) => i !== idx);
+                              setEditForm({ ...editForm, images: updated });
+                            }}
+                            className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition"
+                          >
+                            <X size={12} />
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                        <AdminMediaField
+                          label={`Gallery Image #${idx + 2}`}
+                          value={imgUrl || ''}
+                          onChange={(url) => {
+                            const updated = [...editForm.images];
+                            updated[idx] = url;
+                            setEditForm({ ...editForm, images: updated });
+                          }}
+                          onUpload={async (file) => {
+                            const formData = new FormData();
+                            formData.append('image', file);
+                            const token = localStorage.getItem('khroniq_token');
+                            const res = await fetch('/api/upload', {
+                              method: 'POST',
+                              headers: token ? { Authorization: `Bearer ${token}` } : {},
+                              body: formData
+                            });
+                            const data = await res.json();
+                            if (data.success && data.imageUrl) {
+                              return data.imageUrl;
+                            }
+                            return null;
+                          }}
+                          uploading={uploadingImage}
+                          placeholder="e.g. https://res.cloudinary.com/... or /assets/..."
+                          helperText={`Gallery perspective #${idx + 2}`}
+                        />
+                      </div>
+                    ))}
+
+                    {/* Add More Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditForm({
+                          ...editForm,
+                          images: [...(editForm.images || []), '']
+                        });
+                      }}
+                      className="w-full py-2 bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-[10px] uppercase tracking-wider rounded border border-white/20 hover:border-white transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm mt-2"
+                    >
+                      <Plus size={13} />
+                      <span>Add More Images</span>
+                    </button>
                   </div>
 
                   <div className="space-y-1.5">
@@ -4971,7 +6319,7 @@ const handleEditImageUpload = async (e) => {
                             placeholder={ph}
                             value={editForm.specs?.[key] || ''}
                             onChange={(e) => setEditForm({ ...editForm, specs: { ...editForm.specs, [key]: e.target.value } })}
-                            className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2 focus:outline-none focus:border-luxury-gold"
+                            className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2 focus:outline-none focus:border-white"
                           />
                         </div>
                       ))}
@@ -5017,7 +6365,7 @@ const handleEditImageUpload = async (e) => {
                     {/* Checkboxes shown ONLY when Customizable is checked */}
                     {editForm.customizable && (
                       <div className="pt-2 border-t border-white/5 space-y-3">
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-luxury-gold mb-1">Tailoring Capabilities</p>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-white mb-1">Tailoring Capabilities</p>
 
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2.5">
@@ -5026,7 +6374,7 @@ const handleEditImageUpload = async (e) => {
                               id="allowStrapCustomization"
                               checked={editForm.allowStrapCustomization ?? true}
                               onChange={(e) => setEditForm({ ...editForm, allowStrapCustomization: e.target.checked })}
-                              className="w-4 h-4 accent-luxury-gold cursor-pointer"
+                              className="w-4 h-4 accent-white cursor-pointer"
                             />
                             <label htmlFor="allowStrapCustomization" className="text-xs text-black cursor-pointer select-none">
                               Allow Strap Customization
@@ -5046,7 +6394,7 @@ const handleEditImageUpload = async (e) => {
                                           type="checkbox"
                                           checked={isChecked}
                                           onChange={() => handleStrapCheckboxChange(s.name, true)}
-                                          className="w-3.5 h-3.5 accent-luxury-gold cursor-pointer"
+                                          className="w-3.5 h-3.5 accent-white cursor-pointer"
                                         />
                                         <img src={s.image} alt={s.name} className="w-6 h-6 object-contain rounded" />
                                         <span className="text-[10px] text-gray-300 font-medium">{s.name}</span>
@@ -5058,7 +6406,7 @@ const handleEditImageUpload = async (e) => {
 
                               {/* Multiple Custom Straps Addition */}
                               <div className="space-y-2 pt-2 border-t border-white/5">
-                                <label className="text-[9px] text-luxury-gold font-bold uppercase tracking-wider block">Add Custom Straps</label>
+                                <label className="text-[9px] text-white font-bold uppercase tracking-wider block">Add Custom Straps</label>
                                 <div className="grid grid-cols-2 gap-2">
                                   <input
                                     type="text"
@@ -5077,7 +6425,7 @@ const handleEditImageUpload = async (e) => {
                                 <button
                                   type="button"
                                   onClick={() => handleAddCustomStrap(true)}
-                                  className="w-full py-1.5 bg-luxury-gold hover:bg-neutral-100 text-neutral-950 font-bold text-[9px] uppercase tracking-wider rounded transition cursor-pointer"
+                                  className="w-full py-1.5 bg-white hover:bg-neutral-200 text-black font-bold text-[9px] uppercase tracking-wider rounded transition cursor-pointer border border-white shadow"
                                 >
                                   Add Strap Option
                                 </button>
@@ -5121,7 +6469,7 @@ const handleEditImageUpload = async (e) => {
                               id="allowCaseCustomization"
                               checked={editForm.allowCaseCustomization ?? true}
                               onChange={(e) => setEditForm({ ...editForm, allowCaseCustomization: e.target.checked })}
-                              className="w-4 h-4 accent-luxury-gold cursor-pointer"
+                              className="w-4 h-4 accent-white cursor-pointer"
                             />
                             <label htmlFor="allowCaseCustomization" className="text-xs text-black cursor-pointer select-none">
                               Allow Case Finish Customization
@@ -5131,7 +6479,7 @@ const handleEditImageUpload = async (e) => {
                             <div className="pl-6 space-y-2 border-l border-white/10 my-2">
                               {/* Multiple Custom Cases Addition */}
                               <div className="space-y-1.5">
-                                <label className="text-[9px] text-luxury-gold font-bold uppercase tracking-wider block">Add Custom Case Finish (Optional)</label>
+                                <label className="text-[9px] text-white font-bold uppercase tracking-wider block">Add Custom Case Finish (Optional)</label>
                                 <div className="grid grid-cols-3 gap-2">
                                   <input
                                     type="text"
@@ -5160,7 +6508,7 @@ const handleEditImageUpload = async (e) => {
                                 <button
                                   type="button"
                                   onClick={() => handleAddCustomCase(true)}
-                                  className="w-full py-1.5 bg-luxury-gold hover:bg-neutral-100 text-neutral-950 font-bold text-[9px] uppercase tracking-wider rounded transition cursor-pointer"
+                                  className="w-full py-1.5 bg-white hover:bg-neutral-200 text-black font-bold text-[9px] uppercase tracking-wider rounded transition cursor-pointer border border-white shadow"
                                 >
                                   Add Case Option
                                 </button>
@@ -5207,7 +6555,7 @@ const handleEditImageUpload = async (e) => {
                               id="allowDialCustomization"
                               checked={editForm.allowDialCustomization ?? true}
                               onChange={(e) => setEditForm({ ...editForm, allowDialCustomization: e.target.checked })}
-                              className="w-4 h-4 accent-luxury-gold cursor-pointer"
+                              className="w-4 h-4 accent-white cursor-pointer"
                             />
                             <label htmlFor="allowDialCustomization" className="text-xs text-black cursor-pointer select-none">
                               Allow Dial Color Customization
@@ -5225,7 +6573,7 @@ const handleEditImageUpload = async (e) => {
                                         type="checkbox"
                                         checked={isChecked}
                                         onChange={() => handleDialColorCheckboxChange(color.hex, true)}
-                                        className="w-3.5 h-3.5 accent-luxury-gold cursor-pointer"
+                                        className="w-3.5 h-3.5 accent-white cursor-pointer"
                                       />
                                       <span className="w-3.5 h-3.5 rounded-full border border-white/10" style={{ backgroundColor: color.hex }} />
                                       <span className="text-[10px] text-gray-300 font-medium">{color.name}</span>
@@ -5237,7 +6585,7 @@ const handleEditImageUpload = async (e) => {
 
                               {/* Add Custom Dial Color */}
                               <div className="space-y-1.5 pt-2 border-t border-white/5">
-                                <label className="text-[9px] text-luxury-gold font-bold uppercase tracking-wider block">Add Custom Dial Color (Optional)</label>
+                                <label className="text-[9px] text-white font-bold uppercase tracking-wider block">Add Custom Dial Color (Optional)</label>
                                 <div className="grid grid-cols-2 gap-2">
                                   <div className="flex items-center space-x-2">
                                     <input
@@ -5259,7 +6607,7 @@ const handleEditImageUpload = async (e) => {
                                 <button
                                   type="button"
                                   onClick={() => handleAddCustomDialColor(true)}
-                                  className="w-full py-1.5 bg-luxury-gold hover:bg-neutral-100 text-neutral-950 font-bold text-[9px] uppercase tracking-wider rounded transition cursor-pointer"
+                                  className="w-full py-1.5 bg-white hover:bg-neutral-200 text-black font-bold text-[9px] uppercase tracking-wider rounded transition cursor-pointer border border-white shadow"
                                 >
                                   Add Dial Color
                                 </button>
@@ -5337,7 +6685,7 @@ const handleEditImageUpload = async (e) => {
                       <div>
                         <span className="font-semibold text-white truncate max-w-xs block">{p.name}</span>
                         {p.customizable && (
-                          <span className="text-[8px] text-luxury-gold font-black uppercase tracking-widest border border-luxury-gold/30 px-1.5 py-0.5 rounded-sm">
+                          <span className="text-[8px] text-white font-black uppercase tracking-widest border border-white/30 px-1.5 py-0.5 rounded-sm">
                             ✦ Customizable
                           </span>
                         )}
@@ -5365,7 +6713,7 @@ const handleEditImageUpload = async (e) => {
                     <td className="p-4 text-right space-x-2">
                       <button
                         onClick={() => handleEditProductInit(p)}
-                        className="p-1.5 bg-white/5 border border-white/10 hover:border-luxury-gold hover:text-luxury-gold text-gray-400 rounded transition cursor-pointer"
+                        className="p-1.5 bg-white/5 border border-white/10 hover:border-white hover:text-white text-gray-400 rounded transition cursor-pointer"
                         title="Edit watch"
                       >
                         <Edit size={12} />
@@ -5427,7 +6775,7 @@ const handleEditImageUpload = async (e) => {
                           {o.items.map(item => `${item.name} (x${item.quantity})`).join(', ')}
                         </p>
                         {(o.giftingOptions?.isGifting || o.giftingOptions?.occasion || o.giftingOptions?.note) && (
-                          <div className="mt-1 text-[10px] text-black space-y-0.5 bg-luxury-gold/5 border border-luxury-gold/20 p-2 rounded">
+                          <div className="mt-1 text-[10px] text-black space-y-0.5 bg-white/5 border border-white/20 p-2 rounded">
                             <p className="font-bold uppercase tracking-wider">🎁 Curated Gift Order</p>
                             {o.giftingOptions.occasion && <p><span className="font-semibold text-black">Occasion:</span> {o.giftingOptions.occasion}</p>}
                             {o.giftingOptions.packaging && <p><span className="font-semibold text-black">Packaging:</span> {o.giftingOptions.packaging === 'couple' ? 'Couple Packaging' : 'Single Packaging'}</p>}
@@ -5436,7 +6784,7 @@ const handleEditImageUpload = async (e) => {
                                 <button
                                   type="button"
                                   onClick={() => setExpandedNotes(prev => ({ ...prev, [o.id]: !prev[o.id] }))}
-                                  className="action-btn text-[9px] font-black tracking-widest uppercase bg-luxury-gold/20 hover:bg-luxury-gold/30 text-black px-2 py-0.5 rounded cursor-pointer transition"
+                                  className="action-btn text-[9px] font-black tracking-widest uppercase bg-white/20 hover:bg-white/30 text-black px-2 py-0.5 rounded cursor-pointer transition"
                                 >
                                   {expandedNotes[o.id] ? '▲ Hide Note' : '▼ View Note'}
                                 </button>
@@ -5478,10 +6826,10 @@ const handleEditImageUpload = async (e) => {
                       </td>
                     </tr>
                     {expandedNotes[o.id] && o.giftingOptions?.note && (
-                      <tr className="bg-luxury-gold/5">
+                      <tr className="bg-white/5">
                         <td colSpan={6} className="px-4 pb-4 pt-0">
-                          <div className="bg-black/40 border border-luxury-gold/20 rounded-md p-4">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-luxury-gold mb-2">Gift Note</p>
+                          <div className="bg-black/40 border border-white/20 rounded-md p-4">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-white mb-2">Gift Note</p>
                             <p className="italic text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">
                               "{o.giftingOptions.note}"
                             </p>
@@ -5546,7 +6894,7 @@ const handleEditImageUpload = async (e) => {
 
               <button
                 type="submit"
-                className="w-full py-3 bg-white text-luxury-dark font-bold text-xs tracking-widest uppercase hover:bg-luxury-gold hover:text-luxury-dark transition cursor-pointer"
+                className="w-full py-3 bg-white text-black font-bold text-xs tracking-widest uppercase hover:bg-neutral-200 hover:text-black transition cursor-pointer"
               >
                 Activate Coupon
               </button>
@@ -5601,12 +6949,12 @@ const handleEditImageUpload = async (e) => {
                       <span className="text-[10px] text-gray-500">on {item.productName}</span>
                     </div>
 
-                    <div className="flex text-luxury-gold">
+                    <div className="flex text-white">
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
                           size={10}
-                          fill={i < item.review.rating ? "var(--color-luxury-gold)" : "none"}
+                          fill={i < item.review.rating ? "#ffffff" : "none"}
                           className="stroke-1"
                         />
                       ))}
@@ -5661,7 +7009,7 @@ const handleEditImageUpload = async (e) => {
                     required
                     value={newUpdate.title}
                     onChange={(e) => setNewUpdate({ ...newUpdate, title: e.target.value })}
-                    placeholder="e.g. New Boutique Opening"
+                    placeholder="e.g. New Flagship Opening"
                     className="w-full bg-white border border-black/10 rounded text-neutral-900 p-2.5 focus:outline-none focus:border-black"
                   />
                 </div>
@@ -5881,35 +7229,46 @@ const handleEditImageUpload = async (e) => {
 
       {activeTab === 'media' && (
         <div className="space-y-6">
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-widest text-white">Homepage Media</h3>
-            <p className="text-gray-400 text-xs mt-1">Upload or replace the image used in each homepage section.</p>
+          <div className="bg-luxury-gray border border-white/10 p-6 rounded-md">
+            <h3 className="text-base font-bold uppercase tracking-wider text-white">Homepage Media Manager</h3>
+            <p className="text-gray-400 text-xs mt-1">
+              Live visual preview, URL management, and file upload for every promotional media asset on the homepage.
+            </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {HOMEPAGE_SECTIONS.map((section) => (
-              <div key={section.key} className="bg-luxury-gray border border-white/10 rounded p-3 space-y-2">
-                <div className="w-full h-32 bg-luxury-dark rounded overflow-hidden flex items-center justify-center">
-                  {mediaList[section.key] ? (
-                    <img src={mediaList[section.key]} alt={section.label} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-[9px] text-gray-500 uppercase tracking-wider">No custom image set</span>
-                  )}
-                </div>
-                <p className="text-[10px] text-gray-300 font-semibold">{section.label}</p>
-                <label className="block w-full text-center py-2 bg-luxury-dark border border-white/10 hover:border-luxury-gold text-[9px] font-bold uppercase tracking-widest text-black rounded cursor-pointer transition">
-                  {uploadingMedia ? 'Uploading...' : 'Upload / Replace'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploadingMedia}
-                    onChange={(e) => handleSectionImageUpload(e, section.key)}
-                  />
-                </label>
+              <div key={section.key} className="bg-luxury-gray border border-white/10 rounded p-4 space-y-3 shadow-sm">
+                <AdminMediaField
+                  label={section.label}
+                  value={mediaList[section.key] || ''}
+                  onChange={(newUrl) => {
+                    setMediaList(prev => ({ ...prev, [section.key]: newUrl }));
+                  }}
+                  onUpload={async (file) => {
+                    const formData = new FormData();
+                    formData.append('files', file);
+                    formData.append('section', section.key);
+                    const token = localStorage.getItem('khroniq_token');
+                    const res = await fetch('/api/admin/media', {
+                      method: 'POST',
+                      headers: token ? { Authorization: `Bearer ${token}` } : {},
+                      body: formData
+                    });
+                    const data = await res.json();
+                    if (data.success && data.media?.[0]?.url) {
+                      setMediaList(prev => ({ ...prev, [section.key]: data.media[0].url }));
+                      return data.media[0].url;
+                    }
+                    return null;
+                  }}
+                  uploading={uploadingMedia}
+                  placeholder="https://... or /assets/..."
+                  helperText="Supports live preview, direct URL entry, or file replacement"
+                />
               </div>
             ))}
-            </div>
-            </div>
+          </div>
+        </div>
       )}
 
 
@@ -5920,7 +7279,7 @@ const handleEditImageUpload = async (e) => {
             <h3 className="text-xs font-bold uppercase tracking-widest text-white">Blogs Editorial Manager</h3>
             <button
               onClick={() => setShowAddBlogForm(!showAddBlogForm)}
-              className="px-4 py-2 bg-white hover:bg-luxury-gold text-luxury-dark text-xs font-bold uppercase tracking-widest transition flex items-center space-x-1.5 cursor-pointer"
+              className="px-4 py-2 bg-white hover:bg-neutral-200 text-black text-xs font-bold uppercase tracking-widest transition flex items-center space-x-1.5 cursor-pointer"
             >
               <Plus size={14} />
               <span>{showAddBlogForm ? 'Close Form' : 'Write Blog'}</span>
@@ -5969,26 +7328,30 @@ const handleEditImageUpload = async (e) => {
                   </div>
                 </div>
 
-                <div className="md:col-span-2 space-y-1.5">
-                  <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Featured Image</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleBlogImageUpload}
-                    disabled={uploadingBlogImage}
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-black text-xs p-2.5 focus:outline-none"
-                  />
-                  <input
-                    type="text"
+                <div className="md:col-span-2">
+                  <AdminMediaField
+                    label="Featured Article Cover Image"
                     value={newBlog.image}
-                    onChange={(e) => setNewBlog({ ...newBlog, image: e.target.value })}
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 mt-1.5 focus:outline-none"
-                    placeholder="Or enter image path/URL manually (e.g. /assets/lifestyle_black_cafe.jpg)"
+                    onChange={(url) => setNewBlog({ ...newBlog, image: url })}
+                    onUpload={async (file) => {
+                      const formData = new FormData();
+                      formData.append('image', file);
+                      const token = localStorage.getItem('khroniq_token');
+                      const res = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: token ? { Authorization: `Bearer ${token}` } : {},
+                        body: formData
+                      });
+                      const data = await res.json();
+                      if (data.success && data.imageUrl) {
+                        return data.imageUrl;
+                      }
+                      return null;
+                    }}
+                    uploading={uploadingBlogImage}
+                    placeholder="e.g. /assets/lifestyle_black_cafe.jpg"
+                    helperText="Header banner displayed on blog editorial list and article view"
                   />
-                  {uploadingBlogImage && <p className="text-[10px] text-luxury-gold">Uploading...</p>}
-                  {newBlog.image && !uploadingBlogImage && (
-                    <img src={newBlog.image} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded border border-white/10" />
-                  )}
                 </div>
 
                 <div className="md:col-span-2 space-y-1.5">
@@ -6005,7 +7368,7 @@ const handleEditImageUpload = async (e) => {
 
                 <button
                   type="submit"
-                  className="md:col-span-2 py-3 bg-luxury-gold text-luxury-dark font-bold text-xs tracking-widest uppercase hover:bg-luxury-gold-dark transition"
+                  className="md:col-span-2 py-3 bg-white text-black font-bold text-xs tracking-widest uppercase hover:bg-neutral-200 transition"
                 >
                   Publish Article
                 </button>
@@ -6015,8 +7378,8 @@ const handleEditImageUpload = async (e) => {
 
           {/* Edit Blog Form */}
           {editingBlogId && editBlogForm && (
-            <div className="bg-[#1a1a1a] border border-luxury-gold/20 p-6 rounded-md space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-widest text-luxury-gold border-b border-white/5 pb-2">Edit Article</h4>
+            <div className="bg-[#1a1a1a] border border-white/20 p-6 rounded-md space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-widest text-white border-b border-white/5 pb-2">Edit Article</h4>
 
               <form onSubmit={handleUpdateBlogSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -6055,26 +7418,30 @@ const handleEditImageUpload = async (e) => {
                   </div>
                 </div>
 
-                <div className="md:col-span-2 space-y-1.5">
-                  <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Featured Image</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleEditBlogImageUpload}
-                    disabled={uploadingBlogImage}
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-black text-xs p-2.5 focus:outline-none"
-                  />
-                  <input
-                    type="text"
+                <div className="md:col-span-2">
+                  <AdminMediaField
+                    label="Featured Article Cover Image"
                     value={editBlogForm.image}
-                    onChange={(e) => setEditBlogForm({ ...editBlogForm, image: e.target.value })}
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 mt-1.5 focus:outline-none"
-                    placeholder="Or enter image URL manually"
+                    onChange={(url) => setEditBlogForm({ ...editBlogForm, image: url })}
+                    onUpload={async (file) => {
+                      const formData = new FormData();
+                      formData.append('image', file);
+                      const token = localStorage.getItem('khroniq_token');
+                      const res = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: token ? { Authorization: `Bearer ${token}` } : {},
+                        body: formData
+                      });
+                      const data = await res.json();
+                      if (data.success && data.imageUrl) {
+                        return data.imageUrl;
+                      }
+                      return null;
+                    }}
+                    uploading={uploadingBlogImage}
+                    placeholder="e.g. /assets/lifestyle_black_cafe.jpg"
+                    helperText="Header banner displayed on blog editorial list and article view"
                   />
-                  {uploadingBlogImage && <p className="text-[10px] text-luxury-gold">Uploading...</p>}
-                  {editBlogForm.image && !uploadingBlogImage && (
-                    <img src={editBlogForm.image} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded border border-white/10" />
-                  )}
                 </div>
 
                 <div className="md:col-span-2 space-y-1.5">
@@ -6102,7 +7469,7 @@ const handleEditImageUpload = async (e) => {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-3 bg-luxury-gold text-luxury-dark font-bold text-xs tracking-widest uppercase hover:bg-luxury-gold-dark transition cursor-pointer"
+                    className="flex-1 py-3 bg-white text-black font-bold text-xs tracking-widest uppercase hover:bg-neutral-200 transition cursor-pointer"
                   >
                     Save Changes
                   </button>
@@ -6128,7 +7495,7 @@ const handleEditImageUpload = async (e) => {
                     />
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex justify-between items-start gap-2">
-                        <span className="text-[9px] font-bold text-luxury-gold uppercase tracking-wider">{blog.category} · By {blog.author}</span>
+                        <span className="text-[9px] font-bold text-white uppercase tracking-wider">{blog.category} · By {blog.author}</span>
                         <div className="flex items-center space-x-1">
                           <button
                             onClick={() => handleEditBlogInit(blog)}
@@ -6158,6 +7525,8 @@ const handleEditImageUpload = async (e) => {
         </div>
       )}
 
+        </main>
+      </div>
     </div>
   );
 }

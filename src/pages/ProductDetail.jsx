@@ -1,20 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { addToCart, toggleWishlist, addReview, selectCurrentCurrency, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
+import { addToCart, toggleWishlist, addReview, selectCurrentCurrency, formatPrice, getDiscountedPrice, fetchSingleProduct } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
+import { findProductInList } from '../utils/productRouting';
 import ProductCard from '../components/ProductCard';
+import BackButton from '../components/BackButton';
 import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 
 export default function ProductDetail({ params, onPageChange }) {
   const dispatch = useDispatch();
   const products = useSelector(state => state.watch.products);
+  const productsLoaded = useSelector(state => state.watch.productsLoaded);
   const wishlist = useSelector(state => state.watch.wishlist);
   const currentUser = useSelector(state => state.watch.currentUser);
   const currentCurrency = useSelector(selectCurrentCurrency);
 
-  const productId = params?.id;
-  const product = products.find(p => p.id === productId);
+  const rawParamId = params?.id || params?.slug;
+  const storeProduct = findProductInList(products, rawParamId);
+
+  const [apiProduct, setApiProduct] = useState(null);
+  const [isSearchingApi, setIsSearchingApi] = useState(false);
+  const [apiAttempted, setApiAttempted] = useState(false);
+
+  // If not found in current Redux catalog, query backend
+  useEffect(() => {
+    if (!rawParamId) return;
+    const inStore = findProductInList(products, rawParamId);
+    if (inStore) {
+      setApiProduct(null);
+      setApiAttempted(true);
+      return;
+    }
+
+    let isMounted = true;
+    setIsSearchingApi(true);
+    dispatch(fetchSingleProduct(rawParamId)).then((res) => {
+      if (isMounted) {
+        if (res && res.success && res.product) {
+          setApiProduct(res.product);
+        }
+        setIsSearchingApi(false);
+        setApiAttempted(true);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [rawParamId, products, dispatch]);
+
+  const product = storeProduct || apiProduct;
 
   // States
   const [qty, setQty] = useState(1);
@@ -61,11 +97,29 @@ export default function ProductDetail({ params, onPageChange }) {
     });
   };
 
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  // Reset selected image when navigating to a new product
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [product?.id, product?._id]);
+
+  // Gallery calculation strictly without any fake or placeholder fallbacks
+  const rawImages = Array.isArray(product?.images) && product.images.length > 0
+    ? product.images
+    : (product?.image ? [product.image] : []);
+
+  const allImages = rawImages
+    .map(img => (typeof img === 'string' ? img.trim() : ''))
+    .filter(Boolean);
+
+  const currentImage = allImages[selectedImageIndex] || product?.image || '';
+
   const isWishlisted = product ? wishlist.includes(product.id) : false;
 
   useEffect(() => {
     if (product) {
-      document.title = `${product.name} | KHRONIQ`;
+      document.title = `KHRONIQ — ${product.name}`;
 
       const scriptId = 'product-jsonld';
       let scriptTag = document.getElementById(scriptId);
@@ -80,7 +134,7 @@ export default function ProductDetail({ params, onPageChange }) {
         '@context': 'https://schema.org',
         '@type': 'Product',
         name: product.name,
-        image: product.image ? [product.image] : [],
+        image: allImages.length > 0 ? allImages : (product.image ? [product.image] : []),
         description: product.description || `${product.name} luxury timepiece by KHRONIQ`,
         sku: product.id,
         brand: {
@@ -98,24 +152,50 @@ export default function ProductDetail({ params, onPageChange }) {
       };
 
       scriptTag.textContent = JSON.stringify(productSchema);
+    } else if (productsLoaded && apiAttempted) {
+      document.title = 'KHRONIQ — Timepiece Not Found';
     }
 
     return () => {
       const existing = document.getElementById('product-jsonld');
       if (existing) existing.remove();
     };
-  }, [product]);
+  }, [product, productsLoaded, apiAttempted]);
 
   if (!product) {
+    if (!productsLoaded || isSearchingApi || !apiAttempted) {
+      return (
+        <div className="min-h-[55vh] flex flex-col items-center justify-center space-y-4 py-16">
+          <div className="w-8 h-8 border-2 border-luxury-gold/20 border-t-luxury-gold rounded-full animate-spin" />
+          <p className="text-[11px] uppercase tracking-widest text-neutral-500 font-medium">
+            Loading Timepiece Details...
+          </p>
+        </div>
+      );
+    }
+
     return (
-      <div className="text-center py-20 space-y-4">
-        <p className="text-gray-400">Luxury timepiece not found.</p>
-        <button
-          onClick={() => onPageChange('shop')}
-          className="px-6 py-2.5 bg-luxury-gold text-luxury-dark text-xs font-bold uppercase tracking-widest hover:bg-luxury-gold-dark transition"
-        >
-          Return to Shop
-        </button>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center py-20 px-4 text-center space-y-6 max-w-lg mx-auto">
+        <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center border border-neutral-300 text-neutral-800">
+          <Shield className="w-8 h-8 stroke-1 text-luxury-gold-dark" />
+        </div>
+        <div className="space-y-2">
+          <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-[#047857]">Atelier Catalog</span>
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold uppercase tracking-widest text-luxury-text">
+            Timepiece Not Found
+          </h2>
+          <p className="text-xs text-gray-500 leading-relaxed pt-1">
+            The requested luxury watch {rawParamId ? `"${rawParamId}"` : ''} does not exist in our catalog or the link may have expired.
+          </p>
+        </div>
+        <div className="pt-2">
+          <BackButton
+            onPageChange={onPageChange}
+            fallbackPage="shop"
+            label="Return to Shop"
+            className="px-8 py-3.5 bg-black !text-white text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all shadow-md cursor-pointer inline-flex items-center gap-2"
+          />
+        </div>
       </div>
     );
   }
@@ -175,13 +255,11 @@ export default function ProductDetail({ params, onPageChange }) {
     <div className="space-y-16 pb-12">
       
       {/* Back Button */}
-      <button
-        onClick={() => onPageChange('shop')}
-        className="flex items-center space-x-2 text-xs font-semibold text-gray-400 hover:text-luxury-gold transition cursor-pointer"
-      >
-        <ArrowLeft size={14} />
-        <span>BACK TO CATALOGUE</span>
-      </button>
+      <BackButton
+        onPageChange={onPageChange}
+        fallbackPage="shop"
+        label="BACK TO CATALOGUE"
+      />
 
       {/* Main Details Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -195,7 +273,7 @@ export default function ProductDetail({ params, onPageChange }) {
             className="bg-luxury-gray border border-white/5 rounded-md aspect-square flex items-center justify-center p-0 overflow-hidden relative cursor-zoom-in"
           >
             <img
-              src={product.image}
+              src={currentImage}
               alt={product.name}
               onError={(e) => handleImageError(e)}
               className="w-full h-full object-cover filter drop-shadow-[0_15px_35px_rgba(0,0,0,0.6)]"
@@ -214,7 +292,7 @@ export default function ProductDetail({ params, onPageChange }) {
                 }}
               >
                 <img 
-                  src={product.image}
+                  src={currentImage}
                   alt="Zoomed view"
                   onError={(e) => handleImageError(e)}
                   className="absolute max-w-none"
@@ -243,6 +321,34 @@ export default function ProductDetail({ params, onPageChange }) {
   </div>
 )}
           </div>
+
+          {/* Multi-image thumbnail strip (Only shown if multiple real images exist) */}
+          {allImages.length > 1 && (
+            <div className="flex items-center gap-3 overflow-x-auto py-1 scrollbar-none">
+              {allImages.map((imgUrl, idx) => {
+                const isSelected = idx === selectedImageIndex;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedImageIndex(idx)}
+                    className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded border transition-all duration-200 overflow-hidden cursor-pointer ${
+                      isSelected
+                        ? 'border-luxury-gold ring-1 ring-luxury-gold shadow-md shadow-black/40 scale-105'
+                        : 'border-white/10 opacity-70 hover:opacity-100 hover:border-white/40'
+                    }`}
+                  >
+                    <img
+                      src={imgUrl}
+                      alt={`${product.name} perspective ${idx + 1}`}
+                      onError={(e) => handleImageError(e)}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {/* Guarantees Box */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white p-4 border border-luxury-text/5 rounded shadow-sm mt-4">

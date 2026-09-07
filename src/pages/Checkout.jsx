@@ -6,6 +6,7 @@ import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 
 import confetti from 'canvas-confetti';
 import { CheckCircle2, CreditCard, Landmark, ArrowRight, ShieldCheck, Gift, Check, Tag, X, Loader2 } from 'lucide-react';
+import BackButton from '../components/BackButton';
 
 export default function Checkout({ params, onPageChange }) {
   const dispatch = useDispatch();
@@ -75,7 +76,8 @@ export default function Checkout({ params, onPageChange }) {
 
   // Compute prices
   const cartItemsWithDetails = cart.map(item => {
-    const product = products.find(p => p.id === item.productId);
+    const itemProdId = (item.productId?._id || item.productId)?.toString();
+    const product = products.find(p => (p.id && p.id.toString() === itemProdId) || (p._id && p._id.toString() === itemProdId));
     const itemPrice = item.price !== undefined ? item.price : getDiscountedPrice(product);
     return { ...item, product, itemPrice };
   }).filter(item => item.product !== undefined);
@@ -119,15 +121,18 @@ export default function Checkout({ params, onPageChange }) {
     setProcessingPayment(true);
 
     const items = cartItemsWithDetails.map(item => ({
-      productId: item.productId,
+      productId: item.product?._id ? item.product._id.toString() : (item.product?.id || item.productId),
       name: item.product.name,
       price: item.itemPrice,
       quantity: item.quantity,
       image: item.product.image
     }));
 
-    // 1. Create Razorpay order via backend
-    const orderRes = await dispatch(createRazorpayOrder(total));
+    // 1. Create Razorpay order via backend with full items payload
+    const orderRes = await dispatch(createRazorpayOrder({
+      items,
+      couponCode: appliedCoupon?.code || null
+    }));
 
     if (!orderRes.success) {
       alert(orderRes.message || 'Could not initiate payment.');
@@ -360,8 +365,39 @@ export default function Checkout({ params, onPageChange }) {
 
 
 
+  if (step < 4 && cartItemsWithDetails.length === 0) {
+    return (
+      <div className="max-w-md mx-auto py-20 px-4 text-center space-y-6">
+        <div className="flex justify-start">
+          <BackButton onPageChange={onPageChange} fallbackPage="shop" label="BACK" />
+        </div>
+        <div className="w-20 h-20 bg-white border border-neutral-200 rounded-full flex items-center justify-center mx-auto text-neutral-400 shadow-sm">
+          <CreditCard size={36} />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-xl font-bold font-serif uppercase tracking-widest text-neutral-900">Your Cart is Empty</h1>
+          <p className="text-neutral-500 text-xs leading-relaxed font-light">
+            You cannot proceed to checkout with an empty cart. Please add a timepiece from our catalog.
+          </p>
+        </div>
+        <button
+          onClick={() => onPageChange('shop')}
+          className="px-8 py-3 bg-black text-white text-xs font-bold tracking-widest uppercase hover:bg-neutral-800 transition cursor-pointer rounded-sm"
+        >
+          Explore Catalogue
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
+      {/* Back Button (Active during checkout steps, omitted on order confirmation) */}
+      {step < 4 && (
+        <div>
+          <BackButton onPageChange={onPageChange} fallbackPage="cart" label="BACK TO CART" />
+        </div>
+      )}
 
       {/* Checkout Progress Stepper */}
       <div className="flex items-center justify-center space-x-4 border-b border-white/5 pb-6">

@@ -68,6 +68,31 @@ html {
   background: var(--color-luxury-gold-dark);
 }
 
+/* Dedicated Clearly Visible Filters Sidebar Scrollbar */
+.filters-sidebar-scroll {
+  scrollbar-width: thin !important;
+  scrollbar-color: #666666 rgba(0, 0, 0, 0.06) !important;
+}
+
+.filters-sidebar-scroll::-webkit-scrollbar {
+  width: 6px !important;
+  display: block !important;
+}
+
+.filters-sidebar-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05) !important;
+  border-radius: 4px;
+}
+
+.filters-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #666666 !important;
+  border-radius: 4px;
+}
+
+.filters-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #222222 !important;
+}
+
 /* Luxury Glassmorphism Utilities */
 .glass {
   background: rgba(253, 251, 247, 0.85);

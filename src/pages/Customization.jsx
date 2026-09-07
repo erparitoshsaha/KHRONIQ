@@ -4,6 +4,7 @@ import { addToCart, selectCurrentCurrency, formatPrice as formatPriceUtil } from
 import { handleImageError } from '../utils/imageUtils';
 import { Paintbrush, ShoppingBag, ChevronLeft, Check, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import BackButton from '../components/BackButton';
 
 // ─── Colour & option data ─────────────────────────────────────────────────────
 const FALLBACK_DIAL_COLORS = [
@@ -273,6 +274,11 @@ export default function Customization({ onPageChange, params }) {
   if (!selectedProduct) {
     return (
       <div className="space-y-10 pb-16">
+        {/* Back Button */}
+        <div>
+          <BackButton onPageChange={onPageChange} fallbackPage="shop" label="BACK" />
+        </div>
+
         {/* Header */}
         <div className="relative overflow-hidden rounded-2xl p-10 text-center"
           style={{ background: 'linear-gradient(135deg, #0a0a14 0%, #0d1a3a 50%, #0a0a14 100%)' }}>
@@ -370,12 +376,12 @@ export default function Customization({ onPageChange, params }) {
         className="pb-16"
       >
         {/* Back */}
-        <button
-          onClick={() => setSelectedProduct(null)}
-          className="flex items-center gap-2 text-gray-300 hover:text-white text-xs font-bold uppercase tracking-widest mb-8 transition cursor-pointer"
-        >
-          <ChevronLeft size={16} /> All Customizable Models
-        </button>
+        <BackButton
+          customAction={() => setSelectedProduct(null)}
+          label="All Customizable Models"
+          className="mb-8"
+          dark={true}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
 

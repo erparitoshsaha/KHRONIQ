@@ -30,35 +30,111 @@ router.get('/analytics', protect, requirePermission('analytics'), async (req, re
     statusCounts.forEach(s => { ordersByStatus[s._id] = s.count; });
     const totalOrders = await Order.countDocuments();
 
-    // 2. Sales by category (unwind items, look up product category)
-    const salesByCategory = await Order.aggregate([
-      { $match: { status: { $ne: 'Cancelled' } } },
-      { $unwind: '$items' },
-      {
-        $lookup: {
-          from: 'products',
-          let: {
-            pid: {
-              $cond: [
-                { $regexMatch: { input: { $toString: '$items.productId' }, regex: /^[0-9a-fA-F]{24}$/ } },
-                { $toObjectId: '$items.productId' },
-                null
-              ]
-            }
-          },
-          pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$pid'] } } }],
-          as: 'productInfo'
+    // 2. Sales Analytics: Multi-view (Collection, Individual Watch, Gender)
+    // Query current products from database
+    const currentProducts = await Product.find({})
+      .select('name category gender price stock')
+      .lean();
+
+    // Fast lookup maps for current products
+    const productById = new Map();
+    const productByName = new Map();
+
+    currentProducts.forEach(p => {
+      const idStr = p._id ? p._id.toString() : '';
+      if (idStr) productById.set(idStr, p);
+      const cleanName = (p.name || '').trim().toLowerCase();
+      if (cleanName && !productByName.has(cleanName)) {
+        productByName.set(cleanName, p);
+      }
+    });
+
+    // Tracking maps initialized for all current catalog items
+    const productRevenue = new Map();
+    currentProducts.forEach(p => productRevenue.set(p._id.toString(), 0));
+
+    // Dynamic collections derived strictly from current products (canonical field: category)
+    const collectionRevenue = new Map();
+    currentProducts.forEach(p => {
+      const col = (p.category || 'Unassigned').trim();
+      if (col && !collectionRevenue.has(col)) {
+        collectionRevenue.set(col, 0);
+      }
+    });
+
+    // Dynamic genders derived strictly from current products (canonical field: gender)
+    const genderLabels = {
+      men: "Men's",
+      women: "Women's",
+      unisex: "Unisex"
+    };
+    const genderRevenue = new Map();
+    currentProducts.forEach(p => {
+      const gRaw = (p.gender || 'unisex').trim().toLowerCase();
+      const gLabel = genderLabels[gRaw] || (gRaw.charAt(0).toUpperCase() + gRaw.slice(1));
+      if (!genderRevenue.has(gLabel)) {
+        genderRevenue.set(gLabel, 0);
+      }
+    });
+
+    // Query completed/valid non-cancelled orders to aggregate real revenue
+    const nonCancelledOrders = await Order.find(
+      { status: { $ne: 'Cancelled' } },
+      'items.productId items.name items.price items.quantity'
+    ).lean();
+
+    nonCancelledOrders.forEach(order => {
+      (order.items || []).forEach(item => {
+        const rev = (Number(item.price) || 0) * (Number(item.quantity) || 0);
+        const pid = item.productId ? item.productId.toString().trim() : '';
+        const pname = item.name ? item.name.trim().toLowerCase() : '';
+
+        let matchedProduct = null;
+        if (pid && productById.has(pid)) {
+          matchedProduct = productById.get(pid);
+        } else if (pname && productByName.has(pname)) {
+          matchedProduct = productByName.get(pname);
         }
-      },
-      { $unwind: { path: '$productInfo', preserveNullAndEmptyArrays: true } },
-      {
-        $group: {
-          _id: { $ifNull: ['$productInfo.category', 'Unknown'] },
-          revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+
+        if (matchedProduct) {
+          const mId = matchedProduct._id.toString();
+          productRevenue.set(mId, (productRevenue.get(mId) || 0) + rev);
+
+          const col = (matchedProduct.category || 'Unassigned').trim();
+          if (collectionRevenue.has(col)) {
+            collectionRevenue.set(col, (collectionRevenue.get(col) || 0) + rev);
+          }
+
+          const gRaw = (matchedProduct.gender || 'unisex').trim().toLowerCase();
+          const gLabel = genderLabels[gRaw] || (gRaw.charAt(0).toUpperCase() + gRaw.slice(1));
+          if (genderRevenue.has(gLabel)) {
+            genderRevenue.set(gLabel, (genderRevenue.get(gLabel) || 0) + rev);
+          }
         }
-      },
-      { $sort: { revenue: -1 } }
-    ]);
+      });
+    });
+
+    // 1. Sales by Collection (Default View): sorted descending by revenue
+    const salesByCollection = Array.from(collectionRevenue.entries()).map(([col, rev]) => ({
+      _id: col,
+      revenue: rev
+    })).sort((a, b) => b.revenue - a.revenue || a._id.localeCompare(b._id));
+
+    // 2. Sales by Individual Watch: all current products, no limits, sorted descending by revenue
+    const salesByProduct = currentProducts.map(p => ({
+      _id: (p.name || 'Untitled').trim(),
+      productId: p._id.toString(),
+      revenue: productRevenue.get(p._id.toString()) || 0
+    })).sort((a, b) => b.revenue - a.revenue || a._id.localeCompare(b._id));
+
+    // 3. Sales by Gender: only genders in current products, sorted descending by revenue
+    const salesByGender = Array.from(genderRevenue.entries()).map(([gender, rev]) => ({
+      _id: gender,
+      revenue: rev
+    })).sort((a, b) => b.revenue - a.revenue || a._id.localeCompare(b._id));
+
+    // Sales by Category alias for backwards compatibility
+    const salesByCategory = salesByCollection;
 
     // 3. Sales over last 7 days (by date)
     const sevenDaysAgo = new Date();
@@ -105,6 +181,9 @@ router.get('/analytics', protect, requirePermission('analytics'), async (req, re
         totalRevenue,
         totalOrders,
         ordersByStatus,
+        salesByCollection,
+        salesByProduct,
+        salesByGender,
         salesByCategory,
         salesOverTime,
         bestSellers,
@@ -294,7 +373,7 @@ router.get('/users', protect, requireSuperAdmin, async (req, res) => {
           name: isSuper ? 'Super Admin' : (a.name === 'Master Admin' ? 'Khroniq Admin' : a.name),
           email: a.email,
           role: isSuper ? 'super_admin' : 'admin',
-          location: a.location || 'Main Boutique (Flagship)',
+          location: a.location || 'Main Flagship',
           locationId: a.locationId || 'loc-flagship',
           permissions: isSuper ? ['all'] : (a.permissions || []),
           isActive: a.isActive !== false,

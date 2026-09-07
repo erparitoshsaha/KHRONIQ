@@ -1,21 +1,26 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import FilterCategory from '../_models/FilterCategory.js';
 import { protect, requirePermission } from '../_middleware/auth.js';
 
 const router = express.Router();
 
-export const toSlug = (str) => {
-  return String(str || '')
+// Helper: Slugify string safely
+function toSlug(str) {
+  if (!str) return '';
+  return String(str)
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
-};
+}
 
+// System baseline filter categories and options
 export const DEFAULT_FILTER_DEFINITIONS = [
   {
     name: 'Gender',
     slug: 'gender',
+    description: 'Target demographic and watch styling for clients',
     type: 'multi',
     order: 1,
     isActive: true,
@@ -27,6 +32,7 @@ export const DEFAULT_FILTER_DEFINITIONS = [
   {
     name: 'Collection',
     slug: 'collection',
+    description: 'Signature Khroniq timepiece series and collections',
     type: 'multi',
     order: 2,
     isActive: true,
@@ -38,6 +44,7 @@ export const DEFAULT_FILTER_DEFINITIONS = [
   {
     name: 'Movement',
     slug: 'movement',
+    description: 'Precision mechanical, automatic, and quartz caliber mechanisms',
     type: 'multi',
     order: 3,
     isActive: true,
@@ -50,6 +57,7 @@ export const DEFAULT_FILTER_DEFINITIONS = [
   {
     name: 'Strap',
     slug: 'strap',
+    description: 'Handcrafted leather, stainless steel links, and premium bands',
     type: 'multi',
     order: 4,
     isActive: true,
@@ -63,6 +71,7 @@ export const DEFAULT_FILTER_DEFINITIONS = [
   {
     name: 'Dial',
     slug: 'dial',
+    description: 'Analog, digital, and hybrid complication dials',
     type: 'multi',
     order: 5,
     isActive: true,
@@ -75,6 +84,7 @@ export const DEFAULT_FILTER_DEFINITIONS = [
   {
     name: 'Case',
     slug: 'case',
+    description: 'Surgical stainless steel and artisan alloy case materials',
     type: 'multi',
     order: 6,
     isActive: true,
@@ -85,7 +95,7 @@ export const DEFAULT_FILTER_DEFINITIONS = [
   }
 ];
 
-// Helper: Seed default filters safely & idempotently without wiping existing categories/options
+// Helper: Seed default filters safely & idempotently without wiping existing customizations or creating duplicates
 export async function seedDefaultFiltersSafe() {
   for (const def of DEFAULT_FILTER_DEFINITIONS) {
     let existingCat = await FilterCategory.findOne({ slug: def.slug });
@@ -93,22 +103,61 @@ export async function seedDefaultFiltersSafe() {
       existingCat = new FilterCategory({
         name: def.name,
         slug: def.slug,
+        description: def.description || '',
         type: def.type || 'multi',
         order: def.order || 0,
         isActive: def.isActive !== undefined ? def.isActive : true,
-        options: def.options || []
+        options: (def.options || []).map((o, idx) => ({
+          _id: new mongoose.Types.ObjectId(),
+          name: o.name,
+          slug: o.slug,
+          value: o.value || o.slug,
+          order: o.order !== undefined ? o.order : idx + 1,
+          isActive: o.isActive !== false
+        }))
       });
       await existingCat.save();
     } else {
-      // Check for missing default options
       let modified = false;
-      for (const optDef of def.options) {
-        const hasOpt = existingCat.options.some(o => o.slug === optDef.slug);
-        if (!hasOpt) {
-          existingCat.options.push(optDef);
+
+      // 1. Deduplicate existing options in database by normalized name & slug
+      const seenNames = new Set();
+      const seenSlugs = new Set();
+      const cleanExistingOptions = [];
+
+      for (const opt of (existingCat.options || [])) {
+        const normName = String(opt.name || '').toLowerCase().trim();
+        const cleanSlug = toSlug(opt.slug || opt.name);
+        if (!seenNames.has(normName) && !seenSlugs.has(cleanSlug)) {
+          seenNames.add(normName);
+          seenSlugs.add(cleanSlug);
+          cleanExistingOptions.push(opt);
+        } else {
           modified = true;
         }
       }
+      existingCat.options = cleanExistingOptions;
+
+      // 2. Add missing default options without duplicate names or slugs
+      for (const optDef of def.options) {
+        const normDefName = String(optDef.name || '').toLowerCase().trim();
+        const defSlug = toSlug(optDef.slug || optDef.name);
+        const hasOpt = existingCat.options.some(
+          o => toSlug(o.slug || o.name) === defSlug || String(o.name || '').toLowerCase().trim() === normDefName
+        );
+        if (!hasOpt) {
+          existingCat.options.push({
+            _id: new mongoose.Types.ObjectId(),
+            name: optDef.name,
+            slug: defSlug,
+            value: optDef.value || defSlug,
+            order: optDef.order || (existingCat.options.length + 1),
+            isActive: optDef.isActive !== false
+          });
+          modified = true;
+        }
+      }
+
       if (modified) {
         await existingCat.save();
       }
@@ -140,6 +189,7 @@ router.get('/', async (req, res, next) => {
         id: cat._id ? cat._id.toString() : cat.id,
         name: cat.name,
         slug: cat.slug,
+        description: cat.description || '',
         type: cat.type || 'multi',
         order: cat.order || 0,
         isActive: cat.isActive,
@@ -182,11 +232,11 @@ router.post('/seed-defaults', protect, requirePermission('catalog_filters'), asy
 });
 
 // @route   POST /api/filters/categories
-// @desc    Create a new filter category
+// @desc    Create a new filter category with optional initial options
 // @access  Private/Admin
 router.post('/categories', protect, requirePermission('catalog_filters'), async (req, res, next) => {
   try {
-    const { name, slug, type, order, isActive } = req.body;
+    const { name, slug, description, type, order, isActive, options } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, message: 'Category name is required.' });
     }
@@ -207,33 +257,61 @@ router.post('/categories', protect, requirePermission('catalog_filters'), async 
     if (existing) {
       return res.status(400).json({
         success: false,
-        message: `Category "${cleanName}" already exists. Please edit the existing category instead.`
+        message: `Category "${cleanName}" already exists. Please choose a different name.`
+      });
+    }
+
+    // Process & deduplicate options if provided
+    const cleanOptions = [];
+    if (Array.isArray(options)) {
+      const seenNames = new Set();
+      const seenSlugs = new Set();
+
+      options.forEach((opt, idx) => {
+        const optName = String(opt.name || '').trim();
+        if (!optName) return;
+        const normName = optName.toLowerCase();
+        const optSlug = toSlug(opt.slug || optName);
+
+        if (!seenNames.has(normName) && !seenSlugs.has(optSlug)) {
+          seenNames.add(normName);
+          seenSlugs.add(optSlug);
+          cleanOptions.push({
+            _id: new mongoose.Types.ObjectId(),
+            name: optName,
+            slug: optSlug,
+            value: (opt.value && String(opt.value).trim()) ? String(opt.value).trim() : optSlug,
+            order: opt.order !== undefined ? Number(opt.order) : idx + 1,
+            isActive: opt.isActive !== false
+          });
+        }
       });
     }
 
     const newCategory = new FilterCategory({
       name: cleanName,
       slug: cleanSlug,
+      description: description ? String(description).trim() : '',
       type: type || 'multi',
       order: Number(order) || 0,
       isActive: isActive !== undefined ? Boolean(isActive) : true,
-      options: []
+      options: cleanOptions
     });
 
     const savedCategory = await newCategory.save();
     res.status(201).json({ success: true, category: savedCategory });
   } catch (error) {
     console.error('Create filter category error:', error);
-    res.status(500).json({ success: false, message: 'Failed to save filter category.' });
+    res.status(500).json({ success: false, message: error.message || 'Failed to save filter category.' });
   }
 });
 
 // @route   PUT /api/filters/categories/:id
-// @desc    Update a filter category (name, slug, type, order, isActive)
+// @desc    Update a filter category and optionally its options atomically
 // @access  Private/Admin
 router.put('/categories/:id', protect, requirePermission('catalog_filters'), async (req, res, next) => {
   try {
-    const { name, slug, type, order, isActive } = req.body;
+    const { name, slug, description, type, order, isActive, options } = req.body;
     const category = await FilterCategory.findById(req.params.id);
 
     if (!category) {
@@ -263,15 +341,58 @@ router.put('/categories/:id', protect, requirePermission('catalog_filters'), asy
       category.slug = newSlug;
     }
 
+    if (description !== undefined) category.description = String(description).trim();
     if (type !== undefined) category.type = type;
     if (order !== undefined) category.order = Number(order) || 0;
     if (isActive !== undefined) category.isActive = Boolean(isActive);
+
+    // Support complete batch update of options inside category editor with ObjectId safety and deduplication
+    if (Array.isArray(options)) {
+      const seenNames = new Set();
+      const seenSlugs = new Set();
+      const cleanOptions = [];
+
+      for (let idx = 0; idx < options.length; idx++) {
+        const opt = options[idx];
+        const optName = String(opt.name || '').trim();
+        if (!optName) continue;
+        const normName = optName.toLowerCase();
+        const optSlug = toSlug(opt.slug || optName);
+
+        // Deduplicate within the payload
+        if (seenNames.has(normName) || seenSlugs.has(optSlug)) {
+          continue;
+        }
+        seenNames.add(normName);
+        seenSlugs.add(optSlug);
+
+        // Safe ObjectId: preserve existing valid 24-char ObjectId, or generate new valid ObjectId
+        const validId = (opt._id && mongoose.Types.ObjectId.isValid(opt._id))
+          ? opt._id
+          : ((opt.id && mongoose.Types.ObjectId.isValid(opt.id)) ? opt.id : new mongoose.Types.ObjectId());
+
+        cleanOptions.push({
+          _id: validId,
+          name: optName,
+          slug: optSlug,
+          value: (opt.value && String(opt.value).trim()) ? String(opt.value).trim() : optSlug,
+          order: opt.order !== undefined ? Number(opt.order) : cleanOptions.length + 1,
+          isActive: opt.isActive !== false
+        });
+      }
+
+      category.options = cleanOptions;
+    }
 
     const updatedCategory = await category.save();
     res.json({ success: true, category: updatedCategory });
   } catch (error) {
     console.error('Update filter category error:', error);
-    res.status(500).json({ success: false, message: 'Failed to update filter category.' });
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update filter category.',
+      error: error.message
+    });
   }
 });
 
@@ -294,7 +415,7 @@ router.delete('/categories/:id', protect, requirePermission('catalog_filters'), 
 });
 
 // @route   POST /api/filters/categories/:categoryId/options
-// @desc    Add an option to a filter category
+// @desc    Add an option to a category with duplicate prevention
 // @access  Private/Admin
 router.post('/categories/:categoryId/options', protect, requirePermission('catalog_filters'), async (req, res, next) => {
   try {
@@ -313,17 +434,20 @@ router.post('/categories/:categoryId/options', protect, requirePermission('catal
     const cleanVal = (value && value.trim()) ? value.trim() : cleanSlug;
 
     const existingOpt = (category.options || []).find(
-      o => o.slug === cleanSlug || o.name.toLowerCase() === cleanName.toLowerCase()
+      o => o.slug === cleanSlug ||
+           o.name.toLowerCase().trim() === cleanName.toLowerCase() ||
+           toSlug(o.name) === cleanSlug
     );
 
     if (existingOpt) {
       return res.status(400).json({
         success: false,
-        message: `Option "${cleanName}" already exists in this category.`
+        message: `This option already exists in ${category.name}.`
       });
     }
 
     const newOption = {
+      _id: new mongoose.Types.ObjectId(),
       name: cleanName,
       slug: cleanSlug,
       value: cleanVal,
@@ -337,12 +461,12 @@ router.post('/categories/:categoryId/options', protect, requirePermission('catal
     res.status(201).json({ success: true, category });
   } catch (error) {
     console.error('Add filter option error:', error);
-    res.status(500).json({ success: false, message: 'Failed to add filter option.' });
+    res.status(500).json({ success: false, message: error.message || 'Failed to add filter option.' });
   }
 });
 
 // @route   PUT /api/filters/categories/:categoryId/options/:optionId
-// @desc    Update a filter option
+// @desc    Update a filter option with duplicate prevention
 // @access  Private/Admin
 router.put('/categories/:categoryId/options/:optionId', protect, requirePermission('catalog_filters'), async (req, res, next) => {
   try {
@@ -362,25 +486,22 @@ router.put('/categories/:categoryId/options/:optionId', protect, requirePermissi
       const newSlug = toSlug(slug || cleanName);
 
       const duplicate = category.options.find(
-        o => (o.slug === newSlug || o.name.toLowerCase() === cleanName.toLowerCase()) &&
+        o => (o.slug === newSlug || o.name.toLowerCase().trim() === cleanName.toLowerCase() || toSlug(o.name) === newSlug) &&
              o._id.toString() !== req.params.optionId
       );
 
       if (duplicate) {
         return res.status(400).json({
           success: false,
-          message: `Option "${cleanName}" already exists in this category.`
+          message: `This option already exists in ${category.name}.`
         });
       }
 
       option.name = cleanName;
       option.slug = newSlug;
-      if (value === undefined) {
-        option.value = newSlug;
-      }
+      if (value !== undefined) option.value = value.trim() || newSlug;
     }
 
-    if (value !== undefined) option.value = value.trim();
     if (order !== undefined) option.order = Number(order) || 0;
     if (isActive !== undefined) option.isActive = Boolean(isActive);
 
@@ -388,7 +509,7 @@ router.put('/categories/:categoryId/options/:optionId', protect, requirePermissi
     res.json({ success: true, category });
   } catch (error) {
     console.error('Update filter option error:', error);
-    res.status(500).json({ success: false, message: 'Failed to update filter option.' });
+    res.status(500).json({ success: false, message: error.message || 'Failed to update filter option.' });
   }
 });
 
@@ -402,12 +523,12 @@ router.delete('/categories/:categoryId/options/:optionId', protect, requirePermi
       return res.status(404).json({ success: false, message: 'Parent filter category not found.' });
     }
 
-    const optIndex = category.options.findIndex(o => o._id.toString() === req.params.optionId);
-    if (optIndex === -1) {
+    const option = category.options.id(req.params.optionId);
+    if (!option) {
       return res.status(404).json({ success: false, message: 'Filter option not found.' });
     }
 
-    category.options.splice(optIndex, 1);
+    category.options.pull(req.params.optionId);
     await category.save();
 
     res.json({ success: true, message: 'Filter option deleted successfully.', category });

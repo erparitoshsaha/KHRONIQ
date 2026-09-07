@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Compass, Mail, Phone, MapPin, Award, CheckCircle2, ChevronDown, BookOpen, ArrowRight, X } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchBlogs } from '../store/slices/watchSlice';
+import BackButton from '../components/BackButton';
 
-export default function Static({ params, _onPageChange }) {
+export default function Static({ params, onPageChange }) {
   const dispatch = useDispatch();
   const blogs = useSelector(state => state.watch.blogs || []);
   const contentSections = useSelector(state => state.watch.contentSections || []);
@@ -1801,6 +1802,10 @@ export default function Static({ params, _onPageChange }) {
   ];
   return (
     <div className="space-y-8 pb-12">
+      {/* Back Button */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-0">
+        <BackButton onPageChange={onPageChange} fallbackPage="home" label="BACK" />
+      </div>
       {/* Header Banner */}
       <div className="border-b border-luxury-text/10 pb-6 text-center max-w-xl mx-auto space-y-2">
         <span className="text-[10px] text-luxury-gold-dark font-bold tracking-widest uppercase">Client Services</span>
@@ -1812,7 +1817,7 @@ export default function Static({ params, _onPageChange }) {
       <div className="flex flex-wrap justify-center border-b border-luxury-text/10 max-w-4xl mx-auto gap-y-1">
         {[
           { key: 'about', label: 'Our Story' },
-          { key: 'contact', label: 'Boutique Contact' },
+          { key: 'contact', label: 'Contact' },
           { key: 'shipping', label: 'Shipping Policy' },
          { key: 'exchange', label: 'Replacement Policy' },
           { key: 'refund', label: 'Refund Policy' },
@@ -1890,7 +1895,7 @@ export default function Static({ params, _onPageChange }) {
           </div>
         )}
 
-        {/* BOUTIQUE CONTACT TAB */}
+        {/* CONTACT TAB */}
         {activeTab === 'contact' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             {/* Form */}
@@ -1935,7 +1940,7 @@ export default function Static({ params, _onPageChange }) {
                     required
                     value={contactForm.subject}
                     onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
-                    placeholder="Boutique Appointment Inquiry"
+                    placeholder="Appointment Inquiry"
                     className="w-full bg-luxury-bg border border-luxury-text/10 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-luxury-gold-dark"
                   />
                 </div>
@@ -1964,7 +1969,7 @@ export default function Static({ params, _onPageChange }) {
             {/* Info */}
             <div className="lg:col-span-5 space-y-6 lg:border-l lg:border-luxury-text/10 lg:pl-10">
               <h3 className="text-lg font-bold text-luxury-text font-serif uppercase tracking-wide">
-                {contactSection?.title || 'Boutique HQ'}
+                {contactSection?.title || 'KHRONIQ HQ'}
               </h3>
               
               <div className="space-y-4 text-xs">
@@ -1991,7 +1996,7 @@ export default function Static({ params, _onPageChange }) {
                 <div className="flex items-start space-x-3">
                   <Mail size={16} className="text-luxury-gold-dark mt-0.5" />
                   <div>
-                    <h5 className="font-bold text-luxury-text uppercase">Boutique Email</h5>
+                    <h5 className="font-bold text-luxury-text uppercase">Email</h5>
                     <p className="text-luxury-muted font-light">
                       {contactSection?.buttonText || 'support@khroniq.com'}
                     </p>
@@ -2001,7 +2006,7 @@ export default function Static({ params, _onPageChange }) {
 
               <div className="border border-luxury-text/10 rounded p-4 bg-luxury-bg text-center space-y-2">
                 <Award className="mx-auto text-luxury-gold-dark" size={20} />
-                <h5 className="text-[10px] font-bold text-luxury-text uppercase tracking-widest">Boutique Appointments</h5>
+                <h5 className="text-[10px] font-bold text-luxury-text uppercase tracking-widest">Appointments</h5>
                 <p className="text-[10px] text-luxury-muted leading-relaxed font-light">
                   {contactSection?.description || 'Reserve a personalized consultation or viewing session with our private concierge team.'}
                 </p>
@@ -2412,12 +2417,18 @@ export default function Static({ params, _onPageChange }) {
             {selectedBlog && (
               <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
                 <div className="bg-white border border-luxury-text/10 p-6 sm:p-8 rounded-md w-full max-w-2xl space-y-4 max-h-[90vh] overflow-y-auto relative">
-                  <button 
-                    onClick={() => setSelectedBlog(null)} 
-                    className="absolute top-4 right-4 text-luxury-muted hover:text-luxury-text p-1 cursor-pointer transition"
-                  >
-                    <X size={20} />
-                  </button>
+                  <div className="flex items-center justify-between pb-2 border-b border-luxury-text/10">
+                    <BackButton
+                      customAction={() => setSelectedBlog(null)}
+                      label="Back to Articles"
+                    />
+                    <button 
+                      onClick={() => setSelectedBlog(null)} 
+                      className="text-luxury-muted hover:text-luxury-text p-1 cursor-pointer transition"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
 
                   <div className="space-y-3 pt-2">
                     <div className="flex items-center gap-2 text-[9px] font-bold text-luxury-gold-dark uppercase tracking-widest">

@@ -11,6 +11,15 @@ export default function MainLayout({ children, onPageChange, currentPage }) {
   const [warrantyOpen, setWarrantyOpen] = useState(false);
   const [updatesOpen, setUpdatesOpen] = useState(false);
 
+  // Dedicated full-height layout for Admin dashboard to allow proper sidebar placement
+  if (currentPage === 'admin') {
+    return (
+      <div className="min-h-screen bg-[#f8f9fa] font-sans antialiased">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-luxury-bg flex flex-col font-sans select-none">
       {/* Navigation */}

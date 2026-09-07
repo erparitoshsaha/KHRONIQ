@@ -137,6 +137,12 @@ function Marquee({ items, speed = 20, reverse = false }) {
 ───────────────────────────────────────────────────────────────────── */
 function GenderPanel({ label, img, gender, delay, accent, onPageChange }) {
   const panelRef = useRef(null);
+  const defaultFallback = gender === 'women' ? '/assets/women_watches_beach.jpeg' : '/assets/men_watches.jpg';
+  const [panelImg, setPanelImg] = useState(img || defaultFallback);
+
+  useEffect(() => {
+    setPanelImg(img || defaultFallback);
+  }, [img, defaultFallback]);
 
   /* Raw mouse position -1..1 relative to panel */
   const mx = useMotionValue(0);
@@ -183,11 +189,23 @@ function GenderPanel({ label, img, gender, delay, accent, onPageChange }) {
       transition={{ duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] }}
       style={{ perspective: 900 }}
     >
+      {/* ── Hidden preloader to guarantee fallback if image fails or 404s ── */}
+      <img
+        src={panelImg}
+        alt=""
+        className="hidden"
+        onError={() => {
+          if (panelImg !== defaultFallback) {
+            setPanelImg(defaultFallback);
+          }
+        }}
+      />
+
       {/* ── Image — follows mouse direction ── */}
       <motion.div
         className="absolute inset-[-5%] bg-cover bg-center"
         style={{
-          backgroundImage: `url('${img}')`,
+          backgroundImage: `url('${panelImg}')`,
           x: imgX,
           y: imgY,
         }}
@@ -297,18 +315,8 @@ function CollectionCard({ col, idx, onPageChange }) {
       transition={{ duration: 0.85, delay: idx * 0.12, ease: [0.22, 1, 0.36, 1] }}
       className={`relative h-[360px] sm:h-[420px] md:h-[450px] rounded-2xl p-6 sm:p-8 flex flex-col justify-between overflow-hidden cursor-pointer shadow-md transition-shadow duration-300 hover:shadow-2xl ${bgClass}`}
     >
-      {/* Background Watch Image overlapping on the right */}
-      <div
-        className="absolute bottom-0 right-[-18%] w-[76%] h-[90%] bg-contain bg-no-repeat bg-bottom transition-transform duration-700 pointer-events-none z-10"
-        style={{
-          backgroundImage: `url('${col.image}')`,
-          transform: hovered ? 'scale(1.1) rotate(-3deg)' : 'scale(1)',
-          filter: col.dark ? 'brightness(0.95)' : 'none',
-        }}
-      />
-
-      {/* Content Container (relative z-20 to display over background) */}
-      <div className="relative z-20 flex flex-col justify-between h-full max-w-[65%]">
+      {/* Content Container */}
+      <div className="relative z-20 flex flex-col justify-between h-full">
 
         {/* Top: Num & Header */}
         <div className="space-y-3">
@@ -818,6 +826,9 @@ const defaultHomeImages = {
   khroniq_updates: '/assets/khroniq_updates_bg.jpg'
 };
 
+let publicMediaCache = null;
+let publicMediaPromise = null;
+
 export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, updatesOpen }) {
   const products = useSelector(state => state.watch.products);
   const [homeImages, setHomeImages] = useState(defaultHomeImages);
@@ -849,14 +860,29 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   }, []);
 
   useEffect(() => {
-    fetch('/api/admin/media/public')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.success && data.media) {
-          setHomeImages(prev => ({ ...prev, ...data.media }));
-        }
-      })
-      .catch(err => console.error('Failed to fetch homepage media:', err));
+    if (publicMediaCache) {
+      setHomeImages(prev => ({ ...prev, ...publicMediaCache }));
+      return;
+    }
+    if (!publicMediaPromise) {
+      publicMediaPromise = fetch('/api/admin/media/public')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.success && data.media) {
+            publicMediaCache = data.media;
+            return data.media;
+          }
+          return null;
+        })
+        .catch(err => {
+          console.error('Failed to fetch homepage media:', err);
+          publicMediaPromise = null;
+          return null;
+        });
+    }
+    publicMediaPromise.then(media => {
+      if (media) setHomeImages(prev => ({ ...prev, ...media }));
+    });
   }, []);
 
   /* ── Hero unified parallax ── */
@@ -1121,13 +1147,11 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     deevaaz: {
       tagline: 'CONTEMPORARY SWADESHI LUXURY',
       desc: 'Modern elegance and graceful proportions, tailored for distinction.',
-      image: '/assets/watch_uploaded_2.png',
       dark: false
     },
     classic: {
       tagline: 'HIGH-FREQUENCY CHRONOGRAPHS',
       desc: 'Engineered for precision. Built for timeless performance.',
-      image: '/assets/watch_green.jpg',
       dark: false
     }
   };
@@ -1142,7 +1166,6 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     const art = defaultCollectionArt[slug] || {
       tagline: 'LUXURY TIMEPIECE COLLECTION',
       desc: `Distinct expressions of our watchmaking philosophy in the ${opt.name} collection.`,
-      image: idx % 2 === 0 ? '/assets/watch_uploaded_2.png' : '/assets/watch_green.jpg',
       dark: false
     };
 
@@ -1151,11 +1174,10 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
       name: opt.name.toUpperCase(),
       tagline: customItem?.subtitle || art.tagline,
       desc: customItem?.description || art.desc,
-      image: customItem?.image || art.image,
-      specs: customItem?.metadata?.specs || [
-        { label: 'Automatic Movement', icon: 'Cpu' },
+      specs: (customItem?.metadata?.specs || [
+        { label: 'Quartz Movement', icon: 'Cpu' },
         { label: 'Sapphire Crystal', icon: 'Gem' }
-      ],
+      ]).map(s => (/automatic/i.test(s.label) ? { ...s, label: 'Quartz Movement' } : s)),
       dark: customItem?.metadata?.dark !== undefined ? customItem.metadata.dark : art.dark,
       filter: { category: opt.value || opt.slug || opt.name }
     };
@@ -1311,7 +1333,15 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           />
           <GenderPanel
             label={genderSplitSection?.items?.[1]?.title || "Women's Watches"}
-            img={genderSplitSection?.items?.[1]?.image || "/assets/women_watches_beach.jpeg"}
+            img={
+              (genderSplitSection?.items?.[1]?.image &&
+               !genderSplitSection.items[1].image.includes('women_watches.jpg') &&
+               genderSplitSection.items[1].image.trim()) ||
+              (homeImages?.gender_women &&
+               !homeImages.gender_women.includes('women_watches.jpg') &&
+               homeImages.gender_women.trim()) ||
+              "/assets/women_watches_beach.jpeg"
+            }
             gender="women"
             delay={0.1}
             accent="#34d399"

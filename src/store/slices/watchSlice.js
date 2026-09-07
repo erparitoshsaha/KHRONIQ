@@ -395,7 +395,7 @@ export const DEFAULT_FOOTER_SECTIONS = [
     links: [
       { id: 'link-appt', _id: 'link-appt', label: 'Book an Appointment', page: 'static', args: { view: 'contact' }, order: 1, isActive: true },
       { id: 'link-reg', _id: 'link-reg', label: 'Register My Watch', action: 'warranty', order: 2, isActive: true },
-      { id: 'link-boutique', _id: 'link-boutique', label: 'Boutique Contact', page: 'static', args: { view: 'contact' }, order: 3, isActive: true }
+      { id: 'link-boutique', _id: 'link-boutique', label: 'Contact', page: 'static', args: { view: 'contact' }, order: 3, isActive: true }
     ]
   },
   {
@@ -440,6 +440,7 @@ export const DEFAULT_FOOTER_SECTIONS = [
 
 const initialState = {
   products: getMockProducts(),
+  productsLoaded: false,
   cart: loadSaved('khroniq_cart', []),
   wishlist: loadSaved('khroniq_wishlist', []),
   orders: [],
@@ -545,6 +546,10 @@ const watchSlice = createSlice({
     },
     setProductsAction: (state, action) => {
       state.products = action.payload;
+      state.productsLoaded = true;
+    },
+    setProductsLoadedAction: (state, action) => {
+      state.productsLoaded = action.payload;
     },
     setOrdersAction: (state, action) => {
       state.orders = action.payload;
@@ -610,6 +615,7 @@ export const {
   clearCartAction,
   toggleWishlistAction,
   setProductsAction,
+  setProductsLoadedAction,
   setOrdersAction,
   setCouponsAction,
   setCartAction,
@@ -664,12 +670,19 @@ export const fetchProducts = () => async (dispatch) => {
     const res = await fetch('/api/products');
     const data = await res.json();
     if (data && data.success && Array.isArray(data.products) && data.products.length > 0) {
-      // Normalize: ensure every product has `id` set from `_id` and image is valid
-      const normalized = data.products.map(p => ({
-        ...p,
-        id: p.id || (p._id ? p._id.toString() : undefined),
-        image: (p.image && p.image !== '/placeholder.jpg' && p.image.trim() !== '') ? p.image : '/assets/watch_red.jpg',
-      }));
+      // Normalize: ensure every product has `id` set from `_id` and images array is preserved
+      const normalized = data.products.map(p => {
+        const cleanImage = (typeof p.image === 'string') ? p.image.trim() : '';
+        const cleanImages = Array.isArray(p.images) && p.images.length > 0
+          ? p.images.map(s => (typeof s === 'string' ? s.trim() : '')).filter(Boolean)
+          : (cleanImage ? [cleanImage] : []);
+        return {
+          ...p,
+          id: p.id || (p._id ? p._id.toString() : undefined),
+          image: cleanImage || (cleanImages[0] || ''),
+          images: cleanImages
+        };
+      });
       dispatch(setProductsAction(normalized));
       return;
     }
@@ -677,6 +690,93 @@ export const fetchProducts = () => async (dispatch) => {
     console.error('Failed to fetch products from API:', error);
   }
   dispatch(setProductsAction(getMockProducts()));
+};
+
+export const fetchSingleProduct = (identifier) => async (dispatch, getState) => {
+  if (!identifier) return { success: false };
+  const decoded = decodeURIComponent(identifier).trim();
+
+  // 1. Check if product is already in current Redux state
+  const state = getState();
+  const existing = state.watch.products.find(p => {
+    if (!p) return false;
+    const lower = decoded.toLowerCase();
+    if (p.slug && p.slug.trim().toLowerCase() === lower) return true;
+    if ((p.id || '').toString().toLowerCase() === lower || (p._id || '').toString().toLowerCase() === lower) return true;
+    if (p.modelNo && p.modelNo.trim().toLowerCase() === lower) return true;
+    if (p.serialNo && p.serialNo.trim().toLowerCase() === lower) return true;
+    return false;
+  });
+
+  if (existing) {
+    return { success: true, product: existing };
+  }
+
+  // 2. Otherwise, try fetching single product from backend endpoint
+  try {
+    const res = await fetch(`/api/products/${encodeURIComponent(decoded)}`);
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      if (data && data.success && data.product) {
+        const p = data.product;
+        const cleanImage = (typeof p.image === 'string') ? p.image.trim() : '';
+        const cleanImages = Array.isArray(p.images) && p.images.length > 0
+          ? p.images.map(s => (typeof s === 'string' ? s.trim() : '')).filter(Boolean)
+          : (cleanImage ? [cleanImage] : []);
+        const normalized = {
+          ...p,
+          id: p.id || (p._id ? p._id.toString() : undefined),
+          image: cleanImage || (cleanImages[0] || ''),
+          images: cleanImages
+        };
+        const currentProducts = getState().watch.products;
+        if (!currentProducts.some(cp => cp.id === normalized.id)) {
+          dispatch(setProductsAction([...currentProducts, normalized]));
+        }
+        return { success: true, product: normalized };
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch single product from API endpoint:', err);
+  }
+
+  // 3. Fallback: Fetch full catalog and resolve
+  try {
+    const res = await fetch('/api/products');
+    const data = await res.json();
+    if (data && data.success && Array.isArray(data.products)) {
+      const normalized = data.products.map(p => {
+        const cleanImage = (typeof p.image === 'string') ? p.image.trim() : '';
+        const cleanImages = Array.isArray(p.images) && p.images.length > 0
+          ? p.images.map(s => (typeof s === 'string' ? s.trim() : '')).filter(Boolean)
+          : (cleanImage ? [cleanImage] : []);
+        return {
+          ...p,
+          id: p.id || (p._id ? p._id.toString() : undefined),
+          image: cleanImage || (cleanImages[0] || ''),
+          images: cleanImages
+        };
+      });
+      dispatch(setProductsAction(normalized));
+      const lower = decoded.toLowerCase();
+      const found = normalized.find(p => {
+        if (!p) return false;
+        if (p.slug && p.slug.trim().toLowerCase() === lower) return true;
+        if ((p.id || '').toString().toLowerCase() === lower || (p._id || '').toString().toLowerCase() === lower) return true;
+        if (p.modelNo && p.modelNo.trim().toLowerCase() === lower) return true;
+        if (p.serialNo && p.serialNo.trim().toLowerCase() === lower) return true;
+        return false;
+      });
+      if (found) {
+        return { success: true, product: found };
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fallback fetch products catalog:', err);
+  }
+
+  return { success: false };
 };
 
 export const fetchCoupons = () => async (dispatch) => {
@@ -1331,12 +1431,16 @@ export const validateCoupon = (code, subtotal) => async () => {
   }
 };
 
-export const createRazorpayOrder = (amount) => async () => {
+export const createRazorpayOrder = (orderData) => async () => {
   try {
+    const payload = (typeof orderData === 'object' && orderData !== null && !Array.isArray(orderData))
+      ? orderData
+      : { amount: orderData };
+
     const res = await fetch('/api/payments/create-order', {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ amount })
+      body: JSON.stringify(payload)
     });
     const data = await res.json();
     return data;
@@ -1552,9 +1656,10 @@ export const createFilterCategory = (categoryData) => async (dispatch) => {
       dispatch(fetchFilters());
       return { success: true, category: data.category };
     }
-    return { success: false, message: data.message };
+    return { success: false, message: data.message || 'Failed to create filter category.' };
   } catch (error) {
-    return { success: false, message: 'Failed to create filter category.' };
+    console.error('createFilterCategory error:', error);
+    return { success: false, message: error.message || 'Failed to create filter category.' };
   }
 };
 
@@ -1571,9 +1676,10 @@ export const updateFilterCategory = (categoryId, categoryData) => async (dispatc
       dispatch(fetchFilters());
       return { success: true, category: data.category };
     }
-    return { success: false, message: data.message };
+    return { success: false, message: data.message || 'Failed to update filter category.' };
   } catch (error) {
-    return { success: false, message: 'Failed to update filter category.' };
+    console.error('updateFilterCategory error:', error);
+    return { success: false, message: error.message || 'Failed to update filter category.' };
   }
 };
 
@@ -1589,9 +1695,10 @@ export const deleteFilterCategory = (categoryId) => async (dispatch) => {
       dispatch(fetchFilters());
       return { success: true };
     }
-    return { success: false, message: data.message };
+    return { success: false, message: data.message || 'Failed to delete filter category.' };
   } catch (error) {
-    return { success: false, message: 'Failed to delete filter category.' };
+    console.error('deleteFilterCategory error:', error);
+    return { success: false, message: error.message || 'Failed to delete filter category.' };
   }
 };
 
@@ -1608,9 +1715,10 @@ export const createFilterOption = (categoryId, optionData) => async (dispatch) =
       dispatch(fetchFilters());
       return { success: true, category: data.category };
     }
-    return { success: false, message: data.message };
+    return { success: false, message: data.message || 'Failed to create filter option.' };
   } catch (error) {
-    return { success: false, message: 'Failed to create filter option.' };
+    console.error('createFilterOption error:', error);
+    return { success: false, message: error.message || 'Failed to create filter option.' };
   }
 };
 
@@ -1627,9 +1735,10 @@ export const updateFilterOption = (categoryId, optionId, optionData) => async (d
       dispatch(fetchFilters());
       return { success: true, category: data.category };
     }
-    return { success: false, message: data.message };
+    return { success: false, message: data.message || 'Failed to update filter option.' };
   } catch (error) {
-    return { success: false, message: 'Failed to update filter option.' };
+    console.error('updateFilterOption error:', error);
+    return { success: false, message: error.message || 'Failed to update filter option.' };
   }
 };
 
@@ -1645,9 +1754,10 @@ export const deleteFilterOption = (categoryId, optionId) => async (dispatch) => 
       dispatch(fetchFilters());
       return { success: true };
     }
-    return { success: false, message: data.message };
+    return { success: false, message: data.message || 'Failed to delete filter option.' };
   } catch (error) {
-    return { success: false, message: 'Failed to delete filter option.' };
+    console.error('deleteFilterOption error:', error);
+    return { success: false, message: error.message || 'Failed to delete filter option.' };
   }
 };
 

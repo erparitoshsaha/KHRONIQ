@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { Provider, useDispatch } from 'react-redux';
+import { Provider, useDispatch, useSelector } from 'react-redux';
 import { store } from './store';
+import { parseRouteFromPath, getProductIdentifier, findProductInList, incrementNavCount } from './utils/productRouting';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
@@ -51,7 +52,7 @@ class ErrorBoundary extends React.Component {
             Notice: Temporary Interface Interruption
           </h2>
           <p className="text-xs text-gray-400 max-w-md">
-            An unexpected error occurred while loading this view. You can return to the boutique home or reload the page.
+            An unexpected error occurred while loading this view. You can return to the homepage or reload the page.
           </p>
           <div className="flex gap-3 pt-2">
             <button
@@ -60,8 +61,8 @@ class ErrorBoundary extends React.Component {
                 if (this.props.onReset) this.props.onReset();
                 else window.location.href = '/';
               }}
-              className="px-5 py-2.5 bg-luxury-gold text-black text-xs font-bold uppercase tracking-wider rounded cursor-pointer transition hover:bg-luxury-gold/90"
-              style={{ backgroundColor: '#c8a96a', color: '#0a0a0a' }}
+              className="px-5 py-2.5 bg-black hover:bg-neutral-800 text-white text-xs font-bold uppercase tracking-wider rounded cursor-pointer transition shadow-xs"
+              style={{ backgroundColor: '#111111', color: '#ffffff' }}
             >
               Return to Homepage
             </button>
@@ -81,9 +82,11 @@ class ErrorBoundary extends React.Component {
 
 
 function AppContent() {
-  const [currentPage, setCurrentPage] = useState('home');
-  const [pageParams, setPageParams] = useState(null);
+  const initialRoute = parseRouteFromPath(typeof window !== 'undefined' ? window.location.pathname : '/');
+  const [currentPage, setCurrentPage] = useState(initialRoute.page);
+  const [pageParams, setPageParams] = useState(initialRoute.params);
   const dispatch = useDispatch();
+  const products = useSelector(state => state.watch.products);
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -94,21 +97,95 @@ function AppContent() {
     dispatch(fetchContentSections());
   }, [dispatch]);
 
+  // Synchronize history state on initial mount
   useEffect(() => {
-    const match = window.location.pathname.match(/^\/reset-password\/(.+)$/);
-    if (match) {
-      setCurrentPage('reset-password');
-      setPageParams({ token: match[1] });
+    if (typeof window !== 'undefined') {
+      const existingNavIdx = window.history.state?.navIdx;
+      window.history.replaceState(
+        {
+          page: initialRoute.page,
+          params: initialRoute.params,
+          navIdx: typeof existingNavIdx === 'number' ? existingNavIdx : 0
+        },
+        '',
+        window.location.pathname + window.location.search
+      );
     }
   }, []);
 
-  const handlePageChange = (page, params = null) => {
+  // Listen to browser Back / Forward buttons (popstate)
+  useEffect(() => {
+    const handlePopState = (event) => {
+      if (event.state && event.state.page) {
+        setCurrentPage(event.state.page);
+        setPageParams(event.state.params || null);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        const route = parseRouteFromPath(window.location.pathname);
+        setCurrentPage(route.page);
+        setPageParams(route.params);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handlePageChange = (page, params = null, options = {}) => {
     if (page === 'home') {
       localStorage.setItem('khroniq_is_gifting_journey', 'false');
     }
     setCurrentPage(page);
     setPageParams(params);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (!options.skipHistory && typeof window !== 'undefined') {
+      incrementNavCount();
+      const currentNavIdx = typeof window.history.state?.navIdx === 'number' ? window.history.state.navIdx : 0;
+      const nextNavIdx = currentNavIdx + 1;
+
+      let targetPath = '/';
+      if (page === 'product-detail') {
+        let identifier = params?.id || params?.slug || '';
+        // If product object was passed or found in store, generate canonical identifier
+        if (params?.product) {
+          identifier = getProductIdentifier(params.product, products);
+        } else if (identifier) {
+          const found = findProductInList(products, identifier);
+          if (found) {
+            identifier = getProductIdentifier(found, products);
+          }
+        }
+        targetPath = identifier ? `/product/${identifier}` : '/shop';
+      } else if (page === 'shop') {
+        targetPath = '/shop';
+      } else if (page === 'cart') {
+        targetPath = '/cart';
+      } else if (page === 'checkout') {
+        targetPath = '/checkout';
+      } else if (page === 'profile') {
+        targetPath = '/profile';
+      } else if (page === 'login') {
+        targetPath = '/login';
+      } else if (page === 'admin') {
+        targetPath = '/admin';
+      } else if (page === 'customization') {
+        targetPath = '/customization';
+      } else if (page === 'gifting') {
+        targetPath = '/gifting';
+      } else if (page === 'reset-password') {
+        targetPath = `/reset-password/${params?.token || ''}`;
+      } else if (page === 'static') {
+        targetPath = '/';
+      }
+
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ page, params, navIdx: nextNavIdx }, '', targetPath);
+      } else {
+        window.history.replaceState({ page, params, navIdx: currentNavIdx }, '', targetPath);
+      }
+    }
   };
 
   const renderPage = () => {
@@ -136,7 +213,7 @@ function AppContent() {
       case 'customization':
         return <Customization onPageChange={handlePageChange} params={pageParams} />;
       case 'gifting':
-        return <Gifting onPageChange={handlePageChange} />;
+        return <Gifting onPageChange={handlePageChange} params={pageParams} />;
       default:
         return <Home onPageChange={handlePageChange} />;
     }

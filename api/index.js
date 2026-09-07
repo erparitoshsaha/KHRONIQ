@@ -68,7 +68,8 @@ const staticAllowedOrigins = [
   'https://khroniq.com',
   'http://localhost:5173',
   'http://localhost:5174',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'http://192.168.1.4:5173'
 ];
 
 const envOrigins = (process.env.FRONTEND_URL || '')
@@ -98,6 +99,23 @@ app.use(
           return callback(null, true);
         }
       } catch (_) {}
+
+      // Allow private LAN development origins (RFC 1918) on local dev ports during development
+      if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+        try {
+          const parsedUrl = new URL(origin);
+          const isPrivateIp =
+            parsedUrl.hostname === '192.168.1.4' ||
+            /^192\.168\.\d{1,3}\.\d{1,3}$/.test(parsedUrl.hostname) ||
+            /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(parsedUrl.hostname) ||
+            /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(parsedUrl.hostname) ||
+            parsedUrl.hostname === '127.0.0.1' ||
+            parsedUrl.hostname === 'localhost';
+          if (isPrivateIp && ['5173', '5174', '3000', '5000', '8080'].includes(parsedUrl.port || '')) {
+            return callback(null, true);
+          }
+        } catch (_) {}
+      }
 
       return callback(new Error('CORS policy does not allow access from this origin.'));
     },
@@ -192,6 +210,7 @@ app.get('/api/health', async (req, res) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Listen when running directly on VPS or local Node process
 if (!process.env.VERCEL) {
@@ -205,13 +224,13 @@ if (!process.env.VERCEL) {
       } catch (err) {
         console.error('Initial check error:', err.message);
       }
-      app.listen(PORT, () => {
-        console.log(`KHRONIQ API Server running on port ${PORT}`);
+      app.listen(PORT, HOST, () => {
+        console.log(`KHRONIQ API Server running on port ${PORT} (LAN reachable at http://192.168.1.4:${PORT})`);
       });
     })
     .catch((err) => {
       console.error('Initial database connection failed on boot:', err.message);
-      app.listen(PORT, () => {
+      app.listen(PORT, HOST, () => {
         console.log(`KHRONIQ API Server running on port ${PORT} (Database pending connection)`);
       });
     });

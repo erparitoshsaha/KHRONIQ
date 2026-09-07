@@ -130,7 +130,7 @@ export const DEFAULT_CONTENT_SECTIONS = [
           num: '01',
           dark: false,
           specs: [
-            { label: 'Automatic Movement', icon: 'Cpu' },
+            { label: 'Quartz Movement', icon: 'Cpu' },
             { label: 'Sapphire Crystal', icon: 'Gem' }
           ]
         },
@@ -150,7 +150,7 @@ export const DEFAULT_CONTENT_SECTIONS = [
           num: '02',
           dark: false,
           specs: [
-            { label: 'Automatic Movement', icon: 'Cpu' },
+            { label: 'Quartz Movement', icon: 'Cpu' },
             { label: 'Sapphire Crystal', icon: 'Gem' }
           ]
         },

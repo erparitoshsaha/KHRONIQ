@@ -13,6 +13,7 @@ import {
   Clock, Package, Ribbon, ChevronDown, Check, Crown,
   Baby, Briefcase, User, UserRound,
 } from 'lucide-react';
+import BackButton from '../components/BackButton';
 
 /* ─────────────────────────────────────────────────────────────────
    HELPERS
@@ -64,7 +65,7 @@ function FloatingParticle({ style }) {
 }
 
 /* 3-D tilt card */
-function TiltCard({ children, className, onClick }) {
+function TiltCard({ children, className, onClick, style = {} }) {
   const ref = useRef(null);
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
@@ -87,7 +88,7 @@ function TiltCard({ children, className, onClick }) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={onLeave}
       onClick={onClick}
-      style={{ rotateX: rx, rotateY: ry, transformStyle: 'preserve-3d' }}
+      style={{ rotateX: rx, rotateY: ry, transformStyle: 'preserve-3d', ...style }}
       className={className}
     >
       {children}
@@ -215,7 +216,7 @@ const TESTIMONIALS = [
 /* ═══════════════════════════════════════════════════════════════
    GIFTING PAGE
 ═══════════════════════════════════════════════════════════════ */
-export default function Gifting({ onPageChange }) {
+export default function Gifting({ onPageChange, params }) {
   const products = useSelector(state => state.watch.products);
   const [selectedRecipient, setSelectedRecipient] = useState(null);
   const [giftNote, setGiftNote] = useState('');
@@ -256,6 +257,10 @@ export default function Gifting({ onPageChange }) {
     <div className="dark-panel">
       {/* ══════ HERO ══════ */}
       <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden bg-[#0d0b08]">
+        {/* Back Button */}
+        <div className="absolute top-6 left-6 z-20">
+          <BackButton onPageChange={onPageChange} fallbackPage="home" label="BACK" dark={true} />
+        </div>
         {/* Background image */}
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -573,38 +578,43 @@ export default function Gifting({ onPageChange }) {
           </div>
 
           <div className="relative">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTestimonial}
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -24 }}
-                transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-                className="rounded-2xl p-10 sm:p-14 border border-white/10 text-center"
-                style={{ background: 'rgba(255,255,255,0.03)' }}
-              >
-                {/* Stars */}
-                <div className="flex justify-center gap-1 mb-6">
-                  {[...Array(TESTIMONIALS[activeTestimonial].stars)].map((_, si) => (
-                    <Star key={si} size={14} fill="#c5a880" className="text-luxury-gold" />
-                  ))}
-                </div>
+            {(() => {
+              const safeTestimonial = TESTIMONIALS[activeTestimonial] || TESTIMONIALS[0];
+              return (
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeTestimonial}
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -24 }}
+                    transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                    className="rounded-2xl p-10 sm:p-14 border border-white/10 text-center"
+                    style={{ background: 'rgba(255,255,255,0.03)' }}
+                  >
+                    {/* Stars */}
+                    <div className="flex justify-center gap-1 mb-6">
+                      {[...Array(safeTestimonial.stars || 5)].map((_, si) => (
+                        <Star key={si} size={14} fill="#c5a880" className="text-luxury-gold" />
+                      ))}
+                    </div>
 
-                <blockquote className="text-white/80 text-base sm:text-lg font-light italic leading-relaxed max-w-2xl mx-auto"
-                  style={{ fontFamily: 'Georgia, serif' }}>
-                  "{TESTIMONIALS[activeTestimonial].text}"
-                </blockquote>
+                    <blockquote className="text-white/80 text-base sm:text-lg font-light italic leading-relaxed max-w-2xl mx-auto"
+                      style={{ fontFamily: 'Georgia, serif' }}>
+                      "{safeTestimonial.text}"
+                    </blockquote>
 
-                <div className="mt-8 space-y-1">
-                  <p className="text-white font-cinzel font-bold text-sm tracking-widest uppercase">
-                    {TESTIMONIALS[activeTestimonial].name}
-                  </p>
-                  <p className="text-luxury-gold/60 text-xs font-light">
-                    {TESTIMONIALS[activeTestimonial].location} · Gifted a <span className="font-semibold">{TESTIMONIALS[activeTestimonial].watch}</span>
-                  </p>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                    <div className="mt-8 space-y-1">
+                      <p className="text-white font-cinzel font-bold text-sm tracking-widest uppercase">
+                        {safeTestimonial.name}
+                      </p>
+                      <p className="text-luxury-gold/60 text-xs font-light">
+                        {safeTestimonial.location} · Gifted a <span className="font-semibold">{safeTestimonial.watch}</span>
+                      </p>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              );
+            })()}
 
             {/* Dots */}
             <div className="flex justify-center gap-2 mt-8">

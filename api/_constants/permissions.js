@@ -33,7 +33,7 @@ export const PERMISSION_LIST = [
 export const VALID_PERMISSIONS = PERMISSION_LIST.map(p => p.key);
 
 export const DEFAULT_LOCATIONS = [
-  { id: 'loc-flagship', name: 'Main Boutique (Flagship)' },
+  { id: 'loc-flagship', name: 'Main Flagship' },
   { id: 'loc-delhi', name: 'Delhi Store' },
   { id: 'loc-mumbai', name: 'Mumbai Store' },
   { id: 'loc-bengaluru', name: 'Bengaluru Store' },

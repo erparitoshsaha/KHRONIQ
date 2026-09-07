@@ -323,10 +323,10 @@ export default function AdminManagement() {
         <div>
           <div className="flex items-center space-x-3">
             <h2 className="font-serif text-xl font-bold text-white uppercase tracking-wider flex items-center space-x-2">
-              <ShieldAlert size={20} className="text-luxury-gold" />
+              <ShieldAlert size={20} className="text-white" />
               <span>Administrative Access Control</span>
             </h2>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-luxury-gold/15 text-luxury-gold border border-luxury-gold/30">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/15 text-white border border-white/30">
               Super Admin Realm
             </span>
           </div>
@@ -347,7 +347,7 @@ export default function AdminManagement() {
 
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2.5 bg-luxury-gold hover:bg-luxury-gold/90 text-black text-xs font-bold uppercase tracking-wider rounded transition flex items-center space-x-2 cursor-pointer shadow-md"
+            className="px-4 py-2.5 bg-white hover:bg-neutral-200 text-black border border-white text-xs font-bold uppercase tracking-wider rounded transition flex items-center space-x-2 cursor-pointer shadow-md"
             style={{ backgroundColor: '#c8a96a', color: '#0a0a0a' }}
           >
             <UserPlus size={14} className="stroke-[2.5]" />
@@ -364,8 +364,8 @@ export default function AdminManagement() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search admins by name, email, or boutique location..."
-            className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs pl-9 pr-3 py-2.5 focus:outline-none focus:border-luxury-gold"
+            placeholder="Search admins by name, email, or store location..."
+            className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs pl-9 pr-3 py-2.5 focus:outline-none focus:border-white"
           />
         </div>
 
@@ -373,7 +373,7 @@ export default function AdminManagement() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs px-3 py-2.5 focus:outline-none focus:border-luxury-gold"
+            className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs px-3 py-2.5 focus:outline-none focus:border-white"
           >
             <option value="all">All Administrative Roles</option>
             <option value="super_admin">Super Admins (Full Access)</option>
@@ -385,7 +385,7 @@ export default function AdminManagement() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs px-3 py-2.5 focus:outline-none focus:border-luxury-gold"
+            className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs px-3 py-2.5 focus:outline-none focus:border-white"
           >
             <option value="all">All Account Statuses</option>
             <option value="active">Active Accounts Only</option>
@@ -402,18 +402,18 @@ export default function AdminManagement() {
               <tr>
                 <th className="py-3.5 px-4 font-bold">Admin User</th>
                 <th className="py-3.5 px-4 font-bold">Role</th>
-                <th className="py-3.5 px-4 font-bold">Boutique / Store</th>
+                <th className="py-3.5 px-4 font-bold">Store Location</th>
                 <th className="py-3.5 px-4 font-bold">Permissions</th>
                 <th className="py-3.5 px-4 font-bold">Status</th>
                 <th className="py-3.5 px-4 font-bold">Last Activity</th>
-                <th className="py-3.5 px-4 font-bold text-right">Actions</th>
+                <th className="py-3.5 px-4 font-bold text-right min-w-[210px] w-[210px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {filteredAdmins.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-gray-500">
-                    <ShieldAlert size={32} className="mx-auto mb-2 opacity-30 text-luxury-gold" />
+                    <ShieldAlert size={32} className="mx-auto mb-2 opacity-30 text-white" />
                     <p className="text-xs">No administrative accounts match the selected filters.</p>
                   </td>
                 </tr>
@@ -430,7 +430,7 @@ export default function AdminManagement() {
                         <div className="flex items-center space-x-3">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
                             isSuper
-                              ? 'bg-luxury-gold/20 text-luxury-gold border border-luxury-gold/40'
+                              ? 'bg-white/20 text-white border border-white/40'
                               : 'bg-white/10 text-white border border-white/20'
                           }`}>
                             {admin.name?.charAt(0)?.toUpperCase() || 'A'}
@@ -439,7 +439,7 @@ export default function AdminManagement() {
                             <div className="font-semibold text-white flex items-center space-x-1.5">
                               <span>{isSuper ? 'Super Admin' : (admin.name === 'Master Admin' ? 'Khroniq Admin' : admin.name)}</span>
                               {isSelf && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.2 bg-luxury-gold text-black rounded uppercase">
+                                <span className="text-[9px] font-bold px-1.5 py-0.2 bg-white text-black font-bold rounded uppercase">
                                   You
                                 </span>
                               )}
@@ -452,7 +452,7 @@ export default function AdminManagement() {
                       {/* Role Badge */}
                       <td className="py-4 px-4 whitespace-nowrap">
                         {isSuper ? (
-                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-luxury-gold/20 text-luxury-gold border border-luxury-gold/40">
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-white border border-white/40">
                             <Shield size={10} className="stroke-[2.5]" />
                             <span>SUPER ADMIN</span>
                           </span>
@@ -467,8 +467,8 @@ export default function AdminManagement() {
                       {/* Store Location */}
                       <td className="py-4 px-4 whitespace-nowrap">
                         <div className="flex items-center space-x-1.5 text-gray-300">
-                          <MapPin size={12} className="text-luxury-gold shrink-0" />
-                          <span className="font-medium">{admin.location || 'Main Boutique (Flagship)'}</span>
+                          <MapPin size={12} className="text-white shrink-0" />
+                          <span className="font-medium">{admin.location || 'Main Flagship'}</span>
                         </div>
                       </td>
 
@@ -476,7 +476,7 @@ export default function AdminManagement() {
                       <td className="py-4 px-4">
                         {isSuper ? (
                           <div className="flex items-center space-x-2">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-luxury-gold text-black">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-white text-black font-bold">
                               FULL ACCESS
                             </span>
                             <span className="text-[11px] text-gray-300 font-medium">All Modules & System Controls</span>
@@ -540,8 +540,8 @@ export default function AdminManagement() {
                       </td>
 
                       {/* Actions */}
-                      <td className="py-4 px-4 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end space-x-1">
+                      <td className="py-4 px-4 whitespace-nowrap text-right min-w-[210px]">
+                        <div className="flex items-center justify-end gap-1.5">
                           {/* Edit Details */}
                           <button
                             onClick={() => {
@@ -555,7 +555,7 @@ export default function AdminManagement() {
                                 password: ''
                               });
                             }}
-                            className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded transition cursor-pointer"
+                            className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded transition cursor-pointer shrink-0"
                             title="Edit Details"
                           >
                             <Edit2 size={13} />
@@ -568,7 +568,7 @@ export default function AdminManagement() {
                                 setPermissionsAdmin(admin);
                                 setSelectedPermissions(admin.permissions || []);
                               }}
-                              className="p-1.5 text-luxury-gold hover:text-white hover:bg-luxury-gold/20 rounded transition cursor-pointer"
+                              className="p-1.5 text-purple-400 hover:text-white hover:bg-purple-500/20 rounded transition cursor-pointer shrink-0"
                               title="Configure Permissions"
                             >
                               <Sliders size={13} />
@@ -581,7 +581,7 @@ export default function AdminManagement() {
                               setResetPasswordAdmin(admin);
                               setPasswordForm({ newPassword: '', confirmPassword: '' });
                             }}
-                            className="p-1.5 text-amber-400 hover:text-white hover:bg-amber-500/20 rounded transition cursor-pointer"
+                            className="p-1.5 text-amber-400 hover:text-white hover:bg-amber-500/20 rounded transition cursor-pointer shrink-0"
                             title="Reset Password"
                           >
                             <KeyRound size={13} />
@@ -590,7 +590,7 @@ export default function AdminManagement() {
                           {/* Sessions Viewer */}
                           <button
                             onClick={() => handleViewSessions(admin)}
-                            className="p-1.5 text-blue-400 hover:text-white hover:bg-blue-500/20 rounded transition cursor-pointer"
+                            className="p-1.5 text-blue-400 hover:text-white hover:bg-blue-500/20 rounded transition cursor-pointer shrink-0"
                             title="View Active Sessions"
                           >
                             <Monitor size={13} />
@@ -600,7 +600,7 @@ export default function AdminManagement() {
                           {!isSuper && !isSelf && (
                             <button
                               onClick={() => setStatusPromptAdmin(admin)}
-                              className={`p-1.5 rounded transition cursor-pointer ${
+                              className={`p-1.5 rounded transition cursor-pointer shrink-0 ${
                                 admin.isActive !== false
                                   ? 'text-red-400 hover:text-white hover:bg-red-500/20'
                                   : 'text-emerald-400 hover:text-white hover:bg-emerald-500/20'
@@ -615,7 +615,7 @@ export default function AdminManagement() {
                           {!isSuper && !isSelf && (
                             <button
                               onClick={() => setDeletePromptAdmin(admin)}
-                              className="p-1.5 text-red-500 hover:text-white hover:bg-red-600/30 rounded transition cursor-pointer"
+                              className="p-1.5 text-red-500 hover:text-white hover:bg-red-600/30 rounded transition cursor-pointer shrink-0"
                               title="Delete Account"
                             >
                               <Trash2 size={13} />
@@ -638,7 +638,7 @@ export default function AdminManagement() {
           <div className="bg-luxury-gray border border-white/15 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-6">
             <div className="flex justify-between items-center border-b border-white/10 pb-4">
               <div className="flex items-center space-x-2.5">
-                <UserPlus size={18} className="text-luxury-gold" />
+                <UserPlus size={18} className="text-white" />
                 <h3 className="font-serif text-lg font-bold text-white uppercase tracking-wider">
                   Create Restricted Admin Account
                 </h3>
@@ -664,7 +664,7 @@ export default function AdminManagement() {
                     value={createForm.name}
                     onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                     placeholder="e.g., Jane Smith"
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
                   />
                 </div>
 
@@ -679,7 +679,7 @@ export default function AdminManagement() {
                     value={createForm.email}
                     onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
                     placeholder="admin@khroniq.com"
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
                   />
                 </div>
 
@@ -694,7 +694,7 @@ export default function AdminManagement() {
                     value={createForm.password}
                     onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                     placeholder="••••••••"
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
                   />
                 </div>
 
@@ -709,14 +709,14 @@ export default function AdminManagement() {
                     value={createForm.confirmPassword}
                     onChange={(e) => setCreateForm({ ...createForm, confirmPassword: e.target.value })}
                     placeholder="••••••••"
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
                   />
                 </div>
 
-                {/* Boutique Location Scope */}
+                {/* Store Location Scope */}
                 <div className="sm:col-span-2 space-y-1.5">
                   <label className="text-[10px] font-bold text-gray-300 uppercase tracking-widest block">
-                    Boutique / Store Location Scope
+                    Store Location Scope
                   </label>
                   <select
                     value={createForm.locationId}
@@ -728,7 +728,7 @@ export default function AdminManagement() {
                         location: selectedLoc ? selectedLoc.name : e.target.value
                       });
                     }}
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
                   >
                     {DEFAULT_LOCATIONS.map((loc) => (
                       <option key={loc.id} value={loc.id}>
@@ -754,7 +754,7 @@ export default function AdminManagement() {
                     <button
                       type="button"
                       onClick={() => setCreateForm({ ...createForm, permissions: PERMISSION_LIST.map(p => p.key) })}
-                      className="text-luxury-gold hover:underline font-bold uppercase"
+                      className="text-white hover:underline font-bold uppercase"
                     >
                       Select All
                     </button>
@@ -777,7 +777,7 @@ export default function AdminManagement() {
                         key={perm.key}
                         className={`flex items-start space-x-2.5 p-2.5 rounded border text-xs cursor-pointer transition ${
                           isChecked
-                            ? 'bg-luxury-gold/10 border-luxury-gold/40 text-white'
+                            ? 'bg-white/10 border-white/40 text-white'
                             : 'bg-luxury-dark/40 border-white/5 text-gray-400 hover:border-white/15'
                         }`}
                       >
@@ -815,7 +815,7 @@ export default function AdminManagement() {
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-6 py-2.5 bg-luxury-gold hover:bg-luxury-gold/90 text-black text-xs font-bold uppercase tracking-wider rounded transition cursor-pointer shadow-md"
+                  className="px-6 py-2.5 bg-white hover:bg-neutral-200 text-black border border-white text-xs font-bold uppercase tracking-wider rounded transition cursor-pointer shadow-md"
                   style={{ backgroundColor: '#c8a96a', color: '#0a0a0a' }}
                 >
                   {actionLoading ? 'Creating...' : 'Provision Admin Account'}
@@ -832,7 +832,7 @@ export default function AdminManagement() {
           <div className="bg-luxury-gray border border-white/15 rounded-lg max-w-md w-full p-6 shadow-2xl space-y-5">
             <div className="flex justify-between items-center border-b border-white/10 pb-4">
               <div className="flex items-center space-x-2">
-                <Edit2 size={16} className="text-luxury-gold" />
+                <Edit2 size={16} className="text-white" />
                 <h3 className="font-serif text-base font-bold text-white uppercase tracking-wider">
                   Edit Admin Profile
                 </h3>
@@ -855,7 +855,7 @@ export default function AdminManagement() {
                   required
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
                 />
               </div>
 
@@ -868,13 +868,13 @@ export default function AdminManagement() {
                   required
                   value={editForm.email}
                   onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-gray-300 uppercase tracking-widest block">
-                  Boutique Location
+                  Store Location
                 </label>
                 <select
                   value={editForm.locationId}
@@ -886,7 +886,7 @@ export default function AdminManagement() {
                       location: selectedLoc ? selectedLoc.name : e.target.value
                     });
                   }}
-                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
                 >
                   {DEFAULT_LOCATIONS.map((loc) => (
                     <option key={loc.id} value={loc.id}>
@@ -904,7 +904,7 @@ export default function AdminManagement() {
                 <select
                   value={editForm.isActive ? 'true' : 'false'}
                   onChange={(e) => setEditForm({ ...editForm, isActive: e.target.value === 'true' })}
-                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
                 >
                   <option value="true">Active</option>
                   <option value="false">Deactivated (Disabled)</option>
@@ -921,7 +921,7 @@ export default function AdminManagement() {
                   value={editForm.password || ''}
                   onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
                   placeholder="Min 8 characters or leave blank"
-                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
                 />
               </div>
 
@@ -936,7 +936,7 @@ export default function AdminManagement() {
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-5 py-2 bg-luxury-gold hover:bg-luxury-gold/90 text-black text-xs font-bold uppercase tracking-wider rounded transition cursor-pointer shadow-md"
+                  className="px-5 py-2 bg-white hover:bg-neutral-200 text-black border border-white text-xs font-bold uppercase tracking-wider rounded transition cursor-pointer shadow-md"
                   style={{ backgroundColor: '#c8a96a', color: '#0a0a0a' }}
                 >
                   {actionLoading ? 'Saving...' : 'Save Changes'}
@@ -954,7 +954,7 @@ export default function AdminManagement() {
             <div className="flex justify-between items-center border-b border-white/10 pb-4">
               <div>
                 <div className="flex items-center space-x-2">
-                  <Sliders size={16} className="text-luxury-gold" />
+                  <Sliders size={16} className="text-white" />
                   <h3 className="font-serif text-base font-bold text-white uppercase tracking-wider">
                     Permissions: {permissionsAdmin.name}
                   </h3>
@@ -977,7 +977,7 @@ export default function AdminManagement() {
                 <button
                   type="button"
                   onClick={selectAllPermissions}
-                  className="text-luxury-gold hover:underline font-bold uppercase"
+                  className="text-white hover:underline font-bold uppercase"
                 >
                   Grant All
                 </button>
@@ -1000,7 +1000,7 @@ export default function AdminManagement() {
                     key={perm.key}
                     className={`flex items-start space-x-2.5 p-3 rounded border text-xs cursor-pointer transition ${
                       isChecked
-                        ? 'bg-luxury-gold/15 border-luxury-gold/40 text-white'
+                        ? 'bg-white/15 border-white/40 text-white'
                         : 'bg-luxury-dark/40 border-white/5 text-gray-400 hover:border-white/15'
                     }`}
                   >
@@ -1031,7 +1031,7 @@ export default function AdminManagement() {
                 type="button"
                 onClick={handlePermissionsSubmit}
                 disabled={actionLoading}
-                className="px-5 py-2 bg-luxury-gold hover:bg-luxury-gold/90 text-black text-xs font-bold uppercase tracking-wider rounded transition cursor-pointer shadow-md"
+                className="px-5 py-2 bg-white hover:bg-neutral-200 text-black border border-white text-xs font-bold uppercase tracking-wider rounded transition cursor-pointer shadow-md"
                 style={{ backgroundColor: '#c8a96a', color: '#0a0a0a' }}
               >
                 {actionLoading ? 'Saving...' : 'Apply Permissions'}
@@ -1075,7 +1075,7 @@ export default function AdminManagement() {
                   value={passwordForm.newPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                   placeholder="••••••••"
-                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
                 />
               </div>
 
@@ -1089,7 +1089,7 @@ export default function AdminManagement() {
                   value={passwordForm.confirmPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                   placeholder="••••••••"
-                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
                 />
               </div>
 

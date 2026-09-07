@@ -18,6 +18,7 @@ filterOptionSchema.virtual('id').get(function() {
 const filterCategorySchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  description: { type: String, default: '', trim: true },
   type: { type: String, enum: ['single', 'multi', 'range'], default: 'multi' },
   order: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },

@@ -27,7 +27,7 @@ const STATIC_NAV_COLS = [
     links: [
       { label: 'Book an Appointment', page: 'static', args: { view: 'contact' } },
       { label: 'Register My Watch', action: 'warranty' },
-      { label: 'Boutique Contact', page: 'static', args: { view: 'contact' } },
+      { label: 'Contact', page: 'static', args: { view: 'contact' } },
     ],
   },
   {
@@ -281,7 +281,20 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
                   </div>
 
                   <p style={{ fontSize: '0.72rem', color: '#ffffff', lineHeight: 1.7, marginBottom: '0.6rem' }}>
-                    khroniq.com
+                    <a
+                      href="/"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (onPageChange) {
+                          onPageChange('home');
+                        } else {
+                          window.location.href = '/';
+                        }
+                      }}
+                      style={{ color: 'inherit', textDecoration: 'none' }}
+                    >
+                      khroniq.com
+                    </a>
                   </p>
 
                   <p style={{ fontSize: '0.62rem', color: '#ffffff', opacity: 0.8, letterSpacing: '0.08em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -355,7 +368,7 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
                 <strong className="text-gray-300">Product Representation:</strong> All images featured are subject to availability. While we strive to show accurate details, technical specifications and current pricing are not at times reflected in hand-finished components may occasionally cause out.
               </p>
               <p>
-                <strong className="text-gray-300">Warranty Coverage:</strong> Our 1-Year Premium Warranty is valid only for watches purchased directly from our official portal or authorized concierge boutique service. Watches obtained from unverified sources do not qualify for official servicing.
+                <strong className="text-gray-300">Warranty Coverage:</strong> Our 1-Year Premium Warranty is valid only for watches purchased directly from our official portal or authorized concierge service. Watches obtained from unverified sources do not qualify for official servicing.
               </p>
             </div>
             <div>

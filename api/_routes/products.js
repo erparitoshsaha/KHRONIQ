@@ -1,5 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import Product from '../_models/Product.js';
 import Order from '../_models/Order.js';
 import { protect, adminOnly, requirePermission } from '../_middleware/auth.js';
@@ -51,14 +52,66 @@ router.get('/', async (req, res) => {
   }
 });
 
+// @route   GET /api/products/:identifier
+// @desc    Get single product by ID, modelNo, or serialNo
+// @access  Public
+router.get('/:identifier', async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    let product = null;
+
+    if (mongoose.isValidObjectId(identifier)) {
+      product = await Product.findById(identifier);
+    }
+
+    if (!product) {
+      const decoded = decodeURIComponent(identifier).trim();
+      const escaped = decoded.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      product = await Product.findOne({
+        $or: [
+          { slug: { $regex: new RegExp(`^${escaped}$`, 'i') } },
+          { name: { $regex: new RegExp(`^${escaped}$`, 'i') } },
+          { modelNo: { $regex: new RegExp(`^${escaped}$`, 'i') } },
+          { serialNo: { $regex: new RegExp(`^${escaped}$`, 'i') } }
+        ]
+      });
+    }
+
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    res.json({ success: true, product });
+  } catch (error) {
+    console.error('Fetch single product error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // @route   POST /api/products
 // @desc    Create a product
 // @access  Private/Admin
 router.post('/', protect, requirePermission('products'), async (req, res) => {
-  const { name, modelNo, serialNo, uniqueCode, price, stock, category, gender, description, image, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths, customizationOptions } = req.body;
+  const { name, modelNo, serialNo, uniqueCode, price, stock, category, gender, description, image, images, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths, customizationOptions } = req.body;
   try {
     const rawSerial = typeof serialNo === 'string' ? serialNo.trim() : '';
     const rawCode = typeof uniqueCode === 'string' ? uniqueCode.trim() : '';
+
+    const cleanImage = typeof image === 'string' ? image.trim() : '';
+    if (!cleanImage) {
+      return res.status(400).json({ success: false, message: 'Primary watch image is required.' });
+    }
+
+    // Canonical images array: [primaryImage, ...additionalImages] without duplicates or empty values
+    const rawAdditional = Array.isArray(images) ? images : [];
+    const cleanAdditional = Array.from(
+      new Set(
+        rawAdditional
+          .map(img => (typeof img === 'string' ? img.trim() : ''))
+          .filter(img => Boolean(img) && img !== cleanImage)
+      )
+    );
+    const finalImages = [cleanImage, ...cleanAdditional];
 
     let finalSerialNo = rawSerial;
     if (finalSerialNo) {
@@ -91,7 +144,8 @@ router.post('/', protect, requirePermission('products'), async (req, res) => {
       category,
       gender,
       description,
-      image: image || '/placeholder.jpg',
+      image: cleanImage,
+      images: finalImages,
       specs: {
         movement: specs?.movement || 'Automatic',
         case: specs?.case || 'Stainless Steel',
@@ -119,7 +173,7 @@ router.post('/', protect, requirePermission('products'), async (req, res) => {
 // @desc    Update a product
 // @access  Private/Admin
 router.put('/:id', protect, requirePermission('products'), async (req, res) => {
-  const { name, modelNo, serialNo, uniqueCode, price, stock, category, gender, description, image, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths, customizationOptions } = req.body;
+  const { name, modelNo, serialNo, uniqueCode, price, stock, category, gender, description, image, images, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths, customizationOptions } = req.body;
   try {
     const product = await Product.findById(req.params.id);
 
@@ -164,7 +218,39 @@ router.put('/:id', protect, requirePermission('products'), async (req, res) => {
     product.category = category !== undefined ? category : product.category;
     product.gender = gender !== undefined ? gender : product.gender;
     product.description = description !== undefined ? description : product.description;
-    product.image = image !== undefined ? image : product.image;
+    
+    // Primary Image update
+    let updatedPrimary = product.image;
+    if (image !== undefined) {
+      const cleanPrimary = typeof image === 'string' ? image.trim() : '';
+      if (!cleanPrimary) {
+        return res.status(400).json({ success: false, message: 'Primary watch image cannot be empty.' });
+      }
+      product.image = cleanPrimary;
+      updatedPrimary = cleanPrimary;
+    }
+
+    // Additional images update: canonical structure is [product.image, ...additionalImages]
+    if (images !== undefined) {
+      const rawAdditional = Array.isArray(images) ? images : [];
+      const cleanAdditional = Array.from(
+        new Set(
+          rawAdditional
+            .map(img => (typeof img === 'string' ? img.trim() : ''))
+            .filter(img => Boolean(img) && img !== updatedPrimary)
+        )
+      );
+      product.images = updatedPrimary ? [updatedPrimary, ...cleanAdditional] : cleanAdditional;
+    } else if (image !== undefined) {
+      const existingAdditional = Array.from(
+        new Set(
+          (product.images || [])
+            .map(img => (typeof img === 'string' ? img.trim() : ''))
+            .filter(img => Boolean(img) && img !== updatedPrimary)
+        )
+      );
+      product.images = updatedPrimary ? [updatedPrimary, ...existingAdditional] : existingAdditional;
+    }
     
     if (specs) {
       product.specs = {

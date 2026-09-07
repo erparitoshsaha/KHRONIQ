@@ -76,7 +76,7 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
       ref={cardRef}
       onClick={(e) => {
         if (e.target.closest('.action-btn')) return;
-        onPageChange('product-detail', { id: product.id });
+        onPageChange('product-detail', { id: product.id, product });
       }}
       onMouseMove={handleMove}
       onMouseEnter={() => setIsHovered(true)}
@@ -110,20 +110,20 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
           />
 
           {product.discountPercent > 0 && (
-            <div className="absolute top-3 left-3 bg-luxury-red text-white uppercase text-[10px] tracking-[0.2em] font-semibold px-2.5 py-1 rounded-sm shadow-lg shadow-black/20">
+            <div className="absolute top-2.5 left-2.5 bg-luxury-red text-white uppercase text-[9px] tracking-wider font-semibold px-2 py-0.5 rounded-sm shadow-md">
               {product.discountPercent}% OFF
             </div>
           )}
 
           {product.badge && (
-            <div className="absolute top-3 right-3 bg-luxury-gold-dark uppercase text-[10px] tracking-[0.2em] font-semibold px-2.5 py-1 rounded-sm shadow-lg shadow-black/20" style={{ color: '#ffffff' }}>
+            <div className="absolute top-2.5 right-2.5 bg-neutral-900 uppercase text-[9px] tracking-wider font-semibold px-2 py-0.5 rounded-sm shadow-md text-white">
               {product.badge}
             </div>
           )}
           
           {product.stock === 0 && (
-            <div className="absolute inset-0 bg-[#f6f6f6]/80 flex items-center justify-center">
-              <span className="text-luxury-red font-bold text-[10px] tracking-widest uppercase border border-luxury-red px-2.5 py-1">
+            <div className="absolute inset-0 bg-[#f6f6f6]/85 flex items-center justify-center">
+              <span className="text-luxury-red font-bold text-[9px] tracking-widest uppercase border border-luxury-red px-2.5 py-1 bg-white/90">
                 Sold Out
               </span>
             </div>
@@ -132,12 +132,12 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
 
         {/* Details */}
         <div
-          className="pt-3 pb-2 bg-transparent space-y-1 flex flex-col justify-between flex-1 transition-opacity duration-300"
+          className="pt-2 pb-1 bg-transparent space-y-1 flex flex-col justify-between flex-1 transition-opacity duration-300"
           style={{ opacity: isHovered ? 1 : 0.85 }}
         >
           <div className="space-y-0.5">
             <h3
-              className="text-luxury-text text-sm font-semibold tracking-wide line-clamp-1 transition-all duration-300"
+              className="text-luxury-text text-[13px] font-semibold tracking-wide line-clamp-1 transition-all duration-300"
               style={{
                 color: isHovered ? '#000000' : 'inherit',
                 transform: isHovered ? 'translateX(2px)' : 'translateX(0)',
@@ -145,7 +145,7 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
             >
               {product.name}
             </h3>
-            <p className="text-[11px] text-luxury-muted font-normal tracking-wide">{specLine}</p>
+            <p className="text-[10px] text-luxury-muted font-normal tracking-wide truncate">{specLine}</p>
           </div>
 
           <div className="flex items-center justify-between pt-1">
@@ -154,7 +154,7 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
                 <>
                   <p className="text-[10px] text-red-400 line-through">{formatPrice(product.price, currentCurrency)}</p>
                   <p
-                    className="text-luxury-text text-xs sm:text-sm font-semibold transition-transform duration-300"
+                    className="text-luxury-text text-xs sm:text-[13px] font-bold transition-transform duration-300"
                     style={{
                       transform: isHovered ? 'scale(1.04)' : 'scale(1)',
                       transformOrigin: 'left center',
@@ -165,7 +165,7 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
                 </>
               ) : (
                 <p
-                  className="text-luxury-text text-xs sm:text-sm font-semibold transition-transform duration-300"
+                  className="text-luxury-text text-xs sm:text-[13px] font-bold transition-transform duration-300"
                   style={{
                     transform: isHovered ? 'scale(1.04)' : 'scale(1)',
                     transformOrigin: 'left center',
@@ -177,15 +177,15 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
             </div>
              
             {/* Cart and Wishlist Action Buttons */}
-            <div className="flex items-center space-x-1.5 ml-2">
+            <div className="flex items-center space-x-1 ml-1.5">
               {/* Wishlist Heart Button */}
               <button
                 onClick={handleWishlistToggle}
-                className="action-btn p-1.5 text-neutral-500 hover:text-luxury-red transition duration-200 cursor-pointer rounded-full hover:bg-neutral-100 dark:hover:bg-white/5 relative flex items-center justify-center"
+                className="action-btn p-1 text-neutral-500 hover:text-luxury-red transition duration-200 cursor-pointer rounded-full hover:bg-neutral-100 dark:hover:bg-white/5 relative flex items-center justify-center"
                 title="Add to Wishlist"
               >
                 <Heart
-                  size={15}
+                  size={14}
                   fill={isWishlisted ? '#e10600' : 'none'}
                   stroke={isWishlisted ? '#e10600' : '#737373'}
                 />
@@ -208,10 +208,10 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
               {/* Cart Button */}
               <button
                 onClick={handleAddToCart}
-                className="action-btn p-1.5 text-neutral-500 hover:text-black transition duration-200 cursor-pointer rounded-full hover:bg-neutral-100 dark:hover:bg-white/5 flex items-center justify-center"
+                className="action-btn p-1 text-neutral-500 hover:text-black transition duration-200 cursor-pointer rounded-full hover:bg-neutral-100 dark:hover:bg-white/5 flex items-center justify-center"
                 title="Add to Cart"
               >
-                <ShoppingBag size={15} />
+                <ShoppingBag size={14} />
               </button>
             </div>
           </div>
@@ -219,7 +219,7 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
           {showRemove && (
             <button
               onClick={handleWishlistToggle}
-              className="action-btn mt-2.5 w-full py-2 bg-transparent border border-red-500/25 text-red-500 hover:bg-red-500 hover:text-white text-[10px] font-bold tracking-widest uppercase transition duration-300 cursor-pointer rounded-sm"
+              className="action-btn mt-2 w-full py-1.5 bg-transparent border border-red-500/25 text-red-500 hover:bg-red-500 hover:text-white text-[9px] font-bold tracking-widest uppercase transition duration-300 cursor-pointer rounded-sm"
             >
               Remove
             </button>

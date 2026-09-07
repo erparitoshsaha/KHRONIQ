@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { updateCartQty, removeFromCart, selectCurrentCurrency, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import { ShoppingBag, Trash2, Plus, Minus, Tag, ArrowRight, ShieldCheck } from 'lucide-react';
+import BackButton from '../components/BackButton';
 
 export default function CartPage({ onPageChange }) {
   const dispatch = useDispatch();
@@ -22,7 +23,8 @@ export default function CartPage({ onPageChange }) {
 
   // Assemble full item details
   const cartItemsWithDetails = cart.map(item => {
-    const product = products.find(p => p.id === item.productId);
+    const itemProdId = (item.productId?._id || item.productId)?.toString();
+    const product = products.find(p => (p.id && p.id.toString() === itemProdId) || (p._id && p._id.toString() === itemProdId));
     const itemPrice = item.price !== undefined ? item.price : getDiscountedPrice(product);
     return {
       ...item,
@@ -35,7 +37,10 @@ export default function CartPage({ onPageChange }) {
   // not just from what's displayed — keeps cart counts (e.g. Navbar badge) accurate everywhere.
   useEffect(() => {
     if (products.length === 0) return; // don't prune before products have loaded
-    const staleItems = cart.filter(item => !products.some(p => p.id === item.productId));
+    const staleItems = cart.filter(item => {
+      const itemProdId = (item.productId?._id || item.productId)?.toString();
+      return !products.some(p => (p.id && p.id.toString() === itemProdId) || (p._id && p._id.toString() === itemProdId));
+    });
     staleItems.forEach(item => dispatch(removeFromCart(item.productId)));
   }, [cart, products]);
 
@@ -76,7 +81,10 @@ export default function CartPage({ onPageChange }) {
 
   if (cartItemsWithDetails.length === 0) {
     return (
-      <div className="text-center py-20 max-w-md mx-auto space-y-6">
+      <div className="text-center py-20 space-y-6 max-w-md mx-auto">
+        <div className="flex justify-start">
+          <BackButton onPageChange={onPageChange} fallbackPage="shop" label="BACK" />
+        </div>
         <div className="w-20 h-20 bg-white border border-luxury-text/10 rounded-full flex items-center justify-center mx-auto text-luxury-muted shadow-sm">
           <ShoppingBag size={40} />
         </div>
@@ -98,6 +106,11 @@ export default function CartPage({ onPageChange }) {
 
   return (
     <div className="space-y-8">
+      {/* Back Button */}
+      <div>
+        <BackButton onPageChange={onPageChange} fallbackPage="shop" label="CONTINUE SHOPPING" />
+      </div>
+
       {/* Header */}
       <div className="border-b border-luxury-text/10 pb-4">
         <h1 className="font-serif text-2xl font-bold uppercase tracking-widest text-luxury-text">Shopping Bag</h1>

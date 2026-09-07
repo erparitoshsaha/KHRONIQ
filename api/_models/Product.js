@@ -21,6 +21,7 @@ const productSchema = new mongoose.Schema({
   serialNo: { type: String, default: '' },
   uniqueCode: { type: String, default: '' },
   image: { type: String, required: true },
+  images: [{ type: String }],
   brand: { type: String, default: 'KHRONIQ' },
   price: { type: Number, required: true },
   stock: { type: Number, required: true, default: 0 },
