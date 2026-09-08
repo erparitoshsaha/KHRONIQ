@@ -329,7 +329,7 @@ export default function Login({ params, onPageChange }) {
                 }
               }}
               className={`flex-1 pb-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 cursor-pointer transition ${
-                authMode === 'login' ? 'border-luxury-gold text-luxury-gold' : 'border-transparent text-gray-500 hover:text-gray-300'
+                authMode === 'login' ? 'border-luxury-text text-luxury-text' : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               Sign In
@@ -346,7 +346,7 @@ export default function Login({ params, onPageChange }) {
                 setRequiresOtp(false);
               }}
               className={`flex-1 pb-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 cursor-pointer transition ${
-                authMode === 'register' ? 'border-luxury-text text-luxury-text' : 'border-transparent text-gray-500 hover:text-gray-300'
+                authMode === 'register' ? 'border-luxury-text text-luxury-text' : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               Register
@@ -354,7 +354,7 @@ export default function Login({ params, onPageChange }) {
           </div>
         ) : (
           <div className="border-b border-white/5 pb-3">
-            <h2 className="text-xs font-bold text-luxury-gold uppercase tracking-wider text-center">Reset Credentials Key</h2>
+            <h2 className="text-xs font-bold text-luxury-text uppercase tracking-wider text-center">Reset Credentials Key</h2>
           </div>
         )}
 
@@ -458,7 +458,7 @@ export default function Login({ params, onPageChange }) {
                 <button
                   type="button"
                   onClick={() => { setAuthMode('forgot'); setErrorMsg(''); }}
-                  className="text-[9px] text-gray-400 hover:text-white transition uppercase font-semibold cursor-pointer"
+                  className="text-[9px] text-gray-400 hover:text-luxury-text transition uppercase font-semibold cursor-pointer"
                 >
                   Forgot Password?
                 </button>
@@ -523,7 +523,7 @@ export default function Login({ params, onPageChange }) {
               <button
                 type="button"
                 onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
-                className="text-[10px] text-gray-400 hover:text-white transition uppercase font-semibold cursor-pointer"
+                className="text-[10px] text-gray-400 hover:text-luxury-text transition uppercase font-semibold cursor-pointer"
               >
                 Return to Sign In
               </button>

@@ -473,7 +473,7 @@ function WatchWheel({ products, selectedIndex, setSelectedIndex, size = 350 }) {
 
             return (
               <motion.button
-                key={p.id}
+                key={p.id || p._id || i}
                 onClick={() => setSelectedIndex(i)}
                 onMouseEnter={() => setHoverIdx(i)}
                 onMouseLeave={() => setHoverIdx(null)}
@@ -497,7 +497,7 @@ function WatchWheel({ products, selectedIndex, setSelectedIndex, size = 350 }) {
                 }}
                 transition={{ type: 'spring', ...springCfg }}
               >
-                <img src={p.image} alt={p.name} onError={(e) => handleImageError(e)} className="w-full h-full object-contain p-2" />
+                <img src={p.image || p.images?.[0] || ''} alt={p.name || 'Timepiece'} onError={(e) => handleImageError(e)} className="w-full h-full object-contain p-2" />
               </motion.button>
             );
           })}
@@ -1031,73 +1031,6 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
 
 
 
-  const fallbackFeatured = [
-    {
-      id: 'kq-01',
-      name: 'KHRONIQ MIDNIGHT ROMAN',
-      image: '/assets/wt1.png',
-      price: 4999,
-      description: 'Classic Roman-numeral dial with a brushed steel bracelet. Timeless design for the everyday connoisseur.',
-      specs: { movement: 'Quartz Precision', case: 'Stainless Steel' }
-    },
-    {
-      id: 'kq-02',
-      name: 'KHRONIQ IVORY CLASSIC',
-      image: '/assets/wt2.png',
-      price: 3499,
-      description: 'Crisp white dial paired with a polished steel bracelet, presented in a signature velvet case.',
-      specs: { movement: 'Quartz Precision', case: 'Stainless Steel' }
-    },
-    {
-      id: 'kq-03',
-      name: 'KHRONIQ PEARL EDITION',
-      image: '/assets/wt3.png',
-      price: 3999,
-      description: 'Minimalist white dial with mirror-polished steel case and bracelet for an elevated everyday look.',
-      specs: { movement: 'Quartz Precision', case: 'Stainless Steel' }
-    },
-    {
-      id: 'kq-04',
-      name: 'KHRONIQ HERITAGE TAN',
-      image: '/assets/wt4.png',
-      price: 2999,
-      description: 'Rugged black dial on a genuine tan leather strap with contrast green stitching.',
-      specs: { movement: 'Quartz Precision', case: 'Genuine Leather' }
-    },
-    {
-      id: 'kq-05',
-      name: 'KHRONIQ BLUSH SCALE',
-      image: '/assets/wt5.png',
-      price: 4499,
-      description: 'Fish-scale textured rose dial on a rich brown leather strap. A refined statement piece.',
-      specs: { movement: 'Quartz Precision', case: 'Genuine Leather' }
-    },
-    {
-      id: 'kq-06',
-      name: 'KHRONIQ COBALT BLUE',
-      image: '/assets/wt6.png',
-      price: 4299,
-      description: 'Striking cobalt blue textured dial paired with a rich brown leather strap.',
-      specs: { movement: 'Quartz Precision', case: 'Genuine Leather' }
-    },
-    {
-      id: 'kq-07',
-      name: 'KHRONIQ ONYX ROMAN',
-      image: '/assets/wt7.png',
-      price: 5499,
-      description: 'Elegant black dial with Roman numerals on a fine-link stainless steel bracelet.',
-      specs: { movement: 'Quartz Precision', case: 'Stainless Steel' }
-    },
-    {
-      id: 'kq-08',
-      name: 'KHRONIQ TREKKER TAN',
-      image: '/assets/wt8.png',
-      price: 2799,
-      description: 'Sharp black dial on a durable tan leather strap with green underside detailing.',
-      specs: { movement: 'Quartz Precision', case: 'Genuine Leather' }
-    }
-  ];
-
   // --- Dynamic Content Sections from CMS (MongoDB) ---
   const heroSection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'hero');
   const marqueeASection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'marquee_a');
@@ -1110,27 +1043,13 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   const lifestyleSection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'lifestyle');
   const statsSection = contentSections.find(s => s.page === 'home' && s.sectionKey === 'stats');
 
-  const cmsFeaturedTimepieces = (featuredSection?.items && featuredSection.items.length > 0)
-    ? featuredSection.items
-        .filter(it => it.isActive !== false)
-        .sort((a, b) => (a.order || 0) - (b.order || 0))
-        .map(it => ({
-          id: it.metadata?.productId || it._id?.toString() || it.id,
-          _id: it._id?.toString() || it.id,
-          name: it.title,
-          subtitle: it.subtitle || 'PRECISION AT EVERY LEVEL',
-          image: it.image || '/assets/wt1.png',
-          price: Number(it.price !== undefined && it.price !== 0 ? it.price : (it.metadata?.price || 1425)),
-          description: it.description || '',
-          buttonText: it.buttonText || 'EXPLORE',
-          buttonLink: it.buttonLink || '/shop',
-          specs: { movement: 'Quartz Precision', case: 'Stainless Steel' }
-        }))
-    : null;
-
-  const featured = (cmsFeaturedTimepieces && cmsFeaturedTimepieces.length > 0)
-    ? cmsFeaturedTimepieces
-    : (products && products.length > 0 ? products.slice(-8) : fallbackFeatured);
+  // Featured Timepieces: Dynamically derive the newest eligible products (max 8)
+  // Backend /api/products returns products in newest-first order ({ createdAt: -1, _id: -1 }),
+  // so we reuse that ordering directly without duplicate sorting.
+  const eligibleProducts = Array.isArray(products)
+    ? products.filter(p => p && (p.id || p._id) && p.name)
+    : [];
+  const featured = eligibleProducts.slice(0, 8);
 
   const safeFeaturedIndex = (selectedProductIndex >= 0 && selectedProductIndex < featured.length) ? selectedProductIndex : 0;
 
@@ -1594,8 +1513,8 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                   />
                   <motion.img
                     key={safeFeaturedIndex}
-                    src={featured[safeFeaturedIndex].image}
-                    alt={featured[safeFeaturedIndex].name}
+                    src={featured[safeFeaturedIndex]?.image || featured[safeFeaturedIndex]?.images?.[0] || ''}
+                    alt={featured[safeFeaturedIndex]?.name || 'Timepiece'}
                     onError={(e) => handleImageError(e)}
                     className="max-h-full max-w-full object-contain drop-shadow-[0_15px_35px_rgba(0,0,0,0.25)] z-10"
                     initial={{ opacity: 0, scale: 0.9, y: 15 }}
@@ -1654,7 +1573,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                       letterSpacing: "0.03em",
                     }}
                   >
-                    {featured[safeFeaturedIndex].name}
+                    {featured[safeFeaturedIndex]?.name}
                   </h3>
 
                   <p
@@ -1664,29 +1583,28 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                       letterSpacing: "0.25em",
                     }}
                   >
-                    {featured[safeFeaturedIndex].subtitle || 'PRECISION AT EVERY LEVEL'}
+                    {featured[safeFeaturedIndex]?.category
+                      ? featured[safeFeaturedIndex].category.toUpperCase()
+                      : (featured[safeFeaturedIndex]?.subtitle || 'PRECISION AT EVERY LEVEL')}
                   </p>
 
                   <p
                     style={{ color: '#047857' }}
                     className="text-xl sm:text-2xl font-serif italic font-light tracking-wider uppercase"
                   >
-                    {featured[safeFeaturedIndex].price
+                    {featured[safeFeaturedIndex]?.price !== undefined && featured[safeFeaturedIndex]?.price !== null
                       ? `₹${Number(featured[safeFeaturedIndex].price).toLocaleString('en-IN')}`
-                      : (featured[safeFeaturedIndex].id?.startsWith('ap-')
-                          ? `£ ${featured[safeFeaturedIndex].price.toLocaleString()}`
-                          : formatPrice(getDiscountedPrice(featured[safeFeaturedIndex]), currentCurrency))}
+                      : formatPrice(getDiscountedPrice(featured[safeFeaturedIndex]), currentCurrency)}
                   </p>
 
                   <div className="pt-1">
                     <button
                       onClick={() => {
-                        const link = featured[safeFeaturedIndex].buttonLink;
-                        if (link && link.includes('shop')) {
-                          onPageChange("shop");
-                        } else if (featured[safeFeaturedIndex].id) {
+                        const targetId = featured[safeFeaturedIndex]?.id || featured[safeFeaturedIndex]?._id;
+                        if (targetId) {
                           onPageChange("product-detail", {
-                            id: featured[safeFeaturedIndex].id,
+                            id: targetId,
+                            product: featured[safeFeaturedIndex]
                           });
                         } else {
                           onPageChange("shop");
@@ -1694,7 +1612,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                       }}
                       className="uppercase font-bold text-xs tracking-[0.28em] border-b border-black pb-1 hover:text-[#047857] hover:border-[#047857] transition-all duration-300 cursor-pointer inline-block"
                     >
-                      {featured[safeFeaturedIndex].buttonText || 'EXPLORE'}
+                      EXPLORE
                     </button>
                   </div>
                 </div>
@@ -1718,7 +1636,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                         const isSel = idx === safeFeaturedIndex;
                         return (
                           <button
-                            key={item.id || idx}
+                            key={item.id || item._id || idx}
                             type="button"
                             onClick={() => setSelectedProductIndex(idx)}
                             className={`relative shrink-0 rounded-full transition-all duration-300 p-1 cursor-pointer ${
@@ -1730,8 +1648,8 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                           >
                             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-white/90 border border-neutral-200 flex items-center justify-center p-1">
                               <img
-                                src={item.image}
-                                alt={item.name}
+                                src={item.image || item.images?.[0] || ''}
+                                alt={item.name || 'Timepiece'}
                                 onError={(e) => handleImageError(e)}
                                 className="max-h-full max-w-full object-contain"
                               />

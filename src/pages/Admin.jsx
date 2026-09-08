@@ -6649,7 +6649,7 @@ const handleEditImageUpload = async (e) => {
                     <button
                       type="button"
                       onClick={() => setEditingId(null)}
-                      className="py-2.5 border border-white/10 text-white font-semibold uppercase hover:bg-white/5 transition"
+                      className="py-2.5 border border-white/10 text-black font-semibold uppercase hover:bg-black/5 transition"
                     >
                       Cancel
                     </button>
