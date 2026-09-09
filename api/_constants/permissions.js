@@ -1,7 +1,6 @@
 export const PERMISSIONS = {
   ANALYTICS: 'analytics',
   PRODUCTS: 'products',
-  INVENTORY: 'inventory',
   ORDERS: 'orders',
   COUPONS: 'coupons',
   REVIEWS: 'reviews',
@@ -17,7 +16,6 @@ export const PERMISSIONS = {
 export const PERMISSION_LIST = [
   { key: 'analytics', label: 'Store Analytics', description: 'View sales trends, revenue metrics, and performance charts' },
   { key: 'products', label: 'Products / Timepieces', description: 'Manage watches, specifications, images, and catalog details' },
-  { key: 'inventory', label: 'Inventory', description: 'Monitor stock levels, manage serial/claim codes, and export CSV' },
   { key: 'orders', label: 'Orders / Order Dispatcher', description: 'Process customer orders, update delivery status and warranties' },
   { key: 'coupons', label: 'Coupon Builder', description: 'Create and revoke promotional discount coupon codes' },
   { key: 'reviews', label: 'Reviews Manager', description: 'Moderate, approve, and remove customer watch reviews' },

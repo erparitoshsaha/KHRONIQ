@@ -32,11 +32,18 @@ const productSchema = new mongoose.Schema({
   badge: { type: String, default: '' },
   discountPercent: { type: Number, default: 0 },
   specs: {
-    movement: { type: String, default: 'Automatic' },
-    case: { type: String },
-    strap: { type: String },
-    waterResistance: { type: String },
-    glass: { type: String }
+    movement: { type: String, default: '' },
+    case: { type: String, default: '' },
+    dialColor: { type: String, default: '' },
+    caseMaterial: { type: String, default: '' },
+    strap: { type: String, default: '' },
+    waterResistance: { type: String, default: '' },
+    glass: { type: String, default: '' },
+    watchFunction: { type: String, default: '' },
+    collection: { type: String, default: '' },
+    warrantyDetails: { type: String, default: '' },
+    warrantyPeriod: { type: String, default: '' },
+    origin: { type: String, default: '' }
   },
   customizable: { type: Boolean, default: true },
   allowStrapCustomization: { type: Boolean, default: true },

@@ -13,7 +13,7 @@ router.use(express.json());
 
 // @route   GET /api/admin/analytics
 // @desc    Get store analytics (revenue, orders, category sales, trends, best sellers, low stock)
-// @access  Private/Admin (Super Admin or Admin with orders/inventory permission)
+// @access  Private/Admin (Super Admin or Admin with analytics permission)
 router.get('/analytics', protect, requirePermission('analytics'), async (req, res) => {
   try {
     // 1. Total revenue & order status breakdown

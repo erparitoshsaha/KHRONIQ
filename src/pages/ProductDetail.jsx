@@ -559,15 +559,16 @@ export default function ProductDetail({ params, onPageChange }) {
                 { label: 'Water Resistance', value: product.specs?.waterResistance },
                 { label: 'Dial Glass Type',  value: product.specs?.glass },
                 { label: 'Function',         value: product.specs?.watchFunction },
-                { label: 'Collection',       value: product.specs?.collection },
-                { label: 'Gender',           value: product.gender ? (product.gender === 'men' ? "Men's" : product.gender === 'women' ? "Women's" : 'Unisex') : 'Unisex' },
+                { label: 'Collection',       value: product.specs?.collection || product.category },
+                { label: 'Gender',           value: product.gender ? (product.gender.toLowerCase() === 'men' ? "Men's" : product.gender.toLowerCase() === 'women' ? "Women's" : (product.gender.toLowerCase() === 'unisex' ? 'Unisex' : product.gender)) : '' },
                 { label: 'Warranty Details', value: product.specs?.warrantyDetails },
                 { label: 'Warranty Period',  value: (() => {
+                    if (product.specs?.warrantyPeriod) return product.specs.warrantyPeriod;
                     const m = Number(product.warrantyMonths) || 0;
-                    if (m <= 0) return '—';
+                    if (m <= 0) return '';
                     return m % 12 === 0 ? `${m / 12} Year${m / 12 > 1 ? 's' : ''}` : `${m} Month${m > 1 ? 's' : ''}`;
                   })() },
-                { label: 'Origin',           value: 'Designed & Crafted in India' },
+                { label: 'Origin',           value: product.specs?.origin },
               ].map(({ label, value }, i, arr) => (
                 <div
                   key={label}

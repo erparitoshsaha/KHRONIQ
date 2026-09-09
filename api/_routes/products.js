@@ -149,11 +149,18 @@ router.post('/', protect, requirePermission('products'), async (req, res) => {
       image: cleanImage,
       images: finalImages,
       specs: {
-        movement: specs?.movement || 'Automatic',
-        case: specs?.case || 'Stainless Steel',
-        strap: specs?.strap || 'Leather Strap',
-        waterResistance: specs?.waterResistance || '50m',
-        glass: specs?.glass || 'Sapphire Crystal'
+        movement: specs?.movement !== undefined ? String(specs.movement) : '',
+        case: specs?.case !== undefined ? String(specs.case) : '',
+        dialColor: specs?.dialColor !== undefined ? String(specs.dialColor) : '',
+        caseMaterial: specs?.caseMaterial !== undefined ? String(specs.caseMaterial) : '',
+        strap: specs?.strap !== undefined ? String(specs.strap) : '',
+        waterResistance: specs?.waterResistance !== undefined ? String(specs.waterResistance) : '',
+        glass: specs?.glass !== undefined ? String(specs.glass) : '',
+        watchFunction: specs?.watchFunction !== undefined ? String(specs.watchFunction) : '',
+        collection: specs?.collection !== undefined ? String(specs.collection) : '',
+        warrantyDetails: specs?.warrantyDetails !== undefined ? String(specs.warrantyDetails) : '',
+        warrantyPeriod: specs?.warrantyPeriod !== undefined ? String(specs.warrantyPeriod) : '',
+        origin: specs?.origin !== undefined ? String(specs.origin) : ''
       },
       customizable: customizable || false,
       allowStrapCustomization: allowStrapCustomization !== undefined ? allowStrapCustomization : true,
@@ -256,12 +263,20 @@ router.put('/:id', protect, requirePermission('products'), async (req, res) => {
     
     if (specs) {
       product.specs = {
-        movement: specs.movement !== undefined ? specs.movement : product.specs.movement,
-        case: specs.case !== undefined ? specs.case : product.specs.case,
-        strap: specs.strap !== undefined ? specs.strap : product.specs.strap,
-        waterResistance: specs.waterResistance !== undefined ? specs.waterResistance : product.specs.waterResistance,
-        glass: specs.glass !== undefined ? specs.glass : product.specs.glass
+        movement: specs.movement !== undefined ? String(specs.movement) : (product.specs?.movement || ''),
+        case: specs.case !== undefined ? String(specs.case) : (product.specs?.case || ''),
+        dialColor: specs.dialColor !== undefined ? String(specs.dialColor) : (product.specs?.dialColor || ''),
+        caseMaterial: specs.caseMaterial !== undefined ? String(specs.caseMaterial) : (product.specs?.caseMaterial || ''),
+        strap: specs.strap !== undefined ? String(specs.strap) : (product.specs?.strap || ''),
+        waterResistance: specs.waterResistance !== undefined ? String(specs.waterResistance) : (product.specs?.waterResistance || ''),
+        glass: specs.glass !== undefined ? String(specs.glass) : (product.specs?.glass || ''),
+        watchFunction: specs.watchFunction !== undefined ? String(specs.watchFunction) : (product.specs?.watchFunction || ''),
+        collection: specs.collection !== undefined ? String(specs.collection) : (product.specs?.collection || ''),
+        warrantyDetails: specs.warrantyDetails !== undefined ? String(specs.warrantyDetails) : (product.specs?.warrantyDetails || ''),
+        warrantyPeriod: specs.warrantyPeriod !== undefined ? String(specs.warrantyPeriod) : (product.specs?.warrantyPeriod || ''),
+        origin: specs.origin !== undefined ? String(specs.origin) : (product.specs?.origin || '')
       };
+      product.markModified('specs');
     }
 
     if (customizable !== undefined) product.customizable = customizable;

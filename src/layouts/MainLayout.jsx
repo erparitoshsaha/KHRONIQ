@@ -6,10 +6,21 @@ import WarrantyDrawer from '../components/WarrantyDrawer';
 import UpdatesDrawer from '../components/UpdatesDrawer';
 import ScrollToTop from '../components/ScrollToTop';
 
-export default function MainLayout({ children, onPageChange, currentPage }) {
+export default function MainLayout({
+  children,
+  onPageChange,
+  currentPage,
+  updatesOpen: externalUpdatesOpen,
+  onUpdatesOpen: externalOnUpdatesOpen,
+  onUpdatesClose: externalOnUpdatesClose
+}) {
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [warrantyOpen, setWarrantyOpen] = useState(false);
-  const [updatesOpen, setUpdatesOpen] = useState(false);
+  const [internalUpdatesOpen, setInternalUpdatesOpen] = useState(false);
+
+  const updatesOpen = externalUpdatesOpen !== undefined ? externalUpdatesOpen : internalUpdatesOpen;
+  const handleUpdatesOpen = externalOnUpdatesOpen || (() => setInternalUpdatesOpen(true));
+  const handleUpdatesClose = externalOnUpdatesClose || (() => setInternalUpdatesOpen(false));
 
   // Dedicated full-height layout for Admin dashboard to allow proper sidebar placement
   if (currentPage === 'admin') {
@@ -45,7 +56,7 @@ export default function MainLayout({ children, onPageChange, currentPage }) {
       {/* Updates Drawer */}
       <UpdatesDrawer
         isOpen={updatesOpen}
-        onClose={() => setUpdatesOpen(false)}
+        onClose={handleUpdatesClose}
       />
 
       <button
@@ -67,8 +78,8 @@ export default function MainLayout({ children, onPageChange, currentPage }) {
         {React.Children.map(children, child => {
           if (React.isValidElement(child)) {
             return React.cloneElement(child, {
-              onUpdatesOpen: () => setUpdatesOpen(true),
-              onUpdatesClose: () => setUpdatesOpen(false),
+              onUpdatesOpen: handleUpdatesOpen,
+              onUpdatesClose: handleUpdatesClose,
               updatesOpen
             });
           }

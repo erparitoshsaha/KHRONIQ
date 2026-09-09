@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import ProductCard from '../components/ProductCard';
 import BackButton from '../components/BackButton';
-import { getDiscountedPrice, selectCurrentCurrency, formatPrice, fetchFilters } from '../store/slices/watchSlice';
+import { getDiscountedPrice, selectCurrentCurrency, formatPrice, fetchFilters, fetchProducts } from '../store/slices/watchSlice';
 import { SlidersHorizontal, Search, RotateCcw, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 const DEFAULT_FALLBACK_CATEGORIES = [
@@ -149,10 +149,13 @@ export default function Shop({ onPageChange, filterParams }) {
   const currentCurrency = useSelector(selectCurrentCurrency);
   const dynamicFilterCategories = useSelector(state => state.watch.filters || []);
 
-  // Fetch active filters on mount
+  // Fetch active filters and ensure products are fetched on mount
   useEffect(() => {
     dispatch(fetchFilters());
-  }, [dispatch]);
+    if (!products || products.length === 0) {
+      dispatch(fetchProducts());
+    }
+  }, [dispatch, products]);
 
   const activeCategories = dynamicFilterCategories.length > 0 ? dynamicFilterCategories : DEFAULT_FALLBACK_CATEGORIES;
 
@@ -271,7 +274,8 @@ export default function Shop({ onPageChange, filterParams }) {
     (priceRange < 6000 ? 1 : 0);
 
   // Filter products logic with dynamic OR within category and AND between categories
-  const filteredProducts = products.filter((product) => {
+  const filteredProducts = (products || []).filter((product) => {
+    if (!product) return false;
     // 1. Search Query Match
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase().trim();
@@ -322,6 +326,7 @@ export default function Shop({ onPageChange, filterParams }) {
         return String(b.name || '').localeCompare(String(a.name || ''));
       default: { // Featured / Default: newest added watch appears first
         const getTime = (p) => {
+          if (!p) return 0;
           if (p.createdAt) {
             const t = new Date(p.createdAt).getTime();
             if (!isNaN(t)) return t;

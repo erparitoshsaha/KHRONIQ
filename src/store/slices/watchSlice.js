@@ -286,7 +286,7 @@ const getMockProducts = () => [
     allowDialCustomization: true,
     reviews: []
   }
-].map(p => ({ ...p, price: p.price * 83, discountPercent: p.discountPercent || 0 }));
+].map(p => ({ ...p, price: Number(p.price) || 0, discountPercent: p.discountPercent || 0 }));
 
 const DEFAULT_FILTER_CATEGORIES = [
   {

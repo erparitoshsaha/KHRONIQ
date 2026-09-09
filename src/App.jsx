@@ -85,6 +85,7 @@ function AppContent() {
   const initialRoute = parseRouteFromPath(typeof window !== 'undefined' ? window.location.pathname : '/');
   const [currentPage, setCurrentPage] = useState(initialRoute.page);
   const [pageParams, setPageParams] = useState(initialRoute.params);
+  const [updatesOpen, setUpdatesOpen] = useState(false);
   const dispatch = useDispatch();
   const products = useSelector(state => state.watch.products);
 
@@ -191,7 +192,14 @@ function AppContent() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <Home onPageChange={handlePageChange} />;
+        return (
+          <Home
+            onPageChange={handlePageChange}
+            onUpdatesOpen={() => setUpdatesOpen(true)}
+            onUpdatesClose={() => setUpdatesOpen(false)}
+            updatesOpen={updatesOpen}
+          />
+        );
       case 'shop':
         return <Shop onPageChange={handlePageChange} filterParams={pageParams} />;
       case 'product-detail':
@@ -215,12 +223,25 @@ function AppContent() {
       case 'gifting':
         return <Gifting onPageChange={handlePageChange} params={pageParams} />;
       default:
-        return <Home onPageChange={handlePageChange} />;
+        return (
+          <Home
+            onPageChange={handlePageChange}
+            onUpdatesOpen={() => setUpdatesOpen(true)}
+            onUpdatesClose={() => setUpdatesOpen(false)}
+            updatesOpen={updatesOpen}
+          />
+        );
     }
   };
 
   return (
-    <MainLayout onPageChange={handlePageChange} currentPage={currentPage}>
+    <MainLayout
+      onPageChange={handlePageChange}
+      currentPage={currentPage}
+      updatesOpen={updatesOpen}
+      onUpdatesOpen={() => setUpdatesOpen(true)}
+      onUpdatesClose={() => setUpdatesOpen(false)}
+    >
       <ErrorBoundary onReset={() => handlePageChange('home')}>
         <Suspense fallback={<PageLoader />}>
           {renderPage()}

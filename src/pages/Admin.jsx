@@ -304,8 +304,9 @@ export default function Admin({ onPageChange }) {
       dialColor: 'Black',
       watchFunction: 'Hours, Minutes, Seconds',
       warrantyDetails: 'Manufacturer Warranty',
-      collection: 'Khronomaster',
-      warrantyPeriod: '2 Years'
+      collection: 'Classic',
+      warrantyPeriod: '6 Months',
+      origin: 'Designed & Crafted in India'
     },
     customizable: true,
     allowStrapCustomization: true,
@@ -1175,17 +1176,21 @@ const handleEditImageUpload = async (e) => {
       image: cleanPrimary,
       images: cleanAdditional,
       discountPercent: Number(newProduct.discountPercent) || 0,
-      customizationOptions: customOpts
+      customizationOptions: customOpts,
+      specs: {
+        ...newProduct.specs,
+        warrantyPeriod: newProduct.specs?.warrantyPeriod || formatWarrantyPeriod(newProduct.warrantyMonths)
+      }
     };
     const res = await dispatch(addProduct(finalProduct));
     if (res && res.success) {
       alert('Product created successfully!');
       setShowAddForm(false);
       setNewProduct({
-        name: '', modelNo: '', serialNo: '', uniqueCode: '', price: '', stock: '', discountPercent: 0, badge: '', badgeMode: 'none', unitCodes: [], warrantyMonths: 12, category: 'Khronomaster', description: '',
+        name: '', modelNo: '', serialNo: '', uniqueCode: '', price: '', stock: '', discountPercent: 0, badge: '', badgeMode: 'none', unitCodes: [], warrantyMonths: 12, category: 'Classic', description: '',
         image: '',
         images: [],
-        specs: { movement: 'Automatic', case: '40mm', strap: 'Leather', waterResistance: '50m', glass: 'Sapphire', dialColor: 'Black', caseMaterial: 'Stainless Steel', watchFunction: 'Hours, Minutes, Seconds', warrantyDetails: 'Manufacturer Warranty', collection: 'Khronomaster', warrantyPeriod: '2 Years' },
+        specs: { movement: 'Automatic', case: '40mm', strap: 'Leather strap', waterResistance: '50m', glass: 'Sapphire Crystal', dialColor: 'Black', caseMaterial: 'Stainless Steel', watchFunction: 'Hours, Minutes, Seconds', warrantyDetails: 'Manufacturer Warranty', collection: 'Classic', warrantyPeriod: '1 Year', origin: 'Designed & Crafted in India' },
         customizable: true,
         allowStrapCustomization: true,
         allowCaseCustomization: true,
@@ -1238,17 +1243,18 @@ const handleEditImageUpload = async (e) => {
       allowStrapCustomization: product.allowStrapCustomization ?? true,
       allowCaseCustomization: product.allowCaseCustomization ?? true,
       specs: {
-        movement: product.specs?.movement || 'Automatic Chronometer',
-        case: product.specs?.case || 'Stainless Steel (40mm)',
-        strap: product.specs?.strap || 'Leather',
-        waterResistance: product.specs?.waterResistance || '50m',
-        glass: product.specs?.glass || 'Sapphire Crystal',
-        dialColor: product.specs?.dialColor || 'Black',
-        caseMaterial: product.specs?.caseMaterial || 'Stainless Steel',
-        watchFunction: product.specs?.watchFunction || 'Hours, Minutes, Seconds',
-        warrantyDetails: product.specs?.warrantyDetails || 'Manufacturer Warranty',
-        collection: product.specs?.collection || 'Khronomaster',
-        warrantyPeriod: product.specs?.warrantyPeriod || '2 Years'
+        movement: product.specs?.movement || '',
+        case: product.specs?.case || '',
+        dialColor: product.specs?.dialColor || '',
+        caseMaterial: product.specs?.caseMaterial || '',
+        strap: product.specs?.strap || '',
+        waterResistance: product.specs?.waterResistance || '',
+        glass: product.specs?.glass || '',
+        watchFunction: product.specs?.watchFunction || '',
+        collection: product.specs?.collection || '',
+        warrantyDetails: product.specs?.warrantyDetails || '',
+        warrantyPeriod: product.specs?.warrantyPeriod || '',
+        origin: product.specs?.origin || ''
       },
       customizationOptions: {
         dialColors: product.customizationOptions?.dialColors || [],
@@ -1281,7 +1287,11 @@ const handleEditImageUpload = async (e) => {
       image: cleanPrimary,
       images: cleanAdditional,
       unitCodes: editForm.newUnitCodes || [],
-      customizationOptions: customOpts
+      customizationOptions: customOpts,
+      specs: {
+        ...editForm.specs,
+        warrantyPeriod: editForm.specs?.warrantyPeriod || formatWarrantyPeriod(editForm.warrantyMonths)
+      }
     };
     const res = await dispatch(editProduct(editingId, finalProduct));
     if (res && res.success) {
@@ -5598,6 +5608,7 @@ const handleEditImageUpload = async (e) => {
                       { key: 'watchFunction',  label: 'Function',        ph: 'Hours, Minutes, Seconds' },
                       { key: 'collection',     label: 'Collection',      ph: 'Classic' },
                       { key: 'warrantyDetails',label: 'Warranty Details', ph: 'Manufacturer Warranty' },
+                      { key: 'origin',         label: 'Origin',          ph: 'Designed & Crafted in India' },
                     ].map(({ key, label, ph }) => (
                       <div key={key} className="space-y-1">
                         <label className="text-[8px] text-black font-bold uppercase tracking-widest block">{label}</label>
@@ -6315,6 +6326,7 @@ const handleEditImageUpload = async (e) => {
                         { key: 'watchFunction',   label: 'Function',         ph: 'Hours, Minutes, Seconds' },
                         { key: 'collection',      label: 'Collection',       ph: 'Classic' },
                         { key: 'warrantyDetails', label: 'Warranty Details', ph: 'Manufacturer Warranty' },
+                        { key: 'origin',          label: 'Origin',           ph: 'Designed & Crafted in India' },
                       ].map(({ key, label, ph }) => (
                         <div key={key} className="space-y-1">
                           <label className="text-[8px] text-black font-bold uppercase tracking-widest block">{label}</label>
