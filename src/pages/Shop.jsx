@@ -6,7 +6,7 @@ import { getDiscountedPrice, selectCurrentCurrency, formatPrice, fetchFilters, f
 import { SlidersHorizontal, Search, RotateCcw, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 const PRICE_STEP = 1000;
-const SLIDER_STEP = 100;
+const SLIDER_STEP = 1;
 
 const DEFAULT_FALLBACK_CATEGORIES = [
   {
@@ -183,13 +183,13 @@ export default function Shop({ onPageChange, filterParams }) {
     const actualMin = Math.min(...prices);
     const actualMax = Math.max(...prices);
 
-    const roundedMin = Math.max(0, Math.floor(actualMin / PRICE_STEP) * PRICE_STEP);
+    const exactMin = Math.max(0, actualMin);
     let roundedMax = Math.ceil(actualMax / PRICE_STEP) * PRICE_STEP;
-    if (roundedMax <= roundedMin) {
-      roundedMax = roundedMin + PRICE_STEP;
+    if (roundedMax <= exactMin) {
+      roundedMax = exactMin + PRICE_STEP;
     }
 
-    return { minPrice: roundedMin, maxPrice: roundedMax };
+    return { minPrice: exactMin, maxPrice: roundedMax };
   }, [products]);
 
   // Filter States
