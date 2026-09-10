@@ -172,66 +172,92 @@ export function productMatchesFilterOption(product, categorySlug, optionValue, o
   switch (normSlug) {
     case 'gender': {
       const pGender = String(product.gender || '').toLowerCase().trim();
-      if (normVal === 'men' || normVal === 'male') return pGender === 'men' || pGender === 'unisex';
-      if (normVal === 'women' || normVal === 'female') return pGender === 'women' || pGender === 'unisex';
-      if (normVal === 'unisex') return pGender === 'unisex';
-      return pGender === normVal || pGender === normName || pGender.includes(normVal);
+      if (!pGender) return false;
+      const isWomen = normVal === 'women' || normVal === 'female' || normName.includes('women') || cleanNameSlug.includes('women');
+      if (isWomen) {
+        return pGender === 'women' || pGender === 'unisex';
+      }
+      const isMen = normVal === 'men' || normVal === 'male' || normName.includes('men') || cleanNameSlug.includes('men');
+      if (isMen) {
+        return pGender === 'men' || pGender === 'unisex';
+      }
+      if (normVal === 'unisex' || normName.includes('unisex')) {
+        return pGender === 'unisex';
+      }
+      return pGender === normVal || pGender === normName || pGender === cleanValSlug;
     }
 
     case 'collection': {
       const pCol = String((specs.collection && String(specs.collection).trim()) || product.category || '').toLowerCase().trim();
+      if (!pCol) return false;
       const pColSlug = toCleanSlug(pCol);
-      if (normVal === 'classic' || normVal === 'khronomaster') {
+      if (normVal === 'classic' || normVal === 'khronomaster' || normName === 'classic' || normName === 'khronomaster') {
         return pCol === 'classic' || pCol === 'khronomaster' || pColSlug === 'classic' || pColSlug === 'khronomaster';
       }
-      if (normVal === 'deevaaz') {
+      if (normVal === 'deevaaz' || normName === 'deevaaz') {
         return pCol === 'deevaaz' || pColSlug === 'deevaaz';
       }
-      return pColSlug === cleanValSlug || pColSlug === cleanNameSlug || pCol === normVal || pCol === normName || pCol.includes(normVal) || normVal.includes(pCol);
+      return pColSlug === cleanValSlug || pColSlug === cleanNameSlug || pCol === normVal || pCol === normName;
     }
 
     case 'movement': {
       const pMovement = String(specs.movement || '').toLowerCase().trim();
+      if (!pMovement) return false;
       const pMovementSlug = toCleanSlug(pMovement);
-      if (normVal === 'automatic') return pMovement.includes('automatic');
-      if (normVal === 'quartz') return pMovement.includes('quartz');
-      if (normVal === 'digital') return pMovement.includes('digital');
-      if (normVal === 'mechanical') return pMovement.includes('mechanical');
-      return pMovementSlug === cleanValSlug || pMovementSlug === cleanNameSlug || pMovement.includes(normVal) || pMovement.includes(normName);
+      if (normVal === 'automatic' || normName === 'automatic') return pMovement.includes('automatic');
+      if (normVal === 'quartz' || normName === 'quartz') return pMovement.includes('quartz');
+      if (normVal === 'digital' || normName === 'digital') return pMovement.includes('digital');
+      if (normVal === 'mechanical' || normName === 'mechanical') return pMovement.includes('mechanical');
+      return pMovementSlug === cleanValSlug || pMovementSlug === cleanNameSlug || pMovement === normVal || pMovement === normName;
     }
 
     case 'strap': {
       const pStrap = String(specs.strap || '').toLowerCase().trim();
-      if (normVal === 'leather-strap' || normVal === 'leather') {
+      if (!pStrap) return false;
+      const pStrapSlug = toCleanSlug(pStrap);
+      const pStrapBase = pStrapSlug.replace(/-(strap|band)$/, '');
+      const optValBase = cleanValSlug.replace(/-(strap|band)$/, '');
+      const optNameBase = cleanNameSlug.replace(/-(strap|band)$/, '');
+
+      if (optValBase === 'leather' || optNameBase === 'leather' || normVal === 'leather' || normName === 'leather' || normVal === 'leather-strap' || normName === 'leather strap') {
         return pStrap.includes('leather');
       }
-      if (normVal === 'chain-strap' || normVal === 'chain') {
+      if (optValBase === 'chain' || optNameBase === 'chain' || normVal === 'chain' || normName === 'chain' || normVal === 'chain-strap' || normName === 'chain strap') {
         return pStrap.includes('chain') || pStrap.includes('link');
       }
-      if (normVal === 'stainless-steel' || normVal === 'steel') {
+      if (optValBase === 'stainless-steel' || optNameBase === 'stainless-steel' || optValBase === 'steel' || optNameBase === 'steel' || normVal === 'stainless-steel' || normVal === 'steel') {
         return pStrap.includes('steel') || pStrap.includes('stainless');
       }
-      if (normVal === 'brass-alloy' || normVal === 'brass' || normVal === 'alloy') {
+      if (optValBase === 'brass-alloy' || optNameBase === 'brass-alloy' || optValBase === 'brass' || optNameBase === 'brass' || optValBase === 'alloy' || optNameBase === 'alloy') {
         return pStrap.includes('brass') || pStrap.includes('alloy');
       }
-      return pStrap.includes(normVal) || pStrap.includes(normName) || toCleanSlug(pStrap) === cleanValSlug;
+      if (optValBase && pStrapBase && optValBase === pStrapBase) {
+        return true;
+      }
+      if (optNameBase && pStrapBase && optNameBase === pStrapBase) {
+        return true;
+      }
+      return pStrapSlug === cleanValSlug || pStrapSlug === cleanNameSlug || pStrap === normVal || pStrap === normName;
     }
 
     case 'case': {
       // STRICT: Case Material ONLY (NEVER inspect specs.case)
       const pCaseMaterial = String(specs.caseMaterial || '').toLowerCase().trim();
-      if (normVal === 'stainless-steel' || normVal === 'steel') {
+      if (!pCaseMaterial) return false;
+      const pCaseSlug = toCleanSlug(pCaseMaterial);
+      if (normVal === 'stainless-steel' || normVal === 'steel' || normName === 'stainless steel' || normName === 'steel') {
         return pCaseMaterial.includes('steel') || pCaseMaterial.includes('stainless');
       }
-      if (normVal === 'brass-alloy' || normVal === 'brass' || normVal === 'alloy') {
+      if (normVal === 'brass-alloy' || normVal === 'brass' || normVal === 'alloy' || normName === 'brass/alloy' || normName === 'brass' || normName === 'alloy') {
         return pCaseMaterial.includes('brass') || pCaseMaterial.includes('alloy');
       }
-      return pCaseMaterial.includes(normVal) || pCaseMaterial.includes(normName) || toCleanSlug(pCaseMaterial) === cleanValSlug;
+      return pCaseSlug === cleanValSlug || pCaseSlug === cleanNameSlug || pCaseMaterial === normVal || pCaseMaterial === normName;
     }
 
     case 'case-dimensions': {
       // STRICT: Case Dimensions ONLY (NEVER inspect specs.caseMaterial)
       const pCaseDim = String(specs.case || '').toLowerCase().trim();
+      if (!pCaseDim) return false;
       return pCaseDim.includes(normVal) || pCaseDim.includes(normName) || toCleanSlug(pCaseDim) === cleanValSlug;
     }
 

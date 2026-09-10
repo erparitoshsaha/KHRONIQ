@@ -5,7 +5,6 @@ import BackButton from '../components/BackButton';
 import { getDiscountedPrice, selectCurrentCurrency, formatPrice, fetchFilters, fetchProducts } from '../store/slices/watchSlice';
 import { SlidersHorizontal, Search, RotateCcw, X, ChevronDown, ChevronUp } from 'lucide-react';
 import {
-  getProductCanonicalValues,
   productMatchesFilterOption,
   toCleanSlug,
   normalizeFilterKey,
@@ -74,10 +73,6 @@ function matchesOption(product, categorySlug, optionValue, optionName) {
   return productMatchesFilterOption(product, categorySlug, optionValue, optionName);
 }
 
-function getProductValuesForCategory(product, catSlug) {
-  return getProductCanonicalValues(product, catSlug);
-}
-
 export default function Shop({ onPageChange, filterParams }) {
   const dispatch = useDispatch();
   const products = useSelector(state => state.watch.products);
@@ -94,113 +89,70 @@ export default function Shop({ onPageChange, filterParams }) {
 
   const baseCategories = dynamicFilterCategories.length > 0 ? dynamicFilterCategories : DEFAULT_FALLBACK_CATEGORIES;
 
-  // Reconcile Catalog Filter configuration with actual current product attribute values
+  // Single Source of Truth: Customer-facing filter options come ONLY from active Catalog Filter options.
+  // Product fields NEVER create or derive new customer-facing filter options.
   const activeCategories = useMemo(() => {
-    const prods = Array.isArray(products) ? products : [];
+    return (baseCategories || [])
+      .filter(cat => cat && cat.isActive !== false)
+      .map(cat => {
+        // Build set of inactive options to respect admin deactivation
+        const inactiveSet = new Set();
+        const inactiveOptions = [
+          ...(cat.inactiveOptions || []),
+          ...(cat.options || []).filter(o => o && o.isActive === false)
+        ];
+        inactiveOptions.forEach(opt => {
+          if (opt.name) inactiveSet.add(normalizeFilterKey(opt.name));
+          if (opt.slug) inactiveSet.add(normalizeFilterKey(opt.slug));
+          if (opt.value) inactiveSet.add(normalizeFilterKey(opt.value));
+        });
 
-    return baseCategories.map(cat => {
-      // 1. Build set of inactive options to respect admin deactivation
-      const inactiveSet = new Set();
-      const inactiveOptions = [
-        ...(cat.inactiveOptions || []),
-        ...(cat.options || []).filter(o => o.isActive === false)
-      ];
-      inactiveOptions.forEach(opt => {
-        if (opt.name) inactiveSet.add(normalizeFilterKey(opt.name));
-        if (opt.slug) inactiveSet.add(normalizeFilterKey(opt.slug));
-        if (opt.value) inactiveSet.add(normalizeFilterKey(opt.value));
-      });
+        const isDeactivated = (val, slug, name) => {
+          const nVal = normalizeFilterKey(val);
+          const nSlug = normalizeFilterKey(slug);
+          const nName = normalizeFilterKey(name);
+          if (nVal && inactiveSet.has(nVal)) return true;
+          if (nSlug && inactiveSet.has(nSlug)) return true;
+          if (nName && inactiveSet.has(nName)) return true;
+          return false;
+        };
 
-      const isDeactivated = (val, slug, name) => {
-        const nVal = normalizeFilterKey(val);
-        const nSlug = normalizeFilterKey(slug);
-        const nName = normalizeFilterKey(name);
-        if (nVal && inactiveSet.has(nVal)) return true;
-        if (nSlug && inactiveSet.has(nSlug)) return true;
-        if (nName && inactiveSet.has(nName)) return true;
-        return false;
-      };
+        const activeRaw = (cat.options || []).filter(o => o && o.isActive !== false);
+        const shownOptions = [];
+        const seenKeys = new Set();
 
-      const activeRaw = (cat.options || []).filter(o => o.isActive !== false);
-      const shownOptions = [];
-      const seenKeys = new Set();
+        for (const opt of activeRaw) {
+          const optVal = opt.value || opt.slug || opt.name;
+          const optName = opt.name || optVal;
+          const optSlug = opt.slug || toCleanSlug(optVal);
 
-      // Rule 1: Existing active option + product uses it → SHOW
-      // Rule 2: Existing inactive option + product uses it → DO NOT SHOW
-      for (const opt of activeRaw) {
-        const optVal = opt.value || opt.slug || opt.name;
-        const optName = opt.name || optVal;
-        const optSlug = opt.slug || toCleanSlug(optVal);
+          if (isDeactivated(optVal, optSlug, optName)) {
+            continue;
+          }
 
-        if (isDeactivated(optVal, optSlug, optName)) {
-          // Rule 2: Inactive option → DO NOT SHOW
-          continue;
-        }
-
-        const productUsesIt = prods.some(p => matchesOption(p, cat.slug, optVal, optName));
-        if (productUsesIt) {
-          const key = optSlug.toLowerCase().trim();
-          if (!seenKeys.has(key)) {
-            seenKeys.add(key);
+          // Duplicate normalization: ensure no duplicate equivalent options are rendered
+          const normKey = normalizeFilterKey(optName) || optSlug.toLowerCase().trim();
+          if (!seenKeys.has(normKey)) {
+            seenKeys.add(normKey);
             shownOptions.push({
               id: opt.id || opt._id || `opt-${optSlug}`,
-              name: opt.name,
+              name: opt.name || formatOptionLabel(optVal),
               slug: optSlug,
               value: optVal,
-              order: opt.order
+              order: opt.order !== undefined ? opt.order : shownOptions.length + 1
             });
           }
         }
-      }
 
-      // Rule 3: Completely new product-derived value with no inactive matching option → SHOW
-      // Rule 4: Product-derived value must never resurrect an option that an admin explicitly deactivated.
-      for (const p of prods) {
-        const candidateValues = getProductValuesForCategory(p, cat.slug);
-        for (const rawVal of candidateValues) {
-          const normVal = rawVal.toLowerCase().trim();
-          const cleanSlug = toCleanSlug(rawVal);
-          if (!cleanSlug) continue;
+        // Sort options by order if defined
+        shownOptions.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
 
-          // Rule 4: Never resurrect deactivated options
-          if (isDeactivated(rawVal, cleanSlug, rawVal)) {
-            continue;
-          }
-
-          // Check if already covered by an existing shown active option
-          const alreadyCovered = shownOptions.some(opt => {
-            const optVal = opt.value || opt.slug || opt.name;
-            const optSlugKey = (opt.slug || toCleanSlug(optVal)).toLowerCase().trim();
-            if (optSlugKey === cleanSlug || optVal.toLowerCase().trim() === normVal) return true;
-            return matchesOption(p, cat.slug, optVal, opt.name) && (
-              normVal.includes(optVal.toLowerCase().trim()) ||
-              normVal.includes(opt.name.toLowerCase().trim())
-            );
-          });
-
-          if (alreadyCovered) {
-            continue;
-          }
-
-          if (!seenKeys.has(cleanSlug)) {
-            seenKeys.add(cleanSlug);
-            shownOptions.push({
-              id: `derived-${cat.slug}-${cleanSlug}`,
-              name: formatOptionLabel(rawVal),
-              slug: cleanSlug,
-              value: cleanSlug,
-              isProductDerived: true
-            });
-          }
-        }
-      }
-
-      return {
-        ...cat,
-        options: shownOptions
-      };
-    });
-  }, [baseCategories, products]);
+        return {
+          ...cat,
+          options: shownOptions
+        };
+      });
+  }, [baseCategories]);
 
   // Calculate dynamic price boundaries from available products
   const { minPrice, maxPrice } = useMemo(() => {
