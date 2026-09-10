@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import ProductCard from '../components/ProductCard';
 import BackButton from '../components/BackButton';
 import { getDiscountedPrice, selectCurrentCurrency, formatPrice, fetchFilters, fetchProducts } from '../store/slices/watchSlice';
 import { SlidersHorizontal, Search, RotateCcw, X, ChevronDown, ChevronUp } from 'lucide-react';
+
+const PRICE_STEP = 1000;
+const SLIDER_STEP = 100;
 
 const DEFAULT_FALLBACK_CATEGORIES = [
   {
@@ -159,13 +162,48 @@ export default function Shop({ onPageChange, filterParams }) {
 
   const activeCategories = dynamicFilterCategories.length > 0 ? dynamicFilterCategories : DEFAULT_FALLBACK_CATEGORIES;
 
+  // Calculate dynamic price boundaries from available products
+  const { minPrice, maxPrice } = useMemo(() => {
+    if (!products || products.length === 0) {
+      return { minPrice: 0, maxPrice: 1000 };
+    }
+    const prices = products
+      .map(p => {
+        const discounted = getDiscountedPrice(p);
+        return typeof discounted === 'number' && !isNaN(discounted) && discounted > 0
+          ? discounted
+          : (Number(p.price) || 0);
+      })
+      .filter(p => p > 0);
+
+    if (prices.length === 0) {
+      return { minPrice: 0, maxPrice: 1000 };
+    }
+
+    const actualMin = Math.min(...prices);
+    const actualMax = Math.max(...prices);
+
+    const roundedMin = Math.max(0, Math.floor(actualMin / PRICE_STEP) * PRICE_STEP);
+    let roundedMax = Math.ceil(actualMax / PRICE_STEP) * PRICE_STEP;
+    if (roundedMax <= roundedMin) {
+      roundedMax = roundedMin + PRICE_STEP;
+    }
+
+    return { minPrice: roundedMin, maxPrice: roundedMax };
+  }, [products]);
+
   // Filter States
   const [searchQuery, setSearchQuery] = useState(filterParams?.search || '');
   const [selectedFilters, setSelectedFilters] = useState({}); // { [categorySlug]: string[] }
-  const [priceRange, setPriceRange] = useState(6000);
+  const [priceRange, setPriceRange] = useState(null);
   const [sortOption, setSortOption] = useState('featured');
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState({});
+
+  // Current effective max price: falls back to dynamic maxPrice when not explicitly overridden
+  const currentMaxPrice = (typeof priceRange === 'number' && !isNaN(priceRange))
+    ? Math.min(Math.max(priceRange, minPrice), maxPrice)
+    : maxPrice;
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -191,21 +229,21 @@ export default function Shop({ onPageChange, filterParams }) {
     if (filterParams?.shopAll) {
       setSearchQuery('');
       setSelectedFilters({});
-      setPriceRange(6000);
+      setPriceRange(null);
       setSortOption('featured');
     } else if (filterParams?.category) {
       const cat = filterParams.category === 'Khronomaster' ? 'classic' : filterParams.category.toLowerCase();
       setSelectedFilters({ collection: [cat] });
       setSearchQuery('');
-      setPriceRange(6000);
+      setPriceRange(null);
     } else if (filterParams?.gender) {
       setSelectedFilters({ gender: [filterParams.gender.toLowerCase()] });
       setSearchQuery('');
-      setPriceRange(6000);
+      setPriceRange(null);
     } else if (filterParams?.search !== undefined) {
       setSearchQuery(filterParams.search);
       setSelectedFilters({});
-      setPriceRange(6000);
+      setPriceRange(null);
     }
     if (filterParams?.maxPrice) {
       setPriceRange(filterParams.maxPrice);
@@ -215,7 +253,7 @@ export default function Shop({ onPageChange, filterParams }) {
   // Reset page when filters or sorting changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedFilters, priceRange, sortOption]);
+  }, [searchQuery, selectedFilters, currentMaxPrice, sortOption]);
 
   const toggleSection = (slug) => {
     setCollapsedSections(prev => ({ ...prev, [slug]: !prev[slug] }));
@@ -263,7 +301,7 @@ export default function Shop({ onPageChange, filterParams }) {
   const resetFilters = () => {
     setSearchQuery('');
     setSelectedFilters({});
-    setPriceRange(6000);
+    setPriceRange(null);
     setSortOption('featured');
     setCurrentPage(1);
   };
@@ -271,7 +309,7 @@ export default function Shop({ onPageChange, filterParams }) {
   // Count of active applied filters
   const activeFilterCount = Object.values(selectedFilters).reduce((acc, curr) => acc + (curr ? curr.length : 0), 0) +
     (searchQuery.trim() ? 1 : 0) +
-    (priceRange < 6000 ? 1 : 0);
+    (currentMaxPrice < maxPrice ? 1 : 0);
 
   // Filter products logic with dynamic OR within category and AND between categories
   const filteredProducts = (products || []).filter((product) => {
@@ -290,7 +328,7 @@ export default function Shop({ onPageChange, filterParams }) {
 
     // 2. Price Range Match
     const effectivePrice = getDiscountedPrice(product);
-    if (effectivePrice > priceRange) {
+    if (effectivePrice > currentMaxPrice) {
       return false;
     }
 
@@ -435,20 +473,20 @@ export default function Shop({ onPageChange, filterParams }) {
       <div className="space-y-2 pt-2">
         <div className="flex justify-between items-center">
           <h4 className="text-[10px] font-bold text-luxury-text uppercase tracking-widest">Max Price</h4>
-          <span className="text-xs text-neutral-900 font-bold">{formatPrice(priceRange, currentCurrency)}</span>
+          <span className="text-xs text-neutral-900 font-bold">{formatPrice(currentMaxPrice, currentCurrency)}</span>
         </div>
         <input
           type="range"
-          min="1000"
-          max="6000"
-          step="100"
-          value={priceRange}
+          min={minPrice}
+          max={maxPrice}
+          step={SLIDER_STEP}
+          value={currentMaxPrice}
           onChange={(e) => setPriceRange(Number(e.target.value))}
           className="w-full accent-black cursor-pointer"
         />
         <div className="flex justify-between text-[10px] text-neutral-500 font-medium">
-          <span>{formatPrice(1000, currentCurrency)}</span>
-          <span>{formatPrice(6000, currentCurrency)}</span>
+          <span>{formatPrice(minPrice, currentCurrency)}</span>
+          <span>{formatPrice(maxPrice, currentCurrency)}</span>
         </div>
       </div>
     </div>

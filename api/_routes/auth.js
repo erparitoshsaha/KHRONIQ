@@ -895,7 +895,15 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
     user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
     await user.save();
 
-    const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const configuredUrl = (process.env.FRONTEND_URL || '').trim();
+    let frontendBase = configuredUrl;
+    if (!frontendBase || frontendBase.includes('khroniq-sage.vercel.app')) {
+      frontendBase = 'https://www.khroniq.com';
+    } else if (frontendBase.includes(',')) {
+      // Local development may configure comma-separated origins for LAN testing; use the first valid origin
+      frontendBase = frontendBase.split(',')[0].trim();
+    }
+    frontendBase = frontendBase.replace(/\/+$/, '');
     const resetUrl = `${frontendBase}/reset-password/${rawToken}`;
 
     await sendEmail({
