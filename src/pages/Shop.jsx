@@ -146,6 +146,53 @@ function matchesOption(product, categorySlug, optionValue, optionName) {
   return specMatch || pDesc.includes(normVal) || pDesc.includes(normName) || pCategory.includes(normVal) || pName.includes(normVal);
 }
 
+function toCleanSlug(str) {
+  if (!str) return '';
+  return String(str)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+function formatOptionLabel(str) {
+  if (!str) return '';
+  const trimmed = str.trim();
+  if (trimmed === trimmed.toLowerCase()) {
+    return trimmed.replace(/\b\w/g, c => c.toUpperCase());
+  }
+  return trimmed;
+}
+
+function getProductValuesForCategory(product, catSlug) {
+  if (!product) return [];
+  const specs = product.specs || {};
+  const vals = [];
+
+  if (catSlug === 'movement') {
+    if (specs.movement) vals.push(specs.movement);
+  } else if (catSlug === 'case') {
+    if (specs.caseMaterial) vals.push(specs.caseMaterial);
+    if (specs.case && !specs.caseMaterial) vals.push(specs.case);
+  } else if (catSlug === 'strap') {
+    if (specs.strap) vals.push(specs.strap);
+    if (specs.strapMaterial) vals.push(specs.strapMaterial);
+  } else if (catSlug === 'collection') {
+    if (specs.collection) vals.push(specs.collection);
+    if (product.category) vals.push(product.category);
+  } else if (catSlug === 'gender') {
+    if (product.gender) vals.push(product.gender);
+  } else if (catSlug === 'dial') {
+    if (specs.dial) vals.push(specs.dial);
+    if (specs.dialType) vals.push(specs.dialType);
+  } else {
+    if (specs[catSlug]) vals.push(specs[catSlug]);
+    if (product[catSlug] && typeof product[catSlug] === 'string') vals.push(product[catSlug]);
+  }
+
+  return vals.map(v => String(v).trim()).filter(Boolean);
+}
+
 export default function Shop({ onPageChange, filterParams }) {
   const dispatch = useDispatch();
   const products = useSelector(state => state.watch.products);
@@ -160,7 +207,115 @@ export default function Shop({ onPageChange, filterParams }) {
     }
   }, [dispatch, products]);
 
-  const activeCategories = dynamicFilterCategories.length > 0 ? dynamicFilterCategories : DEFAULT_FALLBACK_CATEGORIES;
+  const baseCategories = dynamicFilterCategories.length > 0 ? dynamicFilterCategories : DEFAULT_FALLBACK_CATEGORIES;
+
+  // Reconcile Catalog Filter configuration with actual current product attribute values
+  const activeCategories = useMemo(() => {
+    const prods = Array.isArray(products) ? products : [];
+
+    return baseCategories.map(cat => {
+      // 1. Build set of inactive options to respect admin deactivation
+      const inactiveSet = new Set();
+      const inactiveOptions = [
+        ...(cat.inactiveOptions || []),
+        ...(cat.options || []).filter(o => o.isActive === false)
+      ];
+      inactiveOptions.forEach(opt => {
+        if (opt.name) inactiveSet.add(String(opt.name).toLowerCase().trim());
+        if (opt.slug) inactiveSet.add(String(opt.slug).toLowerCase().trim());
+        if (opt.value) inactiveSet.add(String(opt.value).toLowerCase().trim());
+      });
+
+      const isDeactivated = (val, slug, name) => {
+        const nVal = String(val || '').toLowerCase().trim();
+        const nSlug = String(slug || '').toLowerCase().trim();
+        const nName = String(name || '').toLowerCase().trim();
+        if (nVal && inactiveSet.has(nVal)) return true;
+        if (nSlug && inactiveSet.has(nSlug)) return true;
+        if (nName && inactiveSet.has(nName)) return true;
+        return false;
+      };
+
+      const activeRaw = (cat.options || []).filter(o => o.isActive !== false);
+      const shownOptions = [];
+      const seenKeys = new Set();
+
+      // Rule 1: Existing active option + product uses it → SHOW
+      // Rule 2: Existing inactive option + product uses it → DO NOT SHOW
+      for (const opt of activeRaw) {
+        const optVal = opt.value || opt.slug || opt.name;
+        const optName = opt.name || optVal;
+        const optSlug = opt.slug || toCleanSlug(optVal);
+
+        if (isDeactivated(optVal, optSlug, optName)) {
+          // Rule 2: Inactive option → DO NOT SHOW
+          continue;
+        }
+
+        const productUsesIt = prods.some(p => matchesOption(p, cat.slug, optVal, optName));
+        if (productUsesIt) {
+          const key = optSlug.toLowerCase().trim();
+          if (!seenKeys.has(key)) {
+            seenKeys.add(key);
+            shownOptions.push({
+              id: opt.id || opt._id || `opt-${optSlug}`,
+              name: opt.name,
+              slug: optSlug,
+              value: optVal,
+              order: opt.order
+            });
+          }
+        }
+      }
+
+      // Rule 3: Completely new product-derived value with no inactive matching option → SHOW
+      // Rule 4: Product-derived value must never resurrect an option that an admin explicitly deactivated.
+      for (const p of prods) {
+        const candidateValues = getProductValuesForCategory(p, cat.slug);
+        for (const rawVal of candidateValues) {
+          const normVal = rawVal.toLowerCase().trim();
+          const cleanSlug = toCleanSlug(rawVal);
+          if (!cleanSlug) continue;
+
+          // Rule 4: Never resurrect deactivated options
+          if (isDeactivated(rawVal, cleanSlug, rawVal)) {
+            continue;
+          }
+
+          // Check if already covered by an existing shown active option
+          const alreadyCovered = shownOptions.some(opt => {
+            const optVal = opt.value || opt.slug || opt.name;
+            const optSlugKey = (opt.slug || toCleanSlug(optVal)).toLowerCase().trim();
+            if (optSlugKey === cleanSlug || optVal.toLowerCase().trim() === normVal) return true;
+            return matchesOption(p, cat.slug, optVal, opt.name) && (
+              normVal.includes(optVal.toLowerCase().trim()) ||
+              normVal.includes(opt.name.toLowerCase().trim())
+            );
+          });
+
+          if (alreadyCovered) {
+            continue;
+          }
+
+          if (!seenKeys.has(cleanSlug)) {
+            seenKeys.add(cleanSlug);
+            shownOptions.push({
+              id: `derived-${cat.slug}-${cleanSlug}`,
+              name: formatOptionLabel(rawVal),
+              slug: cleanSlug,
+              value: cleanSlug,
+              isProductDerived: true
+            });
+          }
+        }
+      }
+
+      return {
+        ...cat,
+        options: shownOptions
+      };
+    });
+  }, [baseCategories, products]);
 
   // Calculate dynamic price boundaries from available products
   const { minPrice, maxPrice } = useMemo(() => {

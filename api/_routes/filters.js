@@ -182,7 +182,17 @@ router.get('/', async (req, res, next) => {
           slug: opt.slug,
           value: opt.value || opt.slug,
           order: opt.order,
-          isActive: opt.isActive
+          isActive: true
+        }));
+
+      const inactiveOptions = (cat.options || [])
+        .filter(opt => !opt.isActive)
+        .map(opt => ({
+          id: opt._id ? opt._id.toString() : opt.id,
+          name: opt.name,
+          slug: opt.slug,
+          value: opt.value || opt.slug,
+          isActive: false
         }));
 
       return {
@@ -193,7 +203,8 @@ router.get('/', async (req, res, next) => {
         type: cat.type || 'multi',
         order: cat.order || 0,
         isActive: cat.isActive,
-        options: activeOptions
+        options: activeOptions,
+        inactiveOptions
       };
     });
 

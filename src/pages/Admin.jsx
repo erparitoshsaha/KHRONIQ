@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
+  fetchProducts,
   updateOrderStatus,
   updateItemWarranty,
   addProduct,
@@ -101,6 +102,135 @@ const DIAL_COLOR_PRESETS = [
   { name: 'Crimson Red', hex: '#6b1515' },
   { name: 'Beige Dial', hex: '#f5f5dc' }
 ];
+
+function getUniqueSuggestions(values) {
+  const seen = new Set();
+  const result = [];
+  for (const val of values) {
+    if (!val || typeof val !== 'string') continue;
+    const trimmed = val.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(trimmed);
+    }
+  }
+  return result;
+}
+
+function AdminAutocompleteInput({
+  value,
+  onChange,
+  suggestions = [],
+  placeholder = '',
+  className = '',
+  id,
+  type = 'text',
+  name
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const wrapperRef = useRef(null);
+
+  // Filter suggestions based on typed input
+  const filtered = useMemo(() => {
+    if (!suggestions || suggestions.length === 0) return [];
+    const query = String(value || '').trim().toLowerCase();
+    if (!query) return suggestions;
+    return suggestions.filter(s => String(s).toLowerCase().includes(query));
+  }, [suggestions, value]);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (item) => {
+    onChange(item);
+    setIsOpen(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (!isOpen || filtered.length === 0) {
+      if (e.key === 'ArrowDown') {
+        setIsOpen(true);
+      }
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev < filtered.length - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev > 0 ? prev - 1 : filtered.length - 1));
+    } else if (e.key === 'Enter') {
+      if (highlightedIndex >= 0 && highlightedIndex < filtered.length) {
+        e.preventDefault();
+        handleSelect(filtered[highlightedIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+    }
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative w-full">
+      <input
+        id={id}
+        name={name}
+        type={type}
+        autoComplete="off"
+        placeholder={placeholder}
+        value={value || ''}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setIsOpen(true);
+          setHighlightedIndex(-1);
+        }}
+        onFocus={() => {
+          if (suggestions.length > 0) setIsOpen(true);
+        }}
+        onKeyDown={handleKeyDown}
+        className={className}
+      />
+      {isOpen && filtered.length > 0 && (
+        <ul className="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-neutral-950 border border-white/20 rounded shadow-2xl py-1 text-xs text-white">
+          {filtered.map((item, idx) => {
+            const isSelected = String(value || '').trim().toLowerCase() === String(item).toLowerCase();
+            return (
+              <li
+                key={`${item}-${idx}`}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSelect(item);
+                }}
+                className={`px-3 py-1.5 cursor-pointer flex items-center justify-between transition-colors ${
+                  highlightedIndex === idx
+                    ? 'bg-white/20 text-white font-medium'
+                    : isSelected
+                    ? 'bg-white/10 text-white font-medium'
+                    : 'hover:bg-white/10 text-gray-200'
+                }`}
+              >
+                <span>{item}</span>
+                {isSelected && (
+                  <span className="text-[9px] uppercase tracking-wider text-gray-400">Selected</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export default function Admin({ onPageChange }) {
   const dispatch = useDispatch();
@@ -248,9 +378,39 @@ export default function Admin({ onPageChange }) {
     ];
   })();
 
+  const catalogSuggestions = useMemo(() => {
+    const list = Array.isArray(products) ? products : [];
+    const getVals = (getter) => getUniqueSuggestions(list.map(getter).filter(Boolean));
+
+    const getFilterOptions = (slug) => {
+      const cat = (adminFilters || []).find(c => c.slug === slug);
+      return (cat?.options || []).filter(o => o.isActive !== false).map(o => o.name).filter(Boolean);
+    };
+
+    return {
+      movement: getUniqueSuggestions([...getVals(p => p.specs?.movement), ...getFilterOptions('movement')]),
+      case: getVals(p => p.specs?.case),
+      caseMaterial: getUniqueSuggestions([...getVals(p => p.specs?.caseMaterial), ...getFilterOptions('case')]),
+      strap: getUniqueSuggestions([...getVals(p => p.specs?.strap), ...getFilterOptions('strap')]),
+      waterResistance: getVals(p => p.specs?.waterResistance),
+      glass: getVals(p => p.specs?.glass),
+      dialColor: getUniqueSuggestions([...getVals(p => p.specs?.dialColor), ...DIAL_COLOR_PRESETS.map(d => d.name)]),
+      watchFunction: getVals(p => p.specs?.watchFunction),
+      collection: getUniqueSuggestions([...getVals(p => p.specs?.collection), ...getVals(p => p.category), ...dynamicCollectionOptions.map(o => o.value)]),
+      warrantyDetails: getVals(p => p.specs?.warrantyDetails),
+      warrantyPeriod: getVals(p => p.specs?.warrantyPeriod),
+      origin: getVals(p => p.specs?.origin),
+      category: getUniqueSuggestions([...getVals(p => p.category), ...getVals(p => p.specs?.collection), ...dynamicCollectionOptions.map(o => o.value)]),
+      gender: getUniqueSuggestions(['men', 'women', 'unisex', ...getVals(p => p.gender), ...getFilterOptions('gender')])
+    };
+  }, [products, adminFilters, dynamicCollectionOptions]);
+
   useEffect(() => {
     dispatch(fetchAdminFilters());
-  }, [dispatch]);
+    if (!products || products.length === 0) {
+      dispatch(fetchProducts());
+    }
+  }, [dispatch, products]);
 
   useEffect(() => {
     if (activeTab === 'filters') {
@@ -5452,31 +5612,31 @@ const handleEditImageUpload = async (e) => {
 
                 <div className="space-y-1.5">
                   <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Collection / Category</label>
-                  <select
+                  <AdminAutocompleteInput
+                    placeholder="e.g. Classic"
                     value={newProduct.category}
-                    onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
-                  >
-                    {dynamicCollectionOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                    {newProduct.category && !dynamicCollectionOptions.some(o => o.value.toLowerCase() === String(newProduct.category).toLowerCase()) && (
-                      <option value={newProduct.category}>{newProduct.category}</option>
-                    )}
-                  </select>
+                    suggestions={catalogSuggestions.category || []}
+                    onChange={(val) => setNewProduct({
+                      ...newProduct,
+                      category: val,
+                      specs: {
+                        ...newProduct.specs,
+                        collection: newProduct.specs?.collection === newProduct.category || !newProduct.specs?.collection ? val : newProduct.specs.collection
+                      }
+                    })}
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none focus:border-white"
+                  />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Target Gender</label>
-                  <select
+                  <AdminAutocompleteInput
+                    placeholder="men, women, or unisex"
                     value={newProduct.gender}
-                    onChange={(e) => setNewProduct({ ...newProduct, gender: e.target.value })}
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
-                  >
-                    <option value="men">Men's watches</option>
-                    <option value="women">Women's watches</option>
-                    <option value="unisex">Unisex</option>
-                  </select>
+                    suggestions={catalogSuggestions.gender || []}
+                    onChange={(val) => setNewProduct({ ...newProduct, gender: val })}
+                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none focus:border-white"
+                  />
                 </div>
 
                 {/* Product Images (Multi-Image Support) */}
@@ -5612,21 +5772,25 @@ const handleEditImageUpload = async (e) => {
                     ].map(({ key, label, ph }) => (
                       <div key={key} className="space-y-1">
                         <label className="text-[8px] text-black font-bold uppercase tracking-widest block">{label}</label>
-                        <input
-                          type="text"
+                        <AdminAutocompleteInput
                           placeholder={ph}
                           value={newProduct.specs?.[key] || ''}
-                          onChange={(e) => setNewProduct({ ...newProduct, specs: { ...newProduct.specs, [key]: e.target.value } })}
+                          suggestions={catalogSuggestions[key] || []}
+                          onChange={(val) => setNewProduct({ ...newProduct, specs: { ...newProduct.specs, [key]: val } })}
                           className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2 focus:outline-none focus:border-white"
                         />
                       </div>
                     ))}
                     <div className="space-y-1">
                       <label className="text-[8px] text-black font-bold uppercase tracking-widest block">Warranty Period</label>
-                      <div className="w-full bg-white/5 border border-white/10 rounded text-gray-400 text-xs p-2">
-                        {formatWarrantyPeriod(newProduct.warrantyMonths)}
-                      </div>
-                      <p className="text-[8px] text-gray-500">Auto-generated from Warranty (Months) above</p>
+                      <AdminAutocompleteInput
+                        placeholder={formatWarrantyPeriod(newProduct.warrantyMonths)}
+                        value={newProduct.specs?.warrantyPeriod || ''}
+                        suggestions={catalogSuggestions.warrantyPeriod || []}
+                        onChange={(val) => setNewProduct({ ...newProduct, specs: { ...newProduct.specs, warrantyPeriod: val } })}
+                        className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2 focus:outline-none focus:border-white"
+                      />
+                      <p className="text-[8px] text-gray-500">Auto: {formatWarrantyPeriod(newProduct.warrantyMonths)} (or enter custom)</p>
                     </div>
                   </div>
                 </div>
@@ -6167,31 +6331,31 @@ const handleEditImageUpload = async (e) => {
 
                   <div className="space-y-1.5">
                     <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Collection</label>
-                    <select
+                    <AdminAutocompleteInput
+                      placeholder="e.g. Classic"
                       value={editForm.category}
-                      onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                      className="w-full bg-luxury-dark border border-white/10 rounded text-white p-2.5"
-                    >
-                      {dynamicCollectionOptions.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                      {editForm.category && !dynamicCollectionOptions.some(o => o.value.toLowerCase() === String(editForm.category).toLowerCase()) && (
-                        <option value={editForm.category}>{editForm.category}</option>
-                      )}
-                    </select>
+                      suggestions={catalogSuggestions.category || []}
+                      onChange={(val) => setEditForm({
+                        ...editForm,
+                        category: val,
+                        specs: {
+                          ...editForm.specs,
+                          collection: editForm.specs?.collection === editForm.category || !editForm.specs?.collection ? val : editForm.specs.collection
+                        }
+                      })}
+                      className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none focus:border-white"
+                    />
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Target Gender</label>
-                    <select
+                    <AdminAutocompleteInput
+                      placeholder="men, women, or unisex"
                       value={editForm.gender}
-                      onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
-                      className="w-full bg-luxury-dark border border-white/10 rounded text-white p-2.5"
-                    >
-                      <option value="men">Men's watches</option>
-                      <option value="women">Women's watches</option>
-                      <option value="unisex">Unisex</option>
-                    </select>
+                      suggestions={catalogSuggestions.gender || []}
+                      onChange={(val) => setEditForm({ ...editForm, gender: val })}
+                      className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none focus:border-white"
+                    />
                   </div>
 
                   {/* Multi-Image Gallery Container */}
@@ -6330,21 +6494,25 @@ const handleEditImageUpload = async (e) => {
                       ].map(({ key, label, ph }) => (
                         <div key={key} className="space-y-1">
                           <label className="text-[8px] text-black font-bold uppercase tracking-widest block">{label}</label>
-                          <input
-                            type="text"
+                          <AdminAutocompleteInput
                             placeholder={ph}
                             value={editForm.specs?.[key] || ''}
-                            onChange={(e) => setEditForm({ ...editForm, specs: { ...editForm.specs, [key]: e.target.value } })}
+                            suggestions={catalogSuggestions[key] || []}
+                            onChange={(val) => setEditForm({ ...editForm, specs: { ...editForm.specs, [key]: val } })}
                             className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2 focus:outline-none focus:border-white"
                           />
                         </div>
                       ))}
                       <div className="space-y-1">
                         <label className="text-[8px] text-black font-bold uppercase tracking-widest block">Warranty Period</label>
-                        <div className="w-full bg-white/5 border border-white/10 rounded text-gray-400 text-xs p-2">
-                          {formatWarrantyPeriod(editForm.warrantyMonths)}
-                        </div>
-                        <p className="text-[8px] text-gray-500">Auto-generated from Warranty (Months) above</p>
+                        <AdminAutocompleteInput
+                          placeholder={formatWarrantyPeriod(editForm.warrantyMonths)}
+                          value={editForm.specs?.warrantyPeriod || ''}
+                          suggestions={catalogSuggestions.warrantyPeriod || []}
+                          onChange={(val) => setEditForm({ ...editForm, specs: { ...editForm.specs, warrantyPeriod: val } })}
+                          className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2 focus:outline-none focus:border-white"
+                        />
+                        <p className="text-[8px] text-gray-500">Auto: {formatWarrantyPeriod(editForm.warrantyMonths)} (or enter custom)</p>
                       </div>
                     </div>
                   </div>

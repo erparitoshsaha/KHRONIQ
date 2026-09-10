@@ -27,7 +27,7 @@ const productSchema = new mongoose.Schema({
   stock: { type: Number, required: true, default: 0 },
   warrantyMonths: { type: Number, required: true, default: 12 },
   category: { type: String, required: true },
-  gender: { type: String, enum: ['men', 'women', 'unisex'], default: 'unisex' },
+  gender: { type: String, default: 'unisex', trim: true },
   description: { type: String, required: true },
   badge: { type: String, default: '' },
   discountPercent: { type: Number, default: 0 },
