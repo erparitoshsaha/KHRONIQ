@@ -4,6 +4,13 @@ import ProductCard from '../components/ProductCard';
 import BackButton from '../components/BackButton';
 import { getDiscountedPrice, selectCurrentCurrency, formatPrice, fetchFilters, fetchProducts } from '../store/slices/watchSlice';
 import { SlidersHorizontal, Search, RotateCcw, X, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  getProductCanonicalValues,
+  productMatchesFilterOption,
+  toCleanSlug,
+  normalizeFilterKey,
+  formatOptionLabel
+} from '../utils/filterCanonicalMapping';
 
 const PRICE_STEP = 1000;
 const SLIDER_STEP = 1;
@@ -64,133 +71,11 @@ const DEFAULT_FALLBACK_CATEGORIES = [
 ];
 
 function matchesOption(product, categorySlug, optionValue, optionName) {
-  const normVal = String(optionValue || '').toLowerCase().trim();
-  const normName = String(optionName || '').toLowerCase().trim();
-  const pGender = String(product.gender || '').toLowerCase().trim();
-  const pCategory = String(product.category || '').toLowerCase().trim();
-  const pSpecs = product.specs || {};
-  const pMovement = String(pSpecs.movement || '').toLowerCase().trim();
-  const pStrap = String(pSpecs.strap || pSpecs.strapMaterial || '').toLowerCase().trim();
-  const pCase = String(pSpecs.case || pSpecs.caseMaterial || '').toLowerCase().trim();
-  const pDial = String(pSpecs.dial || pSpecs.dialColor || pSpecs.dialType || '').toLowerCase().trim();
-  const pDesc = String(product.description || '').toLowerCase().trim();
-  const pCollection = String(pSpecs.collection || '').toLowerCase().trim();
-  const pName = String(product.name || '').toLowerCase().trim();
-
-  if (categorySlug === 'gender') {
-    if (normVal === 'men' || normVal === 'male') return pGender === 'men' || pGender === 'unisex';
-    if (normVal === 'women' || normVal === 'female') return pGender === 'women' || pGender === 'unisex';
-    if (normVal === 'unisex') return pGender === 'unisex';
-    return pGender.includes(normVal);
-  }
-
-  if (categorySlug === 'collection') {
-    if (normVal === 'classic' || normVal === 'khronomaster') {
-      return pCategory === 'classic' || pCategory === 'khronomaster' || pCollection === 'classic' || pCollection === 'khronomaster';
-    }
-    if (normVal === 'deevaaz') {
-      return pCategory === 'deevaaz' || pCollection === 'deevaaz' || pName.includes('deevaaz');
-    }
-    return pCategory.includes(normVal) || pCollection.includes(normVal) || pDesc.includes(normVal) || pName.includes(normVal);
-  }
-
-  if (categorySlug === 'movement') {
-    if (normVal === 'automatic') return pMovement.includes('automatic');
-    if (normVal === 'quartz') return pMovement.includes('quartz') || String(pSpecs.glass || '').toLowerCase().includes('quartz');
-    if (normVal === 'digital') return pMovement.includes('digital') || pDesc.includes('digital');
-    if (normVal === 'mechanical') return pMovement.includes('mechanical') || pDesc.includes('mechanical');
-    return pMovement.includes(normVal) || pMovement.includes(normName) || pDesc.includes(normVal) || pDesc.includes(normName);
-  }
-
-  if (categorySlug === 'strap') {
-    if (normVal === 'leather-strap' || normVal === 'leather') {
-      return pStrap.includes('leather') || pDesc.includes('leather');
-    }
-    if (normVal === 'chain-strap' || normVal === 'chain') {
-      return pStrap.includes('chain') || pStrap.includes('link') || pDesc.includes('chain');
-    }
-    if (normVal === 'stainless-steel' || normVal === 'steel') {
-      return pStrap.includes('steel') || pStrap.includes('stainless');
-    }
-    if (normVal === 'brass-alloy' || normVal === 'brass' || normVal === 'alloy') {
-      return pStrap.includes('brass') || pStrap.includes('alloy');
-    }
-    return pStrap.includes(normVal) || pStrap.includes(normName) || pDesc.includes(normVal) || pDesc.includes(normName);
-  }
-
-  if (categorySlug === 'dial') {
-    if (normVal === 'analog') {
-      return pDial.includes('analog') || pMovement.includes('automatic') || pMovement.includes('chronometer') || (!pMovement.includes('digital') && !pDesc.includes('digital'));
-    }
-    if (normVal === 'digital-analog' || normVal === 'digital analog') {
-      return pDial.includes('digital-analog') || pDial.includes('digital analog') || (pDesc.includes('digital') && pDesc.includes('analog'));
-    }
-    if (normVal === 'digital') {
-      return pDial.includes('digital') || pMovement.includes('digital') || pDesc.includes('digital');
-    }
-    return pDial.includes(normVal) || pDesc.includes(normVal);
-  }
-
-  if (categorySlug === 'case') {
-    if (normVal === 'stainless-steel' || normVal === 'steel') {
-      return pCase.includes('steel') || pCase.includes('stainless');
-    }
-    if (normVal === 'brass-alloy' || normVal === 'brass' || normVal === 'alloy') {
-      return pCase.includes('brass') || pCase.includes('alloy');
-    }
-    return pCase.includes(normVal) || pDesc.includes(normVal);
-  }
-
-  // Generic fallback for any custom admin category: match in product specs, description, category, or name
-  const specMatch = Object.values(pSpecs).some(v => String(v || '').toLowerCase().includes(normVal) || String(v || '').toLowerCase().includes(normName));
-  return specMatch || pDesc.includes(normVal) || pDesc.includes(normName) || pCategory.includes(normVal) || pName.includes(normVal);
-}
-
-function toCleanSlug(str) {
-  if (!str) return '';
-  return String(str)
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-}
-
-function formatOptionLabel(str) {
-  if (!str) return '';
-  const trimmed = str.trim();
-  if (trimmed === trimmed.toLowerCase()) {
-    return trimmed.replace(/\b\w/g, c => c.toUpperCase());
-  }
-  return trimmed;
+  return productMatchesFilterOption(product, categorySlug, optionValue, optionName);
 }
 
 function getProductValuesForCategory(product, catSlug) {
-  if (!product) return [];
-  const specs = product.specs || {};
-  const vals = [];
-
-  if (catSlug === 'movement') {
-    if (specs.movement) vals.push(specs.movement);
-  } else if (catSlug === 'case') {
-    if (specs.caseMaterial) vals.push(specs.caseMaterial);
-    if (specs.case && !specs.caseMaterial) vals.push(specs.case);
-  } else if (catSlug === 'strap') {
-    if (specs.strap) vals.push(specs.strap);
-    if (specs.strapMaterial) vals.push(specs.strapMaterial);
-  } else if (catSlug === 'collection') {
-    if (specs.collection) vals.push(specs.collection);
-    if (product.category) vals.push(product.category);
-  } else if (catSlug === 'gender') {
-    if (product.gender) vals.push(product.gender);
-  } else if (catSlug === 'dial') {
-    if (specs.dial) vals.push(specs.dial);
-    if (specs.dialType) vals.push(specs.dialType);
-  } else {
-    if (specs[catSlug]) vals.push(specs[catSlug]);
-    if (product[catSlug] && typeof product[catSlug] === 'string') vals.push(product[catSlug]);
-  }
-
-  return vals.map(v => String(v).trim()).filter(Boolean);
+  return getProductCanonicalValues(product, catSlug);
 }
 
 export default function Shop({ onPageChange, filterParams }) {
@@ -221,15 +106,15 @@ export default function Shop({ onPageChange, filterParams }) {
         ...(cat.options || []).filter(o => o.isActive === false)
       ];
       inactiveOptions.forEach(opt => {
-        if (opt.name) inactiveSet.add(String(opt.name).toLowerCase().trim());
-        if (opt.slug) inactiveSet.add(String(opt.slug).toLowerCase().trim());
-        if (opt.value) inactiveSet.add(String(opt.value).toLowerCase().trim());
+        if (opt.name) inactiveSet.add(normalizeFilterKey(opt.name));
+        if (opt.slug) inactiveSet.add(normalizeFilterKey(opt.slug));
+        if (opt.value) inactiveSet.add(normalizeFilterKey(opt.value));
       });
 
       const isDeactivated = (val, slug, name) => {
-        const nVal = String(val || '').toLowerCase().trim();
-        const nSlug = String(slug || '').toLowerCase().trim();
-        const nName = String(name || '').toLowerCase().trim();
+        const nVal = normalizeFilterKey(val);
+        const nSlug = normalizeFilterKey(slug);
+        const nName = normalizeFilterKey(name);
         if (nVal && inactiveSet.has(nVal)) return true;
         if (nSlug && inactiveSet.has(nSlug)) return true;
         if (nName && inactiveSet.has(nName)) return true;

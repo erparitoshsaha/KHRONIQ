@@ -390,17 +390,17 @@ export default function Admin({ onPageChange }) {
     return {
       movement: getUniqueSuggestions([...getVals(p => p.specs?.movement), ...getFilterOptions('movement')]),
       case: getVals(p => p.specs?.case),
-      caseMaterial: getUniqueSuggestions([...getVals(p => p.specs?.caseMaterial), ...getFilterOptions('case')]),
+      caseMaterial: getUniqueSuggestions([...getVals(p => p.specs?.caseMaterial), ...getFilterOptions('case'), ...getFilterOptions('case-material')]),
       strap: getUniqueSuggestions([...getVals(p => p.specs?.strap), ...getFilterOptions('strap')]),
       waterResistance: getVals(p => p.specs?.waterResistance),
       glass: getVals(p => p.specs?.glass),
       dialColor: getUniqueSuggestions([...getVals(p => p.specs?.dialColor), ...DIAL_COLOR_PRESETS.map(d => d.name)]),
       watchFunction: getVals(p => p.specs?.watchFunction),
-      collection: getUniqueSuggestions([...getVals(p => p.specs?.collection), ...getVals(p => p.category), ...dynamicCollectionOptions.map(o => o.value)]),
+      collection: getUniqueSuggestions([...getVals(p => (p.specs?.collection && String(p.specs.collection).trim()) || (p.category && String(p.category).trim())), ...dynamicCollectionOptions.map(o => o.value)]),
       warrantyDetails: getVals(p => p.specs?.warrantyDetails),
       warrantyPeriod: getVals(p => p.specs?.warrantyPeriod),
       origin: getVals(p => p.specs?.origin),
-      category: getUniqueSuggestions([...getVals(p => p.category), ...getVals(p => p.specs?.collection), ...dynamicCollectionOptions.map(o => o.value)]),
+      category: getUniqueSuggestions([...getVals(p => (p.specs?.collection && String(p.specs.collection).trim()) || (p.category && String(p.category).trim())), ...dynamicCollectionOptions.map(o => o.value)]),
       gender: getUniqueSuggestions(['men', 'women', 'unisex', ...getVals(p => p.gender), ...getFilterOptions('gender')])
     };
   }, [products, adminFilters, dynamicCollectionOptions]);
