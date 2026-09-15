@@ -84,7 +84,8 @@ export default function Checkout({ params, onPageChange }) {
 
   const subtotal = cartItemsWithDetails.reduce((sum, item) => sum + (item.itemPrice * item.quantity), 0);
   const discount = appliedCoupon ? Math.round(subtotal * (appliedCoupon.discountPercent / 100)) : 0;
-  const total = subtotal - discount;
+  const gst = Math.round(subtotal * 0.18);
+  const total = Math.max(0, subtotal - discount + gst);
 
   const handleShippingSubmit = (e) => {
     e.preventDefault();
@@ -331,6 +332,11 @@ export default function Checkout({ params, onPageChange }) {
       y += 6;
     }
 
+    const orderGst = Math.round(Number(orderReceipt.subtotal) * 0.18);
+    doc.text('GST (18%)', totalsX, y);
+    doc.text(`Rs. ${orderGst.toLocaleString('en-IN')}`, pageWidth - marginX, y, { align: 'right' });
+    y += 6;
+
     doc.setDrawColor(0, 0, 0);
     doc.line(totalsX, y, pageWidth - marginX, y);
     y += 6;
@@ -561,7 +567,7 @@ export default function Checkout({ params, onPageChange }) {
 
           {/* Right Summary */}
           <div className="lg:col-span-5 space-y-6">
-            <CheckoutSummary cartItems={cartItemsWithDetails} subtotal={subtotal} discount={discount} total={total} zipCode={shippingForm.zipCode} />
+            <CheckoutSummary cartItems={cartItemsWithDetails} subtotal={subtotal} discount={discount} gst={gst} total={total} zipCode={shippingForm.zipCode} />
           </div>
         </div>
       )}
@@ -749,7 +755,7 @@ export default function Checkout({ params, onPageChange }) {
 
           {/* Right Summary */}
           <div className="lg:col-span-5 space-y-6">
-            <CheckoutSummary cartItems={cartItemsWithDetails} subtotal={subtotal} discount={discount} total={total} zipCode={shippingForm.zipCode} />
+            <CheckoutSummary cartItems={cartItemsWithDetails} subtotal={subtotal} discount={discount} gst={gst} total={total} zipCode={shippingForm.zipCode} />
           </div>
         </div>
       )}
@@ -795,7 +801,7 @@ export default function Checkout({ params, onPageChange }) {
 
           {/* Right Summary */}
           <div className="lg:col-span-5 space-y-6">
-            <CheckoutSummary cartItems={cartItemsWithDetails} subtotal={subtotal} discount={discount} total={total} zipCode={shippingForm.zipCode} />
+            <CheckoutSummary cartItems={cartItemsWithDetails} subtotal={subtotal} discount={discount} gst={gst} total={total} zipCode={shippingForm.zipCode} />
           </div>
         </div>
       )}
@@ -874,7 +880,7 @@ export default function Checkout({ params, onPageChange }) {
   );
 
   // Sub-component for Order Summary
-  function CheckoutSummary({ cartItems, subtotal, discount, total, zipCode }) {
+  function CheckoutSummary({ cartItems, subtotal, discount, gst, total, zipCode }) {
     const currentCurrency = useSelector(selectCurrentCurrency);
     const deliveryDate = getExpectedDeliveryDate(zipCode);
     return (
@@ -914,6 +920,10 @@ export default function Checkout({ params, onPageChange }) {
             <span>Subtotal</span>
             <span>{formatPrice(subtotal, currentCurrency)}</span>
           </div>
+          <div className="flex justify-between text-gray-300">
+            <span>GST (18%)</span>
+            <span>{formatPrice(gst, currentCurrency)}</span>
+          </div>
           {discount > 0 && (
             <div className="flex justify-between text-emerald-400">
               <span>Coupon Discount</span>
@@ -926,7 +936,7 @@ export default function Checkout({ params, onPageChange }) {
           </div>
           <div className="flex justify-between items-center text-sm font-bold text-white border-t border-white/5 pt-3">
             <span className="uppercase tracking-widest text-[10px]">Grand Total</span>
-            <span className="text-base text-luxury-gold font-extrabold">{formatPrice(total, currentCurrency)}</span>
+            <span className="text-base text-luxury-text font-extrabold">{formatPrice(total, currentCurrency)}</span>
           </div>
         </div>
       </div>

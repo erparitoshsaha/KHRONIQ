@@ -385,7 +385,7 @@ export default function ProductDetail({ params, onPageChange }) {
         <div className="lg:col-span-6 space-y-6">
           <div className="space-y-2">
             <span className="text-luxury-gold-dark text-xs font-bold tracking-widest uppercase">{(product.category === 'Khronomaster' ? 'Classic' : product.category)} COLLECTION</span>
-            <h1 className="text-3xl sm:text-4xl font-serif font-bold text-luxury-text uppercase tracking-wider">{product.name}</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-luxury-text uppercase tracking-wider" style={{ fontFamily: 'Arial, sans-serif' }}>{product.name}</h1>
             
             {/* Review Badge */}
             <div className="flex items-center space-x-2">

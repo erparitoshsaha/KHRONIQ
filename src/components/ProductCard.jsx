@@ -140,6 +140,7 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
             <h3
               className="text-luxury-text text-[13px] font-semibold tracking-wide line-clamp-1 transition-all duration-300"
               style={{
+                fontFamily: 'Arial, sans-serif',
                 color: isHovered ? '#000000' : 'inherit',
                 transform: isHovered ? 'translateX(2px)' : 'translateX(0)',
               }}

@@ -71,11 +71,13 @@ async function calculateAuthoritativeCart(items, couponCode) {
     }
   }
 
-  const total = Math.max(0, subtotal - discount);
+  const gst = Math.round(subtotal * 0.18);
+  const total = Math.max(0, subtotal - discount + gst);
 
   return {
     subtotal,
     discount,
+    gst,
     total,
     validatedItems,
     appliedCoupon: appliedCouponDoc
@@ -92,7 +94,7 @@ router.post('/create-order', protect, paymentLimiter, async (req, res, next) => 
     const razorpay = getRazorpayInstance();
 
     // 1. Authoritative price calculation directly from DB
-    const { subtotal, discount, total, validatedItems } = await calculateAuthoritativeCart(items, couponCode);
+    const { subtotal, discount, gst, total, validatedItems } = await calculateAuthoritativeCart(items, couponCode);
 
     if (total <= 0) {
       return res.status(400).json({ success: false, message: 'Total order amount must be greater than zero.' });
@@ -120,6 +122,7 @@ router.post('/create-order', protect, paymentLimiter, async (req, res, next) => 
       summary: {
         subtotal,
         discount,
+        gst,
         total
       }
     });
@@ -316,6 +319,7 @@ router.post('/verify', protect, paymentLimiter, async (req, res, next) => {
               <tbody>${itemsHtml}</tbody>
             </table>
             <p>Subtotal: ₹${subtotal.toLocaleString('en-IN')}</p>
+            <p>GST (18%): ₹${gst.toLocaleString('en-IN')}</p>
             ${discount > 0 ? `<p style="color: #1f4d3a;">Discount: -₹${discount.toLocaleString('en-IN')}</p>` : ''}
             <p style="font-size: 16px; font-weight: bold;">Total Paid: ₹${total.toLocaleString('en-IN')}</p>
             <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />

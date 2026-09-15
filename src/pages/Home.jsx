@@ -1309,21 +1309,6 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                   'Engineered with Indian precision, the Classic Professional pushes boundaries with components from the True Knock Group and the legendary Khroniq caliber. Built to inspire confidence for every Indian connoisseur.'}
               </p>
             </Reveal>
-            <Reveal dir="left" delay={0.3}>
-              <motion.button
-                onClick={() =>
-                  onPageChange(
-                    storySection?.buttonLink ? storySection.buttonLink.replace(/^\//, '') : 'shop',
-                    { gender: 'men' }
-                  )
-                }
-                className="flex items-center gap-2 text-xs font-black tracking-[0.22em] uppercase text-luxury-text border-b border-luxury-text pb-1 w-fit cursor-pointer"
-                whileHover={{ gap: 16, color: '#000000', borderColor: '#000000' }}
-                transition={{ duration: 0.25 }}
-              >
-                {storySection?.buttonText || 'Discover'} <ArrowRight size={12} />
-              </motion.button>
-            </Reveal>
           </div>
 
          {/* Right — 5-image auto sliding hero */}
@@ -1497,7 +1482,6 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                   <circle cx="-50" cy="350" r="400" stroke="#000000" strokeWidth="1" fill="none" opacity="0.09" />
                   <circle cx="1250" cy="300" r="400" stroke="#000000" strokeWidth="1" fill="none" opacity="0.05" />
                   <path d="M -50 60 L 180 60 L 300 180 L 300 640 L 90 850" stroke="#047857" strokeWidth="1.5" fill="none" opacity="0.7" />
-                  <path d="M 800 -50 L 800 420 L 950 570 L 1250 570" stroke="#047857" strokeWidth="1.5" fill="none" opacity="0.7" />
                 </svg>
               </div>
 
