@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { logoutUser, setCurrencyAction, selectCurrentCurrency } from '../store/slices/watchSlice';
 import {
@@ -23,8 +23,13 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [visible, setVisible] = useState(true);
-  const [scrolled, setScrolled] = useState(false);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const [scrolled, setScrolled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.scrollY > 80;
+    }
+    return false;
+  });
+  const lastScrollYRef = useRef(typeof window !== 'undefined' ? window.scrollY : 0);
   const currentCurrency = useSelector(selectCurrentCurrency);
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState('recipient');
@@ -36,11 +41,19 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
     EUR: { symbol: '€', label: 'British Currency (Euro)' }
   };
 
+  // Synchronize navbar visibility and scrolled state on mount and route change
+  useEffect(() => {
+    const currentScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+    lastScrollYRef.current = currentScrollY;
+    setVisible(true);
+    setScrolled(currentScrollY > 80);
+  }, [currentPage]);
+
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
 
-      // Track scrolling for background transparency on homepage
+      // Track scrolling for background transparency on homepage (threshold 80px)
       if (currentScrollY > 80) {
         setScrolled(true);
       } else {
@@ -50,17 +63,17 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
       // Hide header on scroll down, show on scroll up
       if (currentScrollY < 10) {
         setVisible(true);
-      } else if (currentScrollY > lastScrollY) {
+      } else if (currentScrollY > lastScrollYRef.current) {
         setVisible(false); // Scrolling down
       } else {
         setVisible(true); // Scrolling up
       }
-      setLastScrollY(currentScrollY);
+      lastScrollYRef.current = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, []);
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   const handleSearchSubmit = (e) => {
@@ -100,15 +113,12 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
   };
 
   const isHome = currentPage === 'home';
-  const headerClass = `${
-    isHome ? 'fixed' : 'sticky'
-  } top-0 left-0 right-0 z-50 transition-all duration-300 transform ${
-    visible ? 'translate-y-0' : 'translate-y-0 md:-translate-y-full'
-  } ${
-    isHome
+  const headerClass = `${isHome ? 'fixed' : 'sticky'
+    } top-0 left-0 right-0 z-50 transition-[transform,background-color,box-shadow] duration-300 isolate transform ${visible ? 'translate-y-0' : 'translate-y-0 md:-translate-y-full'
+    } ${isHome
       ? (scrolled ? 'bg-black/95 backdrop-blur-md shadow-md' : 'bg-transparent')
       : 'bg-[#111111] shadow-md'
-  }`;
+    }`;
 
   const textColorClass = "text-white/80 hover:text-white";
 
@@ -121,7 +131,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
           <div className="flex items-center md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={isHome ? "text-white hover:text-luxury-gold focus:outline-none" : "text-luxury-muted hover:text-luxury-text focus:outline-none"}
+              className="text-white hover:text-luxury-gold focus:outline-none"
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -135,9 +145,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                   <div key={idx} className="relative group py-2">
                     <button
                       onClick={() => handleNavLinkClick(link)}
-                      className={`whitespace-nowrap transition duration-200 cursor-pointer uppercase font-black tracking-wider ${textColorClass} ${
-                        currentPage === link.page ? 'text-luxury-gold' : ''
-                      }`}
+                      className={`whitespace-nowrap transition duration-200 cursor-pointer uppercase font-black tracking-wider ${textColorClass} ${currentPage === link.page ? 'text-luxury-gold' : ''
+                        }`}
                     >
                       {link.label}
                     </button>
@@ -170,9 +179,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                   <div key={idx} className="relative group h-20 flex items-center" onMouseEnter={() => setMegaMenuForceClosed(false)}>
                     <button
                       onClick={() => handleNavLinkClick(link)}
-                      className={`whitespace-nowrap transition duration-200 cursor-pointer uppercase font-black tracking-wider ${textColorClass} ${
-                        currentPage === link.page ? 'text-luxury-gold' : ''
-                      }`}
+                      className={`whitespace-nowrap transition duration-200 cursor-pointer uppercase font-black tracking-wider ${textColorClass} ${currentPage === link.page ? 'text-luxury-gold' : ''
+                        }`}
                     >
                       {link.label}
                     </button>
@@ -185,9 +193,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                           <button
                             type="button"
                             onMouseEnter={() => setActiveSubMenu('price')}
-                            className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${
-                              activeSubMenu === 'price' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
-                            }`}
+                            className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'price' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
+                              }`}
                           >
                             <span>Shop By Price</span>
                             <span className="text-[10px]">&rarr;</span>
@@ -195,9 +202,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                           <button
                             type="button"
                             onMouseEnter={() => setActiveSubMenu('recipient')}
-                            className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${
-                              activeSubMenu === 'recipient' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
-                            }`}
+                            className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'recipient' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
+                              }`}
                           >
                             <span>Watches For Recipient</span>
                             <span className="text-[10px]">&rarr;</span>
@@ -286,7 +292,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                           <div className="relative z-10 space-y-1">
                             <span className="text-[9px] font-bold tracking-[0.3em] uppercase text-luxury-gold">Curated Gifting</span>
-                            <h4 className="font-serif text-2xl font-black tracking-wider leading-tight text-white mt-1">LOOKING<br/>for<br/>A GIFT?</h4>
+                            <h4 className="font-serif text-2xl font-black tracking-wider leading-tight text-white mt-1">LOOKING<br />for<br />A GIFT?</h4>
                           </div>
                           <button
                             onClick={() => {
@@ -308,9 +314,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                 <button
                   key={idx}
                   onClick={() => handleNavLinkClick(link)}
-                  className={`whitespace-nowrap transition duration-200 cursor-pointer ${textColorClass} ${
-                    currentPage === link.page ? 'text-luxury-gold' : ''
-                  }`}
+                  className={`whitespace-nowrap transition duration-200 cursor-pointer ${textColorClass} ${currentPage === link.page ? 'text-luxury-gold' : ''
+                    }`}
                 >
                   {link.label}
                 </button>
@@ -360,7 +365,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                   <button
                     type="button"
                     onClick={() => setSearchOpen(false)}
-                    className="ml-2 text-luxury-muted hover:text-luxury-text"
+                    className="ml-2 text-white/60 hover:text-white"
                   >
                     <X size={16} />
                   </button>
@@ -455,9 +460,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                         dispatch(setCurrencyAction(code));
                         setCurrencyOpen(false);
                       }}
-                      className={`w-full text-left px-4 py-2.5 hover:bg-white/15 transition cursor-pointer flex justify-between items-center ${
-                        currentCurrency === code ? 'text-luxury-gold' : ''
-                      }`}
+                      className={`w-full text-left px-4 py-2.5 hover:bg-white/15 transition cursor-pointer flex justify-between items-center ${currentCurrency === code ? 'text-luxury-gold' : ''
+                        }`}
                     >
                       <span>{details.label}</span>
                       {currentCurrency === code && <span className="text-luxury-gold">✓</span>}
@@ -590,11 +594,10 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                       dispatch(setCurrencyAction(code));
                       setMobileMenuOpen(false);
                     }}
-                    className={`px-3 py-1 rounded border text-xs font-semibold ${
-                      currentCurrency === code
+                    className={`px-3 py-1 rounded border text-xs font-semibold ${currentCurrency === code
                         ? 'border-black bg-black/5 text-black'
                         : 'border-luxury-text/10 text-luxury-text'
-                    }`}
+                      }`}
                   >
                     {details.symbol} {code}
                   </button>
