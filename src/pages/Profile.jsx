@@ -149,6 +149,7 @@ export default function Profile({ params, onPageChange }) {
   const [postalCode, setPostalCode] = useState(currentUser?.shippingAddress?.postalCode || '');
   const [country, setCountry] = useState(currentUser?.shippingAddress?.country || '');
   const [phone, setPhone] = useState(currentUser?.shippingAddress?.phone || '');
+  const [settingsMessage, setSettingsMessage] = useState('');
   useEffect(() => {
     document.title = 'Client Profile | KHRONIQ';
   }, []);

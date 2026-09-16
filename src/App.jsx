@@ -41,6 +41,12 @@ class ErrorBoundary extends React.Component {
     console.error('App ErrorBoundary caught runtime exception:', error, errorInfo);
   }
 
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+
   render() {
     if (this.state.hasError) {
       return (
@@ -68,7 +74,8 @@ class ErrorBoundary extends React.Component {
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white text-xs font-bold uppercase tracking-wider rounded cursor-pointer transition"
+              className="px-5 py-2.5 border border-neutral-300 hover:border-neutral-900 bg-white hover:bg-neutral-50 text-neutral-900 text-xs font-bold uppercase tracking-wider rounded cursor-pointer transition shadow-xs"
+              style={{ borderColor: '#d4d4d4', color: '#111111', backgroundColor: '#ffffff' }}
             >
               Reload Page
             </button>
@@ -242,7 +249,7 @@ function AppContent() {
       onUpdatesOpen={() => setUpdatesOpen(true)}
       onUpdatesClose={() => setUpdatesOpen(false)}
     >
-      <ErrorBoundary onReset={() => handlePageChange('home')}>
+      <ErrorBoundary resetKey={currentPage} onReset={() => handlePageChange('home')}>
         <Suspense fallback={<PageLoader />}>
           {renderPage()}
         </Suspense>
