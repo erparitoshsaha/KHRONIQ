@@ -1024,9 +1024,9 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   const defaultUpdates = [
     {
       _id: 'up-1',
-      title: 'WEB HOSTING SOON',
-      detail: 'khroniq is launching its timepieces :wait is over',
-      createdAt: '2026-07-17',
+      title: 'GENESIS COLLECTION LAUNCH',
+      detail: 'Unveiling Khroniq inaugural luxury timepieces. Crafted for those who master time.',
+      createdAt: '2026-09-25',
     },
     {
       _id: 'up-2',
