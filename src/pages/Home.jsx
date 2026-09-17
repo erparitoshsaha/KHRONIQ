@@ -1012,7 +1012,11 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     },
   ];
 
-  const displayedUpdates = (brandUpdates && brandUpdates.length > 0) ? brandUpdates : defaultUpdates;
+  const displayedUpdates = (brandUpdates && brandUpdates.length >= 3)
+    ? brandUpdates
+    : (brandUpdates && brandUpdates.length > 0)
+      ? [...brandUpdates, ...defaultUpdates.slice(brandUpdates.length)]
+      : defaultUpdates;
   const [currentUpdateIndex, setCurrentUpdateIndex] = useState(0);
 
   useEffect(() => {
