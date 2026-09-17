@@ -1,0 +1,390 @@
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Cinzel:wght@400..900&family=Italiana&family=Syne:wght@400..800&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-gold-50: #fcf9f2;
+  --color-gold-100: #f7eedb;
+  --color-gold-200: #eddcb9;
+  --color-gold-300: #dec18d;
+  --color-gold-400: #cfa15f;
+  --color-gold-500: #c2883e;
+  --color-gold-600: #a76d30;
+  --color-gold-700: #8b5527;
+  --color-gold-800: #714221;
+  --color-gold-900: #5d351d;
+  --color-gold-950: #361b0f;
+
+  --color-luxury-gold: #ffffff;
+  --color-luxury-gold-dark: #0d0d0d;
+  --color-luxury-red: #e10600; /* Signature Tissot Red */
+  --color-luxury-dark: #ffffff; /* White cards */
+  --color-luxury-bg: #ffffff; /* Full white */
+  --color-luxury-gray: #ffffff; /* Full white */
+  --color-luxury-text: #0d0c0b; /* Much darker primary text */
+  --color-luxury-muted: #4a443e; /* Much darker muted text */
+  
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-bodoni: 'Bodoni Moda', serif;
+  --font-cinzel: 'Cinzel', serif;
+  --font-italiana: 'Italiana', serif;
+  --font-syne: 'Syne', sans-serif;
+}
+
+:root {
+  font-family: var(--font-sans);
+  color-scheme: light;
+}
+
+body {
+  background-color: #ffffff;
+  color: var(--color-luxury-text);
+  margin: 0;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbar */
+html {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #888888 transparent; /* Firefox */
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-luxury-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-luxury-gold-dark);
+}
+
+/* Dedicated Clearly Visible Filters Sidebar Scrollbar */
+.filters-sidebar-scroll {
+  scrollbar-width: thin !important;
+  scrollbar-color: #666666 rgba(0, 0, 0, 0.06) !important;
+}
+
+.filters-sidebar-scroll::-webkit-scrollbar {
+  width: 6px !important;
+  display: block !important;
+}
+
+.filters-sidebar-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05) !important;
+  border-radius: 4px;
+}
+
+.filters-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #666666 !important;
+  border-radius: 4px;
+}
+
+.filters-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #222222 !important;
+}
+
+/* Luxury Glassmorphism Utilities */
+.glass {
+  background: rgba(253, 251, 247, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(32, 30, 27, 0.08);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(32, 30, 27, 0.05);
+}
+
+/* ═══════════════════════════════════════════
+   GLOBAL KEYFRAME ANIMATIONS
+═══════════════════════════════════════════ */
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-18px); }
+}
+
+@keyframes float-xy {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  33%  { transform: translate(10px, -14px) rotate(2deg); }
+  66%  { transform: translate(-8px, -8px) rotate(-1.5deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0px 0px rgba(255,255,255,0); }
+  50%       { box-shadow: 0 0 22px 6px rgba(255,255,255,0.2); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slide-right {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Animation utility classes */
+.animate-float        { animation: float-y 5s ease-in-out infinite; }
+.animate-float-xy     { animation: float-xy 7s ease-in-out infinite; }
+.animate-shimmer      { animation: shimmer 2.5s linear infinite; background-size: 200% auto; }
+.animate-pulse-glow   { animation: pulse-glow 2.5s ease-in-out infinite; }
+.animate-spin-slow    { animation: spin-slow 8s linear infinite; }
+.animate-gradient-x   { animation: gradient-x 4s ease infinite; background-size: 200% 200%; }
+.animate-fade-in-up   { animation: fade-in-up 0.75s ease-out forwards; }
+.animate-scale-in     { animation: scale-in 0.6s cubic-bezier(0.22,1,0.36,1) forwards; }
+.animate-slide-right  { animation: slide-right 0.7s cubic-bezier(0.22,1,0.36,1) forwards; }
+.animate-marquee      { animation: marquee 22s linear infinite; }
+
+/* Smooth underline grow on hover */
+.underline-grow {
+  position: relative;
+  display: inline-block;
+}
+.underline-grow::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background: currentColor;
+  transition: width 0.3s ease;
+}
+.underline-grow:hover::after { width: 100%; }
+
+/* Will-change helper for GPU-accelerated layers */
+.hw-accelerate {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* Custom Animations */
+.hover-gold-glow:hover {
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.star-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.star-shine::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 45%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 55%
+  );
+  transform: rotate(45deg);
+  transition: transform 0.5s ease;
+}
+
+.star-shine:hover::after {
+  transform: translate(50%, 50%) rotate(45deg);
+}
+
+/* ==========================================================================
+   LIGHT LUXURY THEME COMPATIBILITY OVERRIDES
+   ========================================================================== */
+
+/* Overrides for text-white and text-gray classes to adapt them to light layouts */
+.text-white:not(button, button *, .bg-neutral-900, .bg-neutral-900 *, .bg-neutral-950, .bg-neutral-950 *, .bg-black, .bg-black *, .product-card-badge, .product-card-badge *, .bg-neutral-800, .bg-neutral-800 *, .bg-neutral-700, .bg-neutral-700 *, .bg-luxury-red *, .bg-luxury-red, .bg-red-500, .bg-red-500 *, .bg-red-600, .bg-red-600 *, .bg-red-700 *, .bg-red-700, .bg-red-800 *, .bg-red-800, .bg-\[\#1c1a17\] *, footer *, .bg-gradient-to-r *, .text-emerald-400 *, .font-mono *, .dark-panel *, header *) {
+  color: var(--color-luxury-text) !important;
+}
+
+/* Product card badges content contrast — ensure dark badges have crisp white text */
+.product-card-badge,
+.product-card-badge *,
+.bg-neutral-900.text-white,
+.bg-neutral-900 .text-white,
+.bg-neutral-950.text-white,
+.bg-neutral-950 .text-white,
+.bg-black.text-white,
+.bg-black .text-white {
+  color: #ffffff !important;
+}
+
+.text-gray-300:not(footer *, .bg-\[\#1c1a17\] *, button *, .bg-luxury-red *, .bg-red-700 *, .bg-red-800 *, .bg-black\/30 *, .bg-black\/35 *, .bg-gradient-to-r *, .dark-panel *) {
+  color: var(--color-luxury-muted) !important;
+}
+
+.text-gray-400:not(footer *, .bg-\[\#1c1a17\] *, button *, .bg-luxury-red *, .bg-red-700 *, .bg-red-800 *, .bg-black\/30 *, .bg-black\/35 *, .absolute.top-3.left-3 *, .bg-gradient-to-r *, .dark-panel *) {
+  color: var(--color-luxury-muted) !important;
+}
+
+.text-gray-500:not(footer *, .bg-\[\#1c1a17\] *, button *, .bg-luxury-red *, .bg-red-700 *, .bg-red-800 *, .dark-panel *) {
+  color: rgba(32, 30, 27, 0.6) !important;
+}
+
+/* Light background inputs, drop-downs and textareas */
+input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+  background-color: #ffffff !important;
+  color: var(--color-luxury-text) !important;
+  border: 1px solid rgba(32, 30, 27, 0.15) !important;
+}
+
+/* Dark-panel override — keep inputs/textareas transparent on dark backgrounds */
+.dark-panel input:not([type="checkbox"]):not([type="radio"]),
+.dark-panel select,
+.dark-panel textarea {
+  background-color: transparent !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--color-luxury-gold-dark) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Adapting card, list and sidebar backgrounds to the warm light sand style */
+.bg-luxury-gray:not(footer *, .bg-\[\#1c1a17\] *) {
+  background-color: #ffffff !important;
+  border-color: rgba(32, 30, 27, 0.08) !important;
+}
+
+.bg-luxury-gray\/30:not(footer *, .bg-\[\#1c1a17\] *) {
+  background-color: rgba(234, 226, 213, 0.3) !important;
+}
+
+.bg-luxury-dark:not(footer *, .bg-\[\#1c1a17\] *, .glass *, button *) {
+  background-color: #ffffff !important;
+  border-color: rgba(32, 30, 27, 0.08) !important;
+}
+
+.bg-luxury-dark\/50:not(footer *, .bg-\[\#1c1a17\] *) {
+  background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Checkbox and toggle indicators */
+.bg-luxury-gray.text-gray-500 {
+  background-color: rgba(32, 30, 27, 0.06) !important;
+  color: rgba(32, 30, 27, 0.4) !important;
+}
+
+/* Border overrides */
+.border-white\/5 {
+  border-color: rgba(32, 30, 27, 0.08) !important;
+}
+
+.border-white\/10 {
+  border-color: rgba(32, 30, 27, 0.12) !important;
+}
+
+/* White bg buttons with dark text override to rich charcoal buttons */
+.bg-white.text-luxury-dark {
+  background-color: var(--color-luxury-text) !important;
+  color: #ffffff !important;
+  border-color: var(--color-luxury-text) !important;
+}
+
+.bg-white.text-luxury-dark:hover {
+  background-color: var(--color-luxury-gold-dark) !important;
+  border-color: var(--color-luxury-gold-dark) !important;
+}
+
+/* Overrides for product cards inside dark sections like Featured Masterpieces */
+.dark-panel {
+  --color-luxury-text: #ffffff !important;
+  --color-luxury-muted: #b5b0aa !important;
+}
+
+.dark-panel .text-luxury-text {
+  color: #ffffff !important;
+}
+
+.dark-panel .text-luxury-muted {
+  color: #b5b0aa !important;
+}
+
+.dark-panel .bg-\[\#f6f6f6\] {
+  background-color: #111111 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Prevent automatic zoom-in on mobile text inputs and establish robust overflow-x constraints */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+html, body, #root {
+  overflow-x: hidden;
+  max-width: 100%;
+  position: relative;
+}
+
+/* Warranty Portal Custom Styles */
+.warranty-portal-label,
+.warranty-portal-title,
+.warranty-portal-text {
+  color: #ffffff !important;
+}
+.warranty-portal-muted {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+.warranty-portal-input {
+  background-color: #ffffff !important;
+  color: #000000 !important; /* Black */
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+}
+.warranty-portal-input::placeholder {
+  color: #000000 !important; /* Black placeholder */
+  opacity: 0.6 !important;
+}
+

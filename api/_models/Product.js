@@ -1,0 +1,75 @@
+import mongoose from 'mongoose';
+
+const reviewSchema = new mongoose.Schema({
+  userName: { type: String, required: true },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  comment: { type: String, required: true },
+  date: { type: String, default: () => new Date().toISOString().split('T')[0] },
+  status: { type: String, enum: ['approved', 'pending', 'rejected'], default: 'pending' }
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+reviewSchema.virtual('id').get(function() {
+  return this._id.toHexString();
+});
+
+const productSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  modelNo: { type: String, default: '' },
+  serialNo: { type: String, default: '' },
+  uniqueCode: { type: String, default: '' },
+  image: { type: String, required: true },
+  images: [{ type: String }],
+  images360: [{ type: String }],
+  brand: { type: String, default: 'KHRONIQ' },
+  price: { type: Number, required: true },
+  stock: { type: Number, required: true, default: 0 },
+  warrantyMonths: { type: Number, required: true, default: 12 },
+  category: { type: String, required: true },
+  gender: { type: String, default: 'unisex', trim: true },
+  description: { type: String, required: true },
+  badge: { type: String, default: '' },
+  discountPercent: { type: Number, default: 0 },
+  specs: {
+    movement: { type: String, default: '' },
+    case: { type: String, default: '' },
+    dialColor: { type: String, default: '' },
+    caseMaterial: { type: String, default: '' },
+    strap: { type: String, default: '' },
+    waterResistance: { type: String, default: '' },
+    glass: { type: String, default: '' },
+    watchFunction: { type: String, default: '' },
+    collection: { type: String, default: '' },
+    warrantyDetails: { type: String, default: '' },
+    warrantyPeriod: { type: String, default: '' },
+    origin: { type: String, default: '' }
+  },
+  customizable: { type: Boolean, default: true },
+  allowStrapCustomization: { type: Boolean, default: true },
+  allowCaseCustomization: { type: Boolean, default: true },
+  allowDialCustomization: { type: Boolean, default: true },
+  customizationOptions: {
+    dialColors: [{ type: String }],
+    strapMaterials: [{ type: String }],
+    caseFinishes: [{ type: String }],
+    engravingAllowed: { type: Boolean, default: false },
+    customStrapName: { type: String, default: '' },
+    customStrapImage: { type: String, default: '' },
+    customCaseName: { type: String, default: '' },
+    customCaseColor: { type: String, default: '' }
+  },
+  reviews: [reviewSchema]
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+productSchema.virtual('id').get(function() {
+  return this._id.toHexString();
+});
+
+const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
+export default Product;
