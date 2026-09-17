@@ -66,7 +66,8 @@ export default function ProductDetail({ params, onPageChange }) {
     }
   }, [product?.id, product?.stock]);
   const [activeTab, setActiveTab] = useState('specs'); // specs | details
-  const [ratingInput, setRatingInput] = useState(5);
+  const [ratingInput, setRatingInput] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [commentInput, setCommentInput] = useState('');
   const [reviewMessage, setReviewMessage] = useState('');
 
@@ -238,16 +239,23 @@ export default function ProductDetail({ params, onPageChange }) {
       return;
     }
 
+    if (!ratingInput || ratingInput < 1) {
+      alert('Please select a star rating score (1 to 5 stars).');
+      return;
+    }
+
     if (!commentInput.trim()) {
       alert('Please enter a review comment.');
       return;
     }
 
-    const res = await dispatch(addReview(product.id, ratingInput, commentInput));
+    const targetId = product?.id || product?._id;
+    const res = await dispatch(addReview(targetId, ratingInput, commentInput));
     if (res && res.success) {
       setReviewMessage(res.message || 'Review submitted successfully!');
       setCommentInput('');
-      setRatingInput(5);
+      setRatingInput(0);
+      setHoverRating(0);
       setTimeout(() => setReviewMessage(''), 6000);
     } else {
       alert(res?.message || 'Failed to submit review.');
@@ -686,21 +694,41 @@ export default function ProductDetail({ params, onPageChange }) {
             <form onSubmit={handleReviewSubmit} className="space-y-4">
               {/* Rating selection */}
               <div className="space-y-1.5">
-                <label className="text-[10px] text-gray-600 font-bold uppercase tracking-widest block">Rating Score</label>
-                <div className="flex space-x-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setRatingInput(star)}
-                      className="text-luxury-gold-dark focus:outline-none hover:scale-115 transition cursor-pointer"
-                    >
-                      <Star 
-                        size={20} 
-                        fill={star <= ratingInput ? "var(--color-luxury-gold-dark)" : "none"} 
-                      />
-                    </button>
-                  ))}
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] text-gray-600 font-bold uppercase tracking-widest block">
+                    Rating Score
+                  </label>
+                  {(hoverRating > 0 || ratingInput > 0) && (
+                    <span className="text-[10px] text-luxury-gold-dark font-bold tracking-wider uppercase">
+                      {hoverRating || ratingInput} / 5 Stars
+                    </span>
+                  )}
+                </div>
+                <div 
+                  className="flex space-x-2 py-0.5"
+                  onMouseLeave={() => setHoverRating(0)}
+                >
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const activeScore = hoverRating || ratingInput;
+                    const isFilled = star <= activeScore;
+                    return (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRatingInput(star)}
+                        onMouseEnter={() => setHoverRating(star)}
+                        className="text-luxury-gold-dark focus:outline-none hover:scale-125 transition-transform duration-150 cursor-pointer p-0.5"
+                        title={`${star} Star${star > 1 ? 's' : ''}`}
+                      >
+                        <Star 
+                          size={22} 
+                          fill={isFilled ? "var(--color-luxury-gold-dark, #b8860b)" : "none"} 
+                          stroke={isFilled ? "var(--color-luxury-gold-dark, #b8860b)" : "#9ca3af"}
+                          className="transition-colors duration-150"
+                        />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
