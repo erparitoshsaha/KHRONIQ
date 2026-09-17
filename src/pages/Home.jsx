@@ -1021,7 +1021,47 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     };
   }, [updatesInView, brandUpdates, onUpdatesOpen, hasClosedSinceInView, updatesOpen]);
 
-  const displayedUpdates = brandUpdates;
+  const defaultUpdates = [
+    {
+      _id: 'up-1',
+      title: 'WEB HOSTING SOON',
+      detail: 'khroniq is launching its timepieces :wait is over',
+      createdAt: '2026-07-17',
+    },
+    {
+      _id: 'up-2',
+      title: 'SWISS CRAFTSMANSHIP',
+      detail: 'Precision engineered automatic movements with anti-reflective sapphire crystal.',
+      createdAt: '2026-08-05',
+    },
+    {
+      _id: 'up-3',
+      title: 'LIMITED EDITION COLLECTION',
+      detail: 'Exclusive hand-crafted timepieces coming soon to select luxury boutiques.',
+      createdAt: '2026-08-20',
+    },
+  ];
+
+  const displayedUpdates = (brandUpdates && brandUpdates.length > 0) ? brandUpdates : defaultUpdates;
+  const [currentUpdateIndex, setCurrentUpdateIndex] = useState(0);
+
+  useEffect(() => {
+    if (!displayedUpdates || displayedUpdates.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentUpdateIndex((prev) => (prev + 1) % displayedUpdates.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [displayedUpdates.length]);
+
+  const handlePrevUpdate = (e) => {
+    e?.stopPropagation();
+    setCurrentUpdateIndex((prev) => (prev - 1 + displayedUpdates.length) % displayedUpdates.length);
+  };
+
+  const handleNextUpdate = (e) => {
+    e?.stopPropagation();
+    setCurrentUpdateIndex((prev) => (prev + 1) % displayedUpdates.length);
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -1782,61 +1822,96 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
       >
         {/* Background Image with slight opacity/fade */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-65"
+          className="absolute inset-0 bg-cover bg-center opacity-85"
           style={{
             backgroundImage: `url(${homeImages.khroniq_updates || "/assets/khroniq_updates_bg.jpg"})`,
             backgroundAttachment: 'fixed',
           }}
         />
         {/* Dark Overlay to align with the premium black theme */}
-        <div className="absolute inset-0 bg-black/40 z-10" />
+        <div className="absolute inset-0 bg-black/30 z-10" />
 
-        {/* Center Glassmorphism High-Transparency KHRONIQ UPDATES Box */}
-        <div className="relative z-20 max-w-3xl w-[90%] sm:w-[85%] p-8 sm:p-10 rounded-3xl bg-[#031c18]/55 backdrop-blur-2xl border border-[#34d399]/50 shadow-[0_25px_60px_rgba(0,0,0,0.85)] flex flex-col sm:flex-row items-center justify-between gap-8 transition-all duration-300 hover:bg-[#031c18]/65 hover:border-[#34d399]/70">
+        {/* Center Glassmorphism High-Transparency KHRONIQ UPDATES Box with Interactive Slider */}
+        <div className="relative z-20 max-w-2xl w-[92%] sm:w-[85%] p-6 sm:p-8 rounded-3xl bg-[#031c18]/25 backdrop-blur-md border border-[#34d399]/40 shadow-[0_25px_60px_rgba(0,0,0,0.85)] flex flex-col gap-5 transition-all duration-300 hover:bg-[#031c18]/35 hover:border-[#34d399]/60">
           
-          {/* Left Content */}
-          <div className="space-y-4 flex-1 text-left">
-            <span className="text-xs uppercase font-black tracking-[0.3em] text-[#34d399] block border-b border-[#34d399]/30 pb-2 max-w-[200px] drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">
+          {/* Top Header: Title on Left, Slide Counter on Right */}
+          <div className="flex items-center justify-between border-b border-[#34d399]/25 pb-3">
+            <span className="text-xs sm:text-sm uppercase font-black tracking-[0.3em] text-[#34d399] drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">
               KHRONIQ UPDATES
             </span>
-
-            <div className="flex items-center gap-2 pt-1">
-              <span className="px-3.5 py-1 rounded-full bg-[#047857]/70 text-white border border-[#34d399] text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md">
-                <span className="w-2 h-2 bg-[#34d399] rounded-full animate-pulse shadow-[0_0_8px_#34d399]" />
-                UPDATE
-              </span>
-            </div>
-
-            <h3 className="font-serif text-2xl sm:text-3xl font-black uppercase tracking-wider text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
-              {displayedUpdates?.[0]?.title || 'WEB HOSTING SOON'}
-            </h3>
-
-            <p className="text-xs sm:text-sm text-emerald-50/90 font-medium leading-relaxed max-w-md drop-shadow">
-              {displayedUpdates?.[0]?.detail || 'khroniq is launching its timepieces :wait is over'}
-            </p>
-
-            <div className="flex items-center gap-2.5 text-emerald-300 font-bold font-mono text-xs sm:text-sm tracking-widest pt-2">
-              <Calendar className="w-4 h-4 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-              <span className="bg-black/40 px-2.5 py-1 rounded border border-emerald-500/30 text-white">
-                {displayedUpdates?.[0]?.createdAt
-                  ? new Date(displayedUpdates[0].createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
-                  : '17 JUL 2026'}
-              </span>
-            </div>
-          </div>
-
-          {/* Right Circular Branding Emblem */}
-          <div className="flex flex-col items-center justify-center space-y-2.5 shrink-0">
-            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 border-[#34d399]/60 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-4 relative shadow-[0_0_20px_rgba(4,120,87,0.3)] group-hover:scale-105 transition-transform duration-300">
-              <LogoMark className="w-10 h-10 text-emerald-400 fill-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
-            </div>
-            <span className="text-[10px] font-serif uppercase tracking-[0.25em] text-emerald-300 font-bold border-b border-emerald-500/40 pb-1 text-center">
-              CRAFTED FOR WHAT MATTERS
-            </span>
-            <span className="text-[9px] font-mono font-black uppercase tracking-[0.3em] text-white text-center drop-shadow">
-              KHRONIQ TIMEPIECES
+            <span className="text-xs font-mono font-bold tracking-widest text-emerald-200/90 bg-black/40 px-3 py-1 rounded-full border border-emerald-500/20">
+              {currentUpdateIndex + 1} / {displayedUpdates.length}
             </span>
           </div>
+
+          {/* Slider Content Row: Previous Arrow (<), Center Details, Next Arrow (>) */}
+          <div className="flex items-center justify-between gap-3 sm:gap-6 py-2">
+            
+            {/* Left Previous Arrow Button */}
+            <button
+              onClick={handlePrevUpdate}
+              aria-label="Previous Update"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#34d399]/60 bg-[#031c18]/50 hover:bg-[#34d399]/25 hover:border-[#34d399] hover:scale-110 active:scale-95 text-[#34d399] flex items-center justify-center transition-all duration-300 shadow-[0_0_15px_rgba(4,120,87,0.3)] shrink-0 cursor-pointer"
+            >
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
+            </button>
+
+            {/* Center Animated Slide Info */}
+            <div className="flex-1 text-center space-y-3 px-1 min-h-[130px] flex flex-col justify-center items-center">
+              <div className="flex items-center justify-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#34d399] animate-pulse shadow-[0_0_10px_#34d399]" />
+                <h3 className="font-serif text-lg sm:text-2xl font-black uppercase tracking-wider text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
+                  {displayedUpdates[currentUpdateIndex]?.title || 'WEB HOSTING SOON'}
+                </h3>
+              </div>
+
+              <p className="text-xs sm:text-sm text-emerald-50/90 font-medium leading-relaxed max-w-md drop-shadow">
+                {displayedUpdates[currentUpdateIndex]?.detail || 'khroniq is launching its timepieces :wait is over'}
+              </p>
+
+              <div className="w-full max-w-xs border-b border-emerald-500/25 my-1" />
+
+              <div className="flex items-center justify-center gap-2 text-emerald-300 font-bold font-mono text-xs tracking-widest pt-0.5">
+                <Calendar className="w-3.5 h-3.5 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                <span>
+                  {displayedUpdates[currentUpdateIndex]?.createdAt
+                    ? new Date(displayedUpdates[currentUpdateIndex].createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
+                    : '17 JUL 2026'}
+                </span>
+              </div>
+            </div>
+
+            {/* Right Next Arrow Button */}
+            <button
+              onClick={handleNextUpdate}
+              aria-label="Next Update"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#34d399]/60 bg-[#031c18]/50 hover:bg-[#34d399]/25 hover:border-[#34d399] hover:scale-110 active:scale-95 text-[#34d399] flex items-center justify-center transition-all duration-300 shadow-[0_0_15px_rgba(4,120,87,0.3)] shrink-0 cursor-pointer"
+            >
+              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
+            </button>
+
+          </div>
+
+          {/* Bottom Dot Indicators */}
+          {displayedUpdates.length > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-1">
+              {displayedUpdates.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentUpdateIndex(idx);
+                  }}
+                  className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                    idx === currentUpdateIndex
+                      ? 'w-7 bg-[#34d399] shadow-[0_0_8px_#34d399]'
+                      : 'w-2 bg-emerald-950/60 border border-emerald-500/30 hover:bg-emerald-500/50'
+                  }`}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
 
         </div>
 
