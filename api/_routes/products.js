@@ -52,6 +52,48 @@ router.get('/', async (req, res) => {
   }
 });
 
+// @route   GET /api/products/reviews/featured
+// @desc    Get latest approved reviews aggregated across all products (for homepage testimonials)
+// @access  Public
+router.get('/reviews/featured', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 8, 20);
+    const products = await Product.find({ 'reviews.0': { $exists: true } })
+      .select('name image reviews')
+      .lean();
+
+    const allApproved = [];
+    for (const product of products) {
+      const approved = (product.reviews || []).filter(r => r.status === 'approved');
+      for (const review of approved) {
+        allApproved.push({
+          id: review._id?.toString() || review.id,
+          userName: review.userName,
+          rating: review.rating,
+          comment: review.comment,
+          date: review.date,
+          productName: product.name,
+          productImage: product.image,
+          productId: product._id?.toString()
+        });
+      }
+    }
+
+    // Sort newest first, then by highest rating
+    allApproved.sort((a, b) => {
+      const dateA = new Date(a.date || 0).getTime();
+      const dateB = new Date(b.date || 0).getTime();
+      if (dateB !== dateA) return dateB - dateA;
+      return b.rating - a.rating;
+    });
+
+    res.json({ success: true, reviews: allApproved.slice(0, limit) });
+  } catch (error) {
+    console.error('Fetch featured reviews error:', error);
+    res.status(500).json({ success: false, message: 'Server error', reviews: [] });
+  }
+});
+
 // @route   GET /api/products/:identifier
 // @desc    Get single product by ID, modelNo, or serialNo
 // @access  Public

@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { selectCurrentCurrency, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectCurrentCurrency, formatPrice, getDiscountedPrice, fetchFeaturedReviews } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import ProductCard from '../components/ProductCard';
 import LogoMark from '../components/LogoMark';
@@ -624,8 +624,8 @@ function HeroVideoCycler() {
 /* ─────────────────────────────────────────────────────────────────────
    LIFESTYLE SHOWCASE SLIDER
 ───────────────────────────────────────────────────────────────────── */
-function LifestyleShowcaseSlider({ products, onPageChange, homeImages }) {
-  const slides = [
+function LifestyleShowcaseSlider({ products, onPageChange, homeImages, lifestyleItems }) {
+  const defaultSlides = [
     {
       name: 'CRIMSON RED',
       fullName: 'Khroniq Crimson Red',
@@ -648,6 +648,17 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages }) {
       lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
     }
   ];
+
+  // Use CMS lifestyle items when available, otherwise fall back to defaults
+  const slides = (lifestyleItems && lifestyleItems.length > 0)
+    ? lifestyleItems.map((item, idx) => ({
+        name: item.title || defaultSlides[idx]?.name || `COLLECTION ${idx + 1}`,
+        fullName: item.subtitle || item.title || defaultSlides[idx]?.fullName || '',
+        lifestyleImg: item.image || defaultSlides[idx]?.lifestyleImg || '/assets/lifestyle_red.jpg',
+        productImg: item.metadata?.productImage || defaultSlides[idx]?.productImg || '/assets/watch_red.jpg',
+        lifestyleStyle: defaultSlides[idx]?.lifestyleStyle || { filter: 'brightness(0.82) contrast(1.1)' },
+      }))
+    : defaultSlides;
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -830,7 +841,9 @@ let publicMediaCache = null;
 let publicMediaPromise = null;
 
 export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, updatesOpen }) {
+  const dispatch = useDispatch();
   const products = useSelector(state => state.watch.products);
+  const featuredReviews = useSelector(state => state.watch.featuredReviews || []);
   const [homeImages, setHomeImages] = useState(defaultHomeImages);
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
   const spotlightImage = homeImages.khronomaster_professional || "/assets/spotlight_red_angled.png";
@@ -854,6 +867,12 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   const currentCurrency = useSelector(selectCurrentCurrency);
   const filters = useSelector(state => state.watch.filters || []);
   const contentSections = useSelector(state => state.watch.contentSections || []);
+
+  // Fetch featured reviews for testimonials section
+  useEffect(() => {
+    dispatch(fetchFeaturedReviews());
+  }, [dispatch]);
+
 
   useEffect(() => {
     document.title = 'KHRONIQ — Born from The Movement Of Time';
@@ -1446,7 +1465,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
       </div>
 
       {/* ══════════ LIFESTYLE SHOWCASE SLIDER ══════════ */}
-      <LifestyleShowcaseSlider products={products} onPageChange={onPageChange} homeImages={homeImages} />
+      <LifestyleShowcaseSlider products={products} onPageChange={onPageChange} homeImages={homeImages} lifestyleItems={lifestyleSection?.items} />
 
 
       {/* ══════════ FEATURED PRODUCTS ══════════ */}
@@ -1658,9 +1677,102 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           </div>
         )}
       </div>
+
+      {/* ══════════ CLIENT TESTIMONIALS ══════════ */}
+      {featuredReviews.length > 0 && (
+        <section className="w-full py-20 sm:py-28 bg-[#0e0d0b] overflow-hidden">
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+            {/* Section Header */}
+            <div className="text-center mb-14 space-y-4">
+              <motion.p
+                className="text-[10px] font-extrabold tracking-[0.35em] uppercase text-[#34d399]"
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                What Our Patrons Say
+              </motion.p>
+              <motion.h2
+                className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-wide uppercase"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+              >
+                Client Testimonials
+              </motion.h2>
+              <motion.div
+                className="w-12 h-[1.5px] bg-[#34d399] mx-auto"
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+              />
+            </div>
+
+            {/* Reviews Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+              {featuredReviews.slice(0, 6).map((review, idx) => (
+                <motion.div
+                  key={review.id || idx}
+                  className="relative bg-[#1a1916]/80 border border-white/[0.06] rounded-2xl p-6 sm:p-7 space-y-4 backdrop-blur-sm hover:border-[#34d399]/30 transition-all duration-500 group"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.08 }}
+                >
+                  {/* Glow on hover */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[#34d399]/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                  {/* Stars */}
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        size={14}
+                        fill={star <= review.rating ? '#c5a880' : 'transparent'}
+                        stroke={star <= review.rating ? '#c5a880' : '#555'}
+                        strokeWidth={1.5}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Comment */}
+                  <p className="text-white/80 text-sm leading-relaxed font-light italic line-clamp-4">
+                    &ldquo;{review.comment}&rdquo;
+                  </p>
+
+                  {/* Reviewer Info */}
+                  <div className="flex items-center gap-3 pt-2 border-t border-white/[0.06]">
+                    {review.productImage && (
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10 border border-white/10 flex-shrink-0">
+                        <img
+                          src={review.productImage}
+                          alt={review.productName}
+                          onError={(e) => handleImageError(e)}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-white text-xs font-semibold tracking-wide truncate">
+                        {review.userName}
+                      </p>
+                      <p className="text-[10px] text-[#34d399]/70 font-medium tracking-wider uppercase truncate">
+                        on {review.productName}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Spacer to shift KHRONIQ updates section lower */}
       <div className="w-full h-32 bg-black relative z-30" />
-
 
       {/* ══════════ FULL SCREEN IMAGE BACKGROUND UPDATES SECTION ══════════ */}
       {/* ══════════ KHRONIQ UPDATE PARALLAX BANNER SECTION ══════════ */}

@@ -459,7 +459,7 @@ export const DEFAULT_FOOTER_SECTIONS = [
 ];
 
 const initialState = {
-  products: getMockProducts(),
+  products: [],
   productsLoaded: false,
   cart: loadSaved('khroniq_cart', []),
   wishlist: loadSaved('khroniq_wishlist', []),
@@ -467,26 +467,8 @@ const initialState = {
   coupons: [],
   currentUser: null,
   currentCurrency: loadSaved('khroniq_currency', 'INR'),
-  blogs: [
-    {
-      id: 'blog-1',
-      title: "The Art of Swadeshi Horology",
-      content: "Behind the scenes of KHRONIQ's design and assembly processes, bringing high-precision watches to modern watch enthusiasts. Discover how we balance heritage design with modern components.",
-      author: "Vikram R. Mehta",
-      image: "/assets/lifestyle_black_cafe.jpg",
-      category: "Horology",
-      date: "2026-07-01"
-    },
-    {
-      id: 'blog-2',
-      title: "Choosing the Right Case Finish",
-      content: "A guide on selecting between polished stainless steel, rose gold PVD, and matte ceramic finishes for your bespoke timepiece. Learn which finish best suits your daily attire and lifestyle.",
-      author: "Ananya Sharma",
-      image: "/assets/lifestyle_pink_cafe.jpg",
-      category: "Guides",
-      date: "2026-07-05"
-    }
-  ],
+  blogs: [],
+  featuredReviews: [],
   filters: DEFAULT_FILTER_CATEGORIES,
   adminFilters: DEFAULT_FILTER_CATEGORIES,
   footerSections: DEFAULT_FOOTER_SECTIONS,
@@ -628,6 +610,9 @@ const watchSlice = createSlice({
     },
     setAdminUsersLoadingAction: (state, action) => {
       state.adminUsersLoading = action.payload;
+    },
+    setFeaturedReviewsAction: (state, action) => {
+      state.featuredReviews = action.payload;
     }
   }
 });
@@ -658,7 +643,8 @@ export const {
   setLoginActivitiesAction,
   setCurrentSessionIdAction,
   setAdminUsersAction,
-  setAdminUsersLoadingAction
+  setAdminUsersLoadingAction,
+  setFeaturedReviewsAction
 } = watchSlice.actions;
 
 export const selectCurrentCurrency = state => state.watch.currentCurrency || 'INR';
@@ -715,7 +701,9 @@ export const fetchProducts = () => async (dispatch) => {
   } catch (error) {
     console.error('Failed to fetch products from API:', error);
   }
-  dispatch(setProductsAction(getMockProducts()));
+  // No mock fallback — show empty catalog when API is unavailable
+  dispatch(setProductsAction([]));
+  dispatch(setProductsLoadedAction(true));
 };
 
 export const fetchSingleProduct = (identifier) => async (dispatch, getState) => {
@@ -1433,6 +1421,21 @@ export const moderateReview = (productId, reviewId, status) => async (dispatch) 
   } catch (error) {
     console.error('Failed to moderate review:', error);
   }
+};
+
+export const fetchFeaturedReviews = () => async (dispatch) => {
+  try {
+    const res = await fetch('/api/products/reviews/featured');
+    const data = await res.json();
+    if (data.success && Array.isArray(data.reviews)) {
+      dispatch(setFeaturedReviewsAction(data.reviews));
+      return { success: true, reviews: data.reviews };
+    }
+  } catch (error) {
+    console.error('Failed to fetch featured reviews:', error);
+  }
+  dispatch(setFeaturedReviewsAction([]));
+  return { success: false };
 };
 
 export const forgotPassword = (email) => async () => {
