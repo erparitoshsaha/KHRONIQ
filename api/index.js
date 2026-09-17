@@ -111,7 +111,7 @@ app.use(
             /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(parsedUrl.hostname) ||
             parsedUrl.hostname === '127.0.0.1' ||
             parsedUrl.hostname === 'localhost';
-          if (isPrivateIp && ['5173', '5174', '3000', '5000', '8080'].includes(parsedUrl.port || '')) {
+          if (isPrivateIp && ['5173', '5174', '3000', '5000', '5001', '8080'].includes(parsedUrl.port || '')) {
             return callback(null, true);
           }
         } catch (_) {}
@@ -209,7 +209,7 @@ app.get('/api/health', async (req, res) => {
 // 8. Global Express Error Handler Middleware
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 const HOST = process.env.HOST || '0.0.0.0';
 
 // Listen when running directly on VPS or local Node process
