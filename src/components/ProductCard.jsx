@@ -148,6 +148,25 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
               {product.name}
             </h3>
             <p className="text-[10px] text-luxury-muted font-normal tracking-wide truncate">{specLine}</p>
+            {/* Dynamic Star Rating */}
+            {averageRating && (
+              <div className="flex items-center gap-1.5 pt-0.5">
+                <div className="flex items-center">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      size={10}
+                      fill={star <= Math.round(Number(averageRating)) ? 'var(--color-luxury-gold-dark, #b8860b)' : 'none'}
+                      stroke={star <= Math.round(Number(averageRating)) ? 'var(--color-luxury-gold-dark, #b8860b)' : '#d4d4d4'}
+                      className="stroke-1"
+                    />
+                  ))}
+                </div>
+                <span className="text-[9px] text-luxury-muted font-medium">
+                  {averageRating} ({approvedReviews.length})
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between pt-1">
