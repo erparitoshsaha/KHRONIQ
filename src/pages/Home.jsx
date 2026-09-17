@@ -989,37 +989,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     fetchUpdates();
   }, []);
 
-  const [hasClosedSinceInView, setHasClosedSinceInView] = useState(false);
-  const prevUpdatesOpenRef = useRef(updatesOpen);
-
-  useEffect(() => {
-    if (!updatesInView) {
-      setHasClosedSinceInView(false);
-    }
-  }, [updatesInView]);
-
-  useEffect(() => {
-    if (prevUpdatesOpenRef.current && !updatesOpen && updatesInView) {
-      setHasClosedSinceInView(true);
-    }
-    prevUpdatesOpenRef.current = updatesOpen;
-  }, [updatesOpen, updatesInView]);
-
-  useEffect(() => {
-    let timer;
-    if (updatesInView && brandUpdates && brandUpdates.length > 0 && !hasClosedSinceInView && !updatesOpen) {
-      timer = setTimeout(() => {
-        if (onUpdatesOpen) {
-          onUpdatesOpen();
-        }
-      }, 1000);
-    }
-    return () => {
-      if (timer) {
-        clearTimeout(timer);
-      }
-    };
-  }, [updatesInView, brandUpdates, onUpdatesOpen, hasClosedSinceInView, updatesOpen]);
+  // Auto-opening updates drawer disabled as requested
 
   const defaultUpdates = [
     {
