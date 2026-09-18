@@ -973,18 +973,6 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
       title: 'WEB HOSTING SOON',
       detail: 'khroniq is launching its timepieces: wait is over.',
       createdAt: '2026-07-17T00:00:00.000Z'
-    },
-    {
-      _id: 'default-2',
-      title: 'NEW ATELIER COLLECTION',
-      detail: 'Experience our newly crafted tourbillon precision timepieces.',
-      createdAt: '2026-08-01T00:00:00.000Z'
-    },
-    {
-      _id: 'default-3',
-      title: 'GLOBAL BOUTIQUE EXPANSION',
-      detail: 'Khroniq flagship stores opening in London, Dubai and Mumbai.',
-      createdAt: '2026-09-10T00:00:00.000Z'
     }
   ];
 

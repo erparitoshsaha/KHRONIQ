@@ -10,18 +10,6 @@ const DEFAULT_BRAND_UPDATES = [
     detail: 'khroniq is launching its timepieces: wait is over.',
     approved: true,
     createdAt: new Date('2026-07-17T00:00:00.000Z')
-  },
-  {
-    title: 'NEW ATELIER COLLECTION',
-    detail: 'Experience our newly crafted tourbillon precision timepieces.',
-    approved: true,
-    createdAt: new Date('2026-08-01T00:00:00.000Z')
-  },
-  {
-    title: 'GLOBAL BOUTIQUE EXPANSION',
-    detail: 'Khroniq flagship stores opening in London, Dubai and Mumbai.',
-    approved: true,
-    createdAt: new Date('2026-09-10T00:00:00.000Z')
   }
 ];
 
