@@ -967,7 +967,28 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visibleCards, setVisibleCards] = useState(4);
   const [showUpdates, setShowUpdates] = useState(true);
-  const [brandUpdates, setBrandUpdates] = useState([]);
+  const DEFAULT_BRAND_UPDATES = [
+    {
+      _id: 'default-1',
+      title: 'WEB HOSTING SOON',
+      detail: 'khroniq is launching its timepieces: wait is over.',
+      createdAt: '2026-07-17T00:00:00.000Z'
+    },
+    {
+      _id: 'default-2',
+      title: 'NEW ATELIER COLLECTION',
+      detail: 'Experience our newly crafted tourbillon precision timepieces.',
+      createdAt: '2026-08-01T00:00:00.000Z'
+    },
+    {
+      _id: 'default-3',
+      title: 'GLOBAL BOUTIQUE EXPANSION',
+      detail: 'Khroniq flagship stores opening in London, Dubai and Mumbai.',
+      createdAt: '2026-09-10T00:00:00.000Z'
+    }
+  ];
+
+  const [brandUpdates, setBrandUpdates] = useState(DEFAULT_BRAND_UPDATES);
   const [hoveredProduct, setHoveredProduct] = useState(null);
   const updatesRef = useRef(null);
   const updatesInView = useInView(updatesRef, { once: false, margin: '-40%' });
@@ -1005,7 +1026,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
       try {
         const res = await fetch('/api/brand-updates');
         const data = await res.json();
-        if (data && data.success) {
+        if (data && data.success && Array.isArray(data.updates) && data.updates.length > 0) {
           setBrandUpdates(data.updates);
         }
       } catch (err) {

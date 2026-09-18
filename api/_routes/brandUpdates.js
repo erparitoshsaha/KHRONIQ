@@ -4,12 +4,40 @@ import { protect, adminOnly, requirePermission } from '../_middleware/auth.js';
 
 const router = express.Router();
 
+const DEFAULT_BRAND_UPDATES = [
+  {
+    title: 'WEB HOSTING SOON',
+    detail: 'khroniq is launching its timepieces: wait is over.',
+    approved: true,
+    createdAt: new Date('2026-07-17T00:00:00.000Z')
+  },
+  {
+    title: 'NEW ATELIER COLLECTION',
+    detail: 'Experience our newly crafted tourbillon precision timepieces.',
+    approved: true,
+    createdAt: new Date('2026-08-01T00:00:00.000Z')
+  },
+  {
+    title: 'GLOBAL BOUTIQUE EXPANSION',
+    detail: 'Khroniq flagship stores opening in London, Dubai and Mumbai.',
+    approved: true,
+    createdAt: new Date('2026-09-10T00:00:00.000Z')
+  }
+];
+
 // @route   GET /api/brand-updates
 // @desc    Get all approved brand updates for public homepage
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const updates = await BrandUpdate.find({ approved: true }).sort({ createdAt: -1 });
+    let updates = await BrandUpdate.find({ approved: true }).sort({ createdAt: -1 });
+    if (!updates || updates.length === 0) {
+      const count = await BrandUpdate.countDocuments({});
+      if (count === 0) {
+        await BrandUpdate.insertMany(DEFAULT_BRAND_UPDATES);
+        updates = await BrandUpdate.find({ approved: true }).sort({ createdAt: -1 });
+      }
+    }
     res.json({ success: true, updates });
   } catch (error) {
     console.error('Fetch brand updates error:', error);
@@ -22,7 +50,14 @@ router.get('/', async (req, res) => {
 // @access  Private/Admin
 router.get('/admin', protect, requirePermission('brand_updates'), async (req, res) => {
   try {
-    const updates = await BrandUpdate.find({}).sort({ createdAt: -1 });
+    let updates = await BrandUpdate.find({}).sort({ createdAt: -1 });
+    if (!updates || updates.length === 0) {
+      const count = await BrandUpdate.countDocuments({});
+      if (count === 0) {
+        await BrandUpdate.insertMany(DEFAULT_BRAND_UPDATES);
+        updates = await BrandUpdate.find({}).sort({ createdAt: -1 });
+      }
+    }
     res.json({ success: true, updates });
   } catch (error) {
     console.error('Fetch admin brand updates error:', error);
