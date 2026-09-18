@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { selectCurrentCurrency, formatPrice, getDiscountedPrice, fetchFeaturedReviews } from '../store/slices/watchSlice';
+import { useSelector } from 'react-redux';
+import { selectCurrentCurrency, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import ProductCard from '../components/ProductCard';
 import LogoMark from '../components/LogoMark';
@@ -15,7 +15,7 @@ import {
   useScroll,
   AnimatePresence,
 } from 'framer-motion';
-import { Star, Award, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Play, Pause, Cpu, Layers, Droplet, Clock, Gem, Calendar } from 'lucide-react';
+import { Star, Award, ArrowRight, ArrowLeft, Calendar, ChevronDown, ChevronLeft, ChevronRight, Play, Pause, Cpu, Layers, Droplet, Clock, Gem } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────
    ANIMATED COUNTER
@@ -325,9 +325,9 @@ function CollectionCard({ col, idx, onPageChange }) {
           </span>
           <div className="space-y-1 sm:space-y-1.5">
             <h3 className="font-serif text-xl sm:text-2xl font-black uppercase tracking-wider leading-tight"
-            style={{
-          color: col.dark ? '#ffffff' : '#171717'
-          }}>{col.name}</h3>
+              style={{
+                color: col.dark ? '#ffffff' : '#171717'
+              }}>{col.name}</h3>
             <p className="text-[8px] sm:text-[9px] font-black tracking-[0.2em] uppercase" style={{ color: col.dark ? '#ffffff' : numColor }}>
               {col.tagline}
             </p>
@@ -624,8 +624,8 @@ function HeroVideoCycler() {
 /* ─────────────────────────────────────────────────────────────────────
    LIFESTYLE SHOWCASE SLIDER
 ───────────────────────────────────────────────────────────────────── */
-function LifestyleShowcaseSlider({ products, onPageChange, homeImages, lifestyleItems }) {
-  const defaultSlides = [
+function LifestyleShowcaseSlider({ products, onPageChange, homeImages }) {
+  const slides = [
     {
       name: 'CRIMSON RED',
       fullName: 'Khroniq Crimson Red',
@@ -646,19 +646,22 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages, lifestyle
       lifestyleImg: homeImages.hero_slide3_lifestyle || '/assets/lifestyle_black_cafe.jpg',
       productImg: homeImages.hero_slide3_product || '/assets/watch_black_steel.png',
       lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
+    },
+    {
+      name: 'COBALT BLUE',
+      fullName: 'Khroniq Cobalt Blue',
+      lifestyleImg: homeImages.hero_slide4_lifestyle || '/assets/lifestyle_blue_window.jpg',
+      productImg: homeImages.hero_slide4_product || '/assets/watch_blue_brown.png',
+      lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
+    },
+    {
+      name: 'STERLING SILVER',
+      fullName: 'Khroniq Sterling Silver',
+      lifestyleImg: homeImages.hero_slide5_lifestyle || '/assets/lifestyle_pink_cafe.jpg',
+      productImg: homeImages.hero_slide5_product || '/assets/slide_white_product.png',
+      lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
     }
   ];
-
-  // Use CMS lifestyle items when available, otherwise fall back to defaults
-  const slides = (lifestyleItems && lifestyleItems.length > 0)
-    ? lifestyleItems.map((item, idx) => ({
-        name: item.title || defaultSlides[idx]?.name || `COLLECTION ${idx + 1}`,
-        fullName: item.subtitle || item.title || defaultSlides[idx]?.fullName || '',
-        lifestyleImg: item.image || defaultSlides[idx]?.lifestyleImg || '/assets/lifestyle_red.jpg',
-        productImg: item.metadata?.productImage || defaultSlides[idx]?.productImg || '/assets/watch_red.jpg',
-        lifestyleStyle: defaultSlides[idx]?.lifestyleStyle || { filter: 'brightness(0.82) contrast(1.1)' },
-      }))
-    : defaultSlides;
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -815,12 +818,12 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages, lifestyle
   );
 }
 
-const defaultHomeImages = {
+export const defaultHomeImages = {
   gender_men: '/assets/men_watches.jpg',
   gender_women: '/assets/women_watches_beach.jpeg',
-  collection_khronomaster: '/assets/watch_green.jpg',
-  collection_defy: '/assets/watch_red.jpg',
-  collection_heritage: '/assets/watch_green.jpg',
+  khronomaster_professional: '/assets/spotlight_red_angled.png',
+  dive_deeper_tile1: '/assets/spotlight_green_side.jpeg',
+  dive_deeper_tile2: '/assets/spotlight_red_overhead.png',
   hero_slide1_lifestyle: '/assets/lifestyle_red.jpg',
   hero_slide1_product: '/assets/watch_red.jpg',
   hero_slide2_lifestyle: '/assets/slide_green_lifestyle.jpg',
@@ -831,19 +834,48 @@ const defaultHomeImages = {
   hero_slide4_product: '/assets/watch_blue_brown.png',
   hero_slide5_lifestyle: '/assets/lifestyle_pink_cafe.jpg',
   hero_slide5_product: '/assets/slide_white_product.png',
-  khronomaster_professional: '/assets/spotlight_red_angled.png',
-  dive_deeper_tile1: '/assets/spotlight_green_side.jpeg',
-  dive_deeper_tile2: '/assets/spotlight_red_overhead.png',
   khroniq_updates: '/assets/khroniq_updates_bg.jpg'
+};
+
+export const HOMEPAGE_SECTION_LABELS = {
+  gender_men: "Shop by Gender — Men's Banner",
+  gender_women: "Shop by Gender — Women's Banner",
+  khronomaster_professional: 'Classic Professional — Hero Image',
+  dive_deeper_tile1: 'Classic Professional — Tile 1 (Emerald Green)',
+  dive_deeper_tile2: 'Classic Professional — Tile 2 (Crimson Red)',
+  khroniq_updates: 'Khroniq Updates — Drawer / Header Banner',
+  hero_slide1_lifestyle: 'Hero Slide 1 — Crimson Red (Lifestyle)',
+  hero_slide1_product: 'Hero Slide 1 — Crimson Red (Watch)',
+  hero_slide2_lifestyle: 'Hero Slide 2 — Emerald Green (Lifestyle)',
+  hero_slide2_product: 'Hero Slide 2 — Emerald Green (Watch)',
+  hero_slide3_lifestyle: 'Hero Slide 3 — Midnight Black (Lifestyle)',
+  hero_slide3_product: 'Hero Slide 3 — Midnight Black (Watch)',
+  hero_slide4_lifestyle: 'Hero Slide 4 — Cobalt Blue (Lifestyle)',
+  hero_slide4_product: 'Hero Slide 4 — Cobalt Blue (Watch)',
+  hero_slide5_lifestyle: 'Hero Slide 5 — Sterling Silver (Lifestyle)',
+  hero_slide5_product: 'Hero Slide 5 — Sterling Silver (Watch)'
+};
+
+const updateSlideVariants = {
+  enter: (direction) => ({
+    x: direction > 0 ? 60 : -60,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (direction) => ({
+    x: direction > 0 ? -60 : 60,
+    opacity: 0,
+  }),
 };
 
 let publicMediaCache = null;
 let publicMediaPromise = null;
 
 export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, updatesOpen }) {
-  const dispatch = useDispatch();
   const products = useSelector(state => state.watch.products);
-  const featuredReviews = useSelector(state => state.watch.featuredReviews || []);
   const [homeImages, setHomeImages] = useState(defaultHomeImages);
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
   const spotlightImage = homeImages.khronomaster_professional || "/assets/spotlight_red_angled.png";
@@ -867,12 +899,6 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   const currentCurrency = useSelector(selectCurrentCurrency);
   const filters = useSelector(state => state.watch.filters || []);
   const contentSections = useSelector(state => state.watch.contentSections || []);
-
-  // Fetch featured reviews for testimonials section
-  useEffect(() => {
-    dispatch(fetchFeaturedReviews());
-  }, [dispatch]);
-
 
   useEffect(() => {
     document.title = 'KHRONIQ — Born from The Movement Of Time';
@@ -989,53 +1015,36 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     fetchUpdates();
   }, []);
 
-  // Auto-opening updates drawer disabled as requested
+  const [activeUpdateIdx, setActiveUpdateIdx] = useState(0);
+  const [slideDirection, setSlideDirection] = useState(1);
+  const [isUpdatesHovered, setIsUpdatesHovered] = useState(false);
 
-  const defaultUpdates = [
-    {
-      _id: 'up-1',
-      title: 'GENESIS COLLECTION LAUNCH',
-      detail: 'Unveiling Khroniq inaugural luxury timepieces. Crafted for those who master time.',
-      createdAt: '2026-09-25',
-    },
-    {
-      _id: 'up-2',
-      title: 'SWISS CRAFTSMANSHIP',
-      detail: 'Precision engineered automatic movements with anti-reflective sapphire crystal.',
-      createdAt: '2026-08-05',
-    },
-    {
-      _id: 'up-3',
-      title: 'LIMITED EDITION COLLECTION',
-      detail: 'Exclusive hand-crafted timepieces coming soon to select luxury boutiques.',
-      createdAt: '2026-08-20',
-    },
-  ];
+  const handleNextUpdate = useCallback(() => {
+    if (!brandUpdates || brandUpdates.length <= 1) return;
+    setSlideDirection(1);
+    setActiveUpdateIdx(prev => (prev + 1) % brandUpdates.length);
+  }, [brandUpdates]);
 
-  const displayedUpdates = (brandUpdates && brandUpdates.length >= 3)
-    ? brandUpdates
-    : (brandUpdates && brandUpdates.length > 0)
-      ? [...brandUpdates, ...defaultUpdates.slice(brandUpdates.length)]
-      : defaultUpdates;
-  const [currentUpdateIndex, setCurrentUpdateIndex] = useState(0);
+  const handlePrevUpdate = useCallback(() => {
+    if (!brandUpdates || brandUpdates.length <= 1) return;
+    setSlideDirection(-1);
+    setActiveUpdateIdx(prev => (prev === 0 ? brandUpdates.length - 1 : prev - 1));
+  }, [brandUpdates]);
+
+  // Auto-cycle through updates every 6 seconds if multiple exist, pausing when hovered
+  useEffect(() => {
+    if (!brandUpdates || brandUpdates.length <= 1 || isUpdatesHovered) return;
+    const interval = setInterval(() => {
+      handleNextUpdate();
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [brandUpdates, isUpdatesHovered, handleNextUpdate]);
 
   useEffect(() => {
-    if (!displayedUpdates || displayedUpdates.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentUpdateIndex((prev) => (prev + 1) % displayedUpdates.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [displayedUpdates.length]);
-
-  const handlePrevUpdate = (e) => {
-    e?.stopPropagation();
-    setCurrentUpdateIndex((prev) => (prev - 1 + displayedUpdates.length) % displayedUpdates.length);
-  };
-
-  const handleNextUpdate = (e) => {
-    e?.stopPropagation();
-    setCurrentUpdateIndex((prev) => (prev + 1) % displayedUpdates.length);
-  };
+    if (activeUpdateIdx >= brandUpdates.length && brandUpdates.length > 0) {
+      setActiveUpdateIdx(0);
+    }
+  }, [brandUpdates, activeUpdateIdx]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -1091,9 +1100,9 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   const activeCollectionOptions = (collectionCat?.options && collectionCat.options.length > 0)
     ? collectionCat.options.filter(opt => opt.isActive)
     : [
-        { name: 'Deevaaz', slug: 'deevaaz', value: 'deevaaz' },
-        { name: 'Classic', slug: 'classic', value: 'classic' }
-      ];
+      { name: 'Deevaaz', slug: 'deevaaz', value: 'deevaaz' },
+      { name: 'Classic', slug: 'classic', value: 'classic' }
+    ];
 
   const defaultCollectionArt = {
     deevaaz: {
@@ -1145,15 +1154,15 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
 
   const stats = (statsSection?.items && statsSection.items.length > 0)
     ? statsSection.items.map(i => ({
-        raw: i.title.replace(/[^0-9]/g, '') || i.title,
-        suffix: i.title.replace(/[0-9]/g, '') || '',
-        label: i.subtitle || i.description || ''
-      }))
+      raw: i.title.replace(/[^0-9]/g, '') || i.title,
+      suffix: i.title.replace(/[0-9]/g, '') || '',
+      label: i.subtitle || i.description || ''
+    }))
     : [
-        { raw: '100', suffix: '%', label: 'Swadeshi Design' },
-        { raw: '2026', suffix: '', label: 'Indian Launch' },
-        { raw: '50', suffix: 'K+', label: 'Pre-bookings' },
-      ];
+      { raw: '100', suffix: '%', label: 'Swadeshi Design' },
+      { raw: '2026', suffix: '', label: 'Indian Launch' },
+      { raw: '50', suffix: 'K+', label: 'Pre-bookings' },
+    ];
 
   /* ─── Render ─────────────────────────────────────────────────────── */
   return (
@@ -1287,11 +1296,11 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
             label={genderSplitSection?.items?.[1]?.title || "Women's Watches"}
             img={
               (genderSplitSection?.items?.[1]?.image &&
-               !genderSplitSection.items[1].image.includes('women_watches.jpg') &&
-               genderSplitSection.items[1].image.trim()) ||
+                !genderSplitSection.items[1].image.includes('women_watches.jpg') &&
+                genderSplitSection.items[1].image.trim()) ||
               (homeImages?.gender_women &&
-               !homeImages.gender_women.includes('women_watches.jpg') &&
-               homeImages.gender_women.trim()) ||
+                !homeImages.gender_women.includes('women_watches.jpg') &&
+                homeImages.gender_women.trim()) ||
               "/assets/women_watches_beach.jpeg"
             }
             gender="women"
@@ -1344,36 +1353,36 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
             </Reveal>
           </div>
 
-         {/* Right — 5-image auto sliding hero */}
-<div
-  className="relative overflow-hidden min-h-[420px] lg:min-h-0 group"
-  style={{ perspective: "1800px" }}
->
-  <AnimatePresence >
-    <motion.div
-      key={currentSpotlight}
-      className="absolute inset-0 bg-cover bg-center group-hover:scale-105"
-      style={{
-        backgroundImage: `url(${spotlightImages[currentSpotlight]})`,
-      }}
-      initial={{ x: "100%", opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: "-100%", opacity: 0 }}
-      transition={{
-        duration: 0.7,
-        ease: [0.22, 1, 0.36, 1],
-      }}
-    />
-  </AnimatePresence>
+          {/* Right — 5-image auto sliding hero */}
+          <div
+            className="relative overflow-hidden min-h-[420px] lg:min-h-0 group"
+            style={{ perspective: "1800px" }}
+          >
+            <AnimatePresence >
+              <motion.div
+                key={currentSpotlight}
+                className="absolute inset-0 bg-cover bg-center group-hover:scale-105"
+                style={{
+                  backgroundImage: `url(${spotlightImages[currentSpotlight]})`,
+                }}
+                initial={{ x: "100%", opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: "-100%", opacity: 0 }}
+                transition={{
+                  duration: 0.7,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+              />
+            </AnimatePresence>
 
-  <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-transparent" />
-</div>
+            <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-transparent" />
+          </div>
         </motion.div>
 
         {/* Bottom half — 2-up product mini grid */}
         <div className="grid grid-cols-2 border-t border-luxury-text/8">
           {[
-            { img: '/assets/spotlight_green_side.jpeg', label: 'Khroniq Emerald Green', sub: 'Heritage Automatic', style: { backgroundPosition: 'center center' } },
+            { img: homeImages.dive_deeper_tile1 || '/assets/spotlight_green_side.jpeg', label: 'Khroniq Emerald Green', sub: 'Heritage Automatic', style: { backgroundPosition: 'center center' } },
             { img: homeImages.dive_deeper_tile2 || '/assets/spotlight_red_overhead.png', label: 'Khroniq Crimson Red', sub: 'Heritage Automatic', style: { backgroundPosition: 'center center' } },
           ].map(({ img, label, sub, style }, i) => (
             <motion.div
@@ -1479,7 +1488,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
       </div>
 
       {/* ══════════ LIFESTYLE SHOWCASE SLIDER ══════════ */}
-      <LifestyleShowcaseSlider products={products} onPageChange={onPageChange} homeImages={homeImages} lifestyleItems={lifestyleSection?.items} />
+      <LifestyleShowcaseSlider products={products} onPageChange={onPageChange} homeImages={homeImages} />
 
 
       {/* ══════════ FEATURED PRODUCTS ══════════ */}
@@ -1656,11 +1665,10 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                             key={item.id || item._id || idx}
                             type="button"
                             onClick={() => setSelectedProductIndex(idx)}
-                            className={`relative shrink-0 rounded-full transition-all duration-300 p-1 cursor-pointer ${
-                              isSel
-                                ? 'ring-2 ring-[#047857] scale-110 shadow-sm bg-emerald-50/70'
-                                : 'opacity-60 hover:opacity-100 hover:scale-105'
-                            }`}
+                            className={`relative shrink-0 rounded-full transition-all duration-300 p-1 cursor-pointer ${isSel
+                              ? 'ring-2 ring-[#047857] scale-110 shadow-sm bg-emerald-50/70'
+                              : 'opacity-60 hover:opacity-100 hover:scale-105'
+                              }`}
                             title={item.name}
                           >
                             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-white/90 border border-neutral-200 flex items-center justify-center p-1">
@@ -1691,230 +1699,189 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           </div>
         )}
       </div>
-
-      {/* ══════════ CLIENT TESTIMONIALS ══════════ */}
-      {featuredReviews.length > 0 && (
-        <section className="w-full py-20 sm:py-28 bg-[#0e0d0b] overflow-hidden">
-          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-            {/* Section Header */}
-            <div className="text-center mb-14 space-y-4">
-              <motion.p
-                className="text-[10px] font-extrabold tracking-[0.35em] uppercase text-[#34d399]"
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                What Our Patrons Say
-              </motion.p>
-              <motion.h2
-                className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-wide uppercase"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-              >
-                Client Testimonials
-              </motion.h2>
-              <motion.div
-                className="w-12 h-[1.5px] bg-[#34d399] mx-auto"
-                initial={{ scaleX: 0 }}
-                whileInView={{ scaleX: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-              />
-            </div>
-
-            {/* Reviews Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-              {featuredReviews.slice(0, 6).map((review, idx) => (
-                <motion.div
-                  key={review.id || idx}
-                  className="relative bg-[#1a1916]/80 border border-white/[0.06] rounded-2xl p-6 sm:p-7 space-y-4 backdrop-blur-sm hover:border-[#34d399]/30 transition-all duration-500 group"
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: idx * 0.08 }}
-                >
-                  {/* Glow on hover */}
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[#34d399]/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-                  {/* Stars */}
-                  <div className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        size={14}
-                        fill={star <= review.rating ? '#c5a880' : 'transparent'}
-                        stroke={star <= review.rating ? '#c5a880' : '#555'}
-                        strokeWidth={1.5}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Comment */}
-                  <p className="text-white/80 text-sm leading-relaxed font-light italic line-clamp-4">
-                    &ldquo;{review.comment}&rdquo;
-                  </p>
-
-                  {/* Reviewer Info */}
-                  <div className="flex items-center gap-3 pt-2 border-t border-white/[0.06]">
-                    {review.productImage && (
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10 border border-white/10 flex-shrink-0">
-                        <img
-                          src={review.productImage}
-                          alt={review.productName}
-                          onError={(e) => handleImageError(e)}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-white text-xs font-semibold tracking-wide truncate">
-                        {review.userName}
-                      </p>
-                      <p className="text-[10px] text-[#34d399]/70 font-medium tracking-wider uppercase truncate">
-                        on {review.productName}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Spacer to shift KHRONIQ updates section lower */}
-      <div className="w-full h-32 bg-black relative z-30" />
-
       {/* ══════════ FULL SCREEN IMAGE BACKGROUND UPDATES SECTION ══════════ */}
       {/* ══════════ KHRONIQ UPDATE PARALLAX BANNER SECTION ══════════ */}
       <div
         ref={updatesRef}
-        className="relative w-full h-[100vh] flex items-center justify-center overflow-hidden bg-black text-white"
+        className="relative w-full min-h-[600px] sm:min-h-[700px] h-[90vh] sm:h-screen flex items-center justify-center overflow-hidden bg-black text-white px-4 sm:px-6"
       >
         {/* Background Image with slight opacity/fade */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-85"
+          className="absolute inset-0 bg-cover bg-center opacity-65"
           style={{
             backgroundImage: `url(${homeImages.khroniq_updates || "/assets/khroniq_updates_bg.jpg"})`,
             backgroundAttachment: 'fixed',
           }}
         />
         {/* Dark Overlay to align with the premium black theme */}
-        <div className="absolute inset-0 bg-black/30 z-10" />
+        <div className="absolute inset-0 bg-black/40 z-10" />
 
-        {/* Center Glassmorphism High-Transparency KHRONIQ UPDATES Box with Interactive Slider */}
-        <div className="relative z-20 max-w-2xl w-[92%] sm:w-[85%] p-6 sm:p-8 rounded-3xl bg-[#031c18]/25 backdrop-blur-md border border-[#34d399]/40 shadow-[0_25px_60px_rgba(0,0,0,0.85)] flex flex-col gap-5 transition-all duration-300 hover:bg-[#031c18]/35 hover:border-[#34d399]/60">
-          
-          {/* Top Header: Title on Left, Slide Counter on Right */}
-          <div className="flex items-center justify-between border-b border-[#34d399]/25 pb-3">
-            <span className="text-xs sm:text-sm uppercase font-black tracking-[0.3em] text-[#34d399] drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">
-              KHRONIQ UPDATES
-            </span>
-            <span className="text-xs font-mono font-bold tracking-widest text-emerald-200/90 bg-black/40 px-3 py-1 rounded-full border border-emerald-500/20">
-              {currentUpdateIndex + 1} / {displayedUpdates.length}
-            </span>
-          </div>
-
-          {/* Slider Content Row: Previous Arrow (<), Center Details, Next Arrow (>) */}
-          <div className="flex items-center justify-between gap-3 sm:gap-6 py-2">
-            
-            {/* Left Previous Arrow Button */}
-            <button
-              onClick={handlePrevUpdate}
-              aria-label="Previous Update"
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#34d399]/60 bg-[#031c18]/50 hover:bg-[#34d399]/25 hover:border-[#34d399] hover:scale-110 active:scale-95 text-[#34d399] flex items-center justify-center transition-all duration-300 shadow-[0_0_15px_rgba(4,120,87,0.3)] shrink-0 cursor-pointer"
-            >
-              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
-            </button>
-
-            {/* Center Animated Slide Info */}
-            <div className="flex-1 text-center space-y-3 px-1 min-h-[130px] flex flex-col justify-center items-center">
-              <div className="flex items-center justify-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#34d399] animate-pulse shadow-[0_0_10px_#34d399]" />
-                <h3 className="font-serif text-lg sm:text-2xl font-black uppercase tracking-wider text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
-                  {displayedUpdates[currentUpdateIndex]?.title || 'WEB HOSTING SOON'}
-                </h3>
-              </div>
-
-              <p className="text-xs sm:text-sm text-emerald-50/90 font-medium leading-relaxed max-w-md drop-shadow">
-                {displayedUpdates[currentUpdateIndex]?.detail || 'khroniq is launching its timepieces :wait is over'}
-              </p>
-
-              <div className="w-full max-w-xs border-b border-emerald-500/25 my-1" />
-
-              <div className="flex items-center justify-center gap-2 text-emerald-300 font-bold font-mono text-xs tracking-widest pt-0.5">
-                <Calendar className="w-3.5 h-3.5 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                <span>
-                  {displayedUpdates[currentUpdateIndex]?.createdAt
-                    ? new Date(displayedUpdates[currentUpdateIndex].createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
-                    : '17 JUL 2026'}
-                </span>
-              </div>
-            </div>
-
-            {/* Right Next Arrow Button */}
-            <button
-              onClick={handleNextUpdate}
-              aria-label="Next Update"
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#34d399]/60 bg-[#031c18]/50 hover:bg-[#34d399]/25 hover:border-[#34d399] hover:scale-110 active:scale-95 text-[#34d399] flex items-center justify-center transition-all duration-300 shadow-[0_0_15px_rgba(4,120,87,0.3)] shrink-0 cursor-pointer"
-            >
-              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
-            </button>
-
-          </div>
-
-          {/* Bottom Dot Indicators */}
-          {displayedUpdates.length > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-1">
-              {displayedUpdates.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentUpdateIndex(idx);
-                  }}
-                  className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                    idx === currentUpdateIndex
-                      ? 'w-7 bg-[#34d399] shadow-[0_0_8px_#34d399]'
-                      : 'w-2 bg-emerald-950/60 border border-emerald-500/30 hover:bg-emerald-500/50'
-                  }`}
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
-              ))}
-            </div>
-          )}
-
-        </div>
-
-        {/* Vertical Tab sticking to the extreme left of this section only — COMMENTED OUT AS REQUESTED */}
-        {/*
-        <button
-          onClick={() => onUpdatesOpen && onUpdatesOpen()}
-          className="absolute left-0 top-0 h-full w-20 sm:w-24 text-white font-black text-[22px] sm:text-[26px] tracking-[0.35em] uppercase border-r border-[#047857]/30 shadow-2xl hover:opacity-100 hover:translate-x-1.5 transition-all duration-300 z-30 cursor-pointer flex flex-col items-center justify-center select-none rounded-none group"
+        {/* Centered Wide Rectangular Frosted Glass KHRONIQ Updates Card */}
+        <div
+          onMouseEnter={() => setIsUpdatesHovered(true)}
+          onMouseLeave={() => setIsUpdatesHovered(false)}
+          className="relative z-20 w-full max-w-[820px] rounded-3xl p-6 sm:p-9 lg:p-10 select-none overflow-hidden"
           style={{
-            writingMode: 'vertical-lr',
-            textOrientation: 'mixed',
-            background: 'linear-gradient(180deg, #047857 0%, #065f46 45%, #022c22 100%)',
+            background: 'rgba(8, 35, 32, 0.50)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(0, 220, 190, 0.25)',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.25), 0 0 35px rgba(0, 220, 190, 0.15)',
           }}
         >
-          <div className="absolute top-10 flex items-center justify-center">
-            <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-white opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+          {/* Ambient Corner Glows */}
+          <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-teal-500/15 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
+
+          {/* Card Header Row */}
+          <div className="relative z-10 flex items-start justify-between">
+            <div>
+              <span className="font-sans font-bold text-xs sm:text-sm tracking-[0.28em] text-white uppercase block">
+                KHRONIQ UPDATES
+              </span>
+              {/* Subtle Teal Accent Line */}
+              <div className="w-16 sm:w-20 h-[2px] bg-teal-400 mt-2.5 rounded-full shadow-[0_0_8px_rgba(20,184,166,0.6)]" />
+            </div>
+
+            {brandUpdates && brandUpdates.length > 1 && (
+              <div className="flex items-center gap-3 sm:gap-4">
+                <span className="text-white/70 text-xs sm:text-sm font-mono tracking-widest">
+                  {activeUpdateIdx + 1} / {brandUpdates.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePrevUpdate}
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-white/20 hover:border-teal-400 bg-white/5 hover:bg-teal-400/10 text-white/70 hover:text-teal-300 flex items-center justify-center transition cursor-pointer active:scale-95"
+                    aria-label="Previous update"
+                  >
+                    <ArrowLeft size={16} className="stroke-[2.2]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextUpdate}
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-teal-400 bg-teal-400/15 hover:bg-teal-400/25 text-teal-300 flex items-center justify-center transition cursor-pointer active:scale-95 shadow-[0_0_12px_rgba(20,184,166,0.35)]"
+                    aria-label="Next update"
+                  >
+                    <ArrowRight size={16} className="stroke-[2.2]" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
-          <span className="group-hover:scale-105 transition-transform duration-300">
-            KHRONIQ UPDATES
-          </span>
+          {/* Card Body — Content Slides Horizontally */}
+          <div className="relative z-10 overflow-hidden min-h-[160px] sm:min-h-[180px] flex flex-col justify-center mt-6 sm:mt-8">
+            {brandUpdates && brandUpdates.length > 0 ? (
+              (() => {
+                const currentUpdate = brandUpdates[activeUpdateIdx] || brandUpdates[0];
+                return (
+                  <AnimatePresence mode="wait" custom={slideDirection}>
+                    <motion.div
+                      key={currentUpdate._id || currentUpdate.id || activeUpdateIdx}
+                      custom={slideDirection}
+                      variants={updateSlideVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={{
+                        x: { type: 'spring', stiffness: 350, damping: 30 },
+                        opacity: { duration: 0.2 },
+                      }}
+                      className="w-full grid grid-cols-1 md:grid-cols-12 gap-6 items-center"
+                    >
+                      {/* Left / Main Update Content */}
+                      <div className="md:col-span-7 flex flex-col">
+                        {/* Pill Badge */}
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-teal-400/30 bg-teal-400/10 text-teal-300 text-[10px] sm:text-[11px] font-bold tracking-[0.2em] uppercase mb-3.5 w-fit">
+                          <span className="w-1.5 h-1.5 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(20,184,166,0.9)]" />
+                          <span>UPDATE</span>
+                        </div>
 
-          <div className="absolute bottom-10 flex items-center justify-center">
-            <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-white opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                        {/* Title */}
+                        <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white uppercase leading-tight">
+                          {currentUpdate.title}
+                        </h3>
+
+                        {/* Description */}
+                        {currentUpdate.detail && (
+                          <p className="text-neutral-300 text-xs sm:text-sm lg:text-base font-light leading-relaxed mt-2.5 sm:mt-3 whitespace-pre-line break-words max-w-lg">
+                            {currentUpdate.detail}
+                          </p>
+                        )}
+
+                        {/* Date with Calendar Icon */}
+                        {currentUpdate.createdAt && !isNaN(new Date(currentUpdate.createdAt).getTime()) && (
+                          <div className="flex items-center gap-2 text-white/50 text-xs sm:text-sm font-mono tracking-wider uppercase mt-4 sm:mt-5">
+                            <Calendar size={14} className="text-teal-400/80 shrink-0" />
+                            <span>
+                              {new Date(currentUpdate.createdAt).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                              }).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right / Decorative Horological Detail */}
+                      <div className="hidden md:flex md:col-span-5 flex-col items-center justify-center pl-6 border-l border-white/10 select-none">
+                        <div className="relative w-36 h-36 lg:w-40 lg:h-40 flex items-center justify-center">
+                          {/* Ambient decorative glowing arc */}
+                          <div className="absolute inset-0 rounded-full border border-teal-400/20 shadow-[0_0_24px_rgba(20,184,166,0.15)]" />
+                          <div className="absolute inset-3 rounded-full border border-white/10" />
+                          <LogoMark className="w-10 h-10 lg:w-12 lg:h-12 opacity-80" />
+                        </div>
+                        <div className="text-center mt-3">
+                          <span className="font-serif text-[10px] tracking-[0.25em] text-white/50 uppercase block">
+                            Crafted For What Matters
+                          </span>
+                          <div className="w-8 h-[1.5px] bg-teal-400/70 mx-auto mt-1.5 rounded-full" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
+                );
+              })()
+            ) : (
+              <div className="text-xs sm:text-sm text-white/60 font-bold uppercase tracking-wider text-center py-6">
+                Stay Tuned For Announcements
+              </div>
+            )}
           </div>
-        </button>
-        */}
+
+          {/* Bottom Bar: Progress Dots */}
+          <div className="relative z-10 border-t border-white/10 mt-6 sm:mt-8 pt-4 sm:pt-5 flex items-center justify-between">
+            {brandUpdates && brandUpdates.length > 1 ? (
+              <div className="flex items-center gap-2">
+                {brandUpdates.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      setSlideDirection(i > activeUpdateIdx ? 1 : -1);
+                      setActiveUpdateIdx(i);
+                    }}
+                    className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                      i === activeUpdateIdx
+                        ? 'w-6 bg-teal-400 shadow-[0_0_8px_rgba(20,184,166,0.8)]'
+                        : 'w-1.5 bg-white/25 hover:bg-white/50'
+                    }`}
+                    aria-label={`Go to update ${i + 1}`}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div />
+            )}
+
+            {/* Subtle Brand Watermark Detail */}
+            <span className="text-[10px] font-mono tracking-[0.22em] text-white/40 uppercase">
+              KHRONIQ TIMEPIECES
+            </span>
+          </div>
+        </div>
       </div>
     </>
   );

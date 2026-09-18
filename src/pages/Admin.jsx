@@ -48,6 +48,7 @@ import WebsiteContentManager from '../components/admin/WebsiteContentManager';
 import AdminMediaField from '../components/admin/AdminMediaField';
 import AdminManagement from '../components/admin/AdminManagement';
 import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
+import { defaultHomeImages, HOMEPAGE_SECTION_LABELS } from './Home';
 import {
   Menu, BarChart3, Plus, Edit, Trash2, Check, X, Tag, Star,
   Package, AlertTriangle, ShieldAlert, ArrowLeft, ArrowUpRight,
@@ -747,27 +748,15 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
-  const HOMEPAGE_SECTIONS = [
-    { key: 'gender_men', label: "Shop by Gender — Men's Banner" },
-    { key: 'gender_women', label: "Shop by Gender — Women's Banner" },
-    { key: 'collection_khronomaster', label: 'Collection Tile — Classic' },
-    { key: 'collection_defy', label: 'Collection Tile — Defy' },
-    { key: 'collection_heritage', label: 'Collection Tile — Elite & Heritage' },
-    { key: 'khronomaster_professional', label: 'Classic Professional — Hero Image' },
-    { key: 'dive_deeper_tile1', label: 'Classic Professional — Tile 1 (Emerald Green)' },
-    { key: 'dive_deeper_tile2', label: 'Classic Professional — Tile 2 (Crimson Red)' },
-    { key: 'khroniq_updates', label: 'Khroniq Updates — Drawer / Header Banner' },
-    { key: 'hero_slide1_lifestyle', label: 'Hero Slide 1 — Crimson Red (Lifestyle)' },
-    { key: 'hero_slide1_product', label: 'Hero Slide 1 — Crimson Red (Watch)' },
-    { key: 'hero_slide2_lifestyle', label: 'Hero Slide 2 — Emerald Green (Lifestyle)' },
-    { key: 'hero_slide2_product', label: 'Hero Slide 2 — Emerald Green (Watch)' },
-    { key: 'hero_slide3_lifestyle', label: 'Hero Slide 3 — Midnight Black (Lifestyle)' },
-    { key: 'hero_slide3_product', label: 'Hero Slide 3 — Midnight Black (Watch)' },
-    { key: 'hero_slide4_lifestyle', label: 'Hero Slide 4 — Cobalt Blue (Lifestyle)' },
-    { key: 'hero_slide4_product', label: 'Hero Slide 4 — Cobalt Blue (Watch)' },
-    { key: 'hero_slide5_lifestyle', label: 'Hero Slide 5 — Sterling Silver (Lifestyle)' },
-    { key: 'hero_slide5_product', label: 'Hero Slide 5 — Sterling Silver (Watch)' }
-  ];
+  const HOMEPAGE_SECTIONS = Object.keys(defaultHomeImages || {}).map((key) => ({
+    key,
+    label:
+      (HOMEPAGE_SECTION_LABELS && HOMEPAGE_SECTION_LABELS[key]) ||
+      key
+        .split('_')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ')
+  }));
 
   useEffect(() => {
     if (isAdminRole(currentUser?.role) && activeTab === 'media') {
