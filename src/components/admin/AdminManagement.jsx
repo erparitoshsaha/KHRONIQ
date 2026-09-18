@@ -34,8 +34,127 @@ import {
   User,
   MapPin,
   Clock,
-  Shield
+  Shield,
+  ChevronDown
 } from 'lucide-react';
+
+function SearchableLocationSelect({ selectedLocation, selectedLocationId, onChange, label = "Store Location Scope" }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    setSearchTerm(selectedLocation || '');
+  }, [selectedLocation]);
+
+  const filteredLocations = DEFAULT_LOCATIONS.filter(loc =>
+    loc.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
+  );
+
+  const handleSelect = (loc) => {
+    onChange({ id: loc.id, name: loc.name });
+    setSearchTerm(loc.name);
+    setIsOpen(false);
+  };
+
+  const handleCustomSelect = () => {
+    const customName = searchTerm.trim();
+    if (!customName) return;
+    const customId = `loc-custom-${customName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+    onChange({ id: customId, name: customName });
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="space-y-1.5 relative">
+      <label className="text-[10px] font-bold text-gray-300 uppercase tracking-widest block">
+        {label}
+      </label>
+      
+      <div className="relative">
+        <div className="relative flex items-center">
+          <MapPin size={14} className="absolute left-3 text-luxury-gold/80 pointer-events-none" />
+          <input
+            type="text"
+            value={searchTerm}
+            onFocus={() => setIsOpen(true)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setIsOpen(true);
+            }}
+            placeholder="Type city or search store location (e.g. Delhi, Mumbai, Jaipur)..."
+            className="w-full bg-luxury-dark border border-white/15 rounded text-white text-xs pl-9 pr-8 p-3 focus:outline-none focus:border-white transition-all shadow-inner"
+          />
+          {searchTerm ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                onChange({ id: 'loc-flagship', name: 'Main Flagship' });
+                setIsOpen(true);
+              }}
+              className="absolute right-3 text-gray-400 hover:text-white transition cursor-pointer"
+            >
+              <X size={13} />
+            </button>
+          ) : (
+            <ChevronDown size={14} className="absolute right-3 text-gray-400 pointer-events-none" />
+          )}
+        </div>
+
+        {/* Dropdown Suggestions List */}
+        {isOpen && (
+          <>
+            <div 
+              className="fixed inset-0 z-30 cursor-default" 
+              onClick={() => setIsOpen(false)} 
+            />
+            
+            <div className="absolute left-0 right-0 top-full mt-1 bg-[#161616] border border-white/20 rounded-md shadow-2xl z-40 max-h-56 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 divide-y divide-white/5">
+              {filteredLocations.length > 0 ? (
+                filteredLocations.map((loc) => {
+                  const isSelected = selectedLocationId === loc.id || selectedLocation === loc.name;
+                  return (
+                    <button
+                      key={loc.id}
+                      type="button"
+                      onClick={() => handleSelect(loc)}
+                      className={`w-full text-left px-3.5 py-2.5 text-xs flex items-center justify-between transition cursor-pointer ${
+                        isSelected 
+                          ? 'bg-luxury-gold/20 text-white font-bold border-l-2 border-luxury-gold' 
+                          : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <MapPin size={12} className={isSelected ? "text-luxury-gold" : "text-gray-500"} />
+                        <span>{loc.name}</span>
+                      </div>
+                      {isSelected && <span className="text-[10px] text-luxury-gold font-bold">SELECTED</span>}
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="p-3 text-center text-xs text-gray-400">
+                  No matching store city found.
+                </div>
+              )}
+
+              {/* Custom Location Option if typed search has no exact match */}
+              {searchTerm.trim() && !DEFAULT_LOCATIONS.some(l => l.name.toLowerCase() === searchTerm.trim().toLowerCase()) && (
+                <button
+                  type="button"
+                  onClick={handleCustomSelect}
+                  className="w-full text-left px-3.5 py-2.5 text-xs bg-luxury-gold/15 hover:bg-luxury-gold/30 text-luxury-gold font-bold flex items-center space-x-2 transition cursor-pointer border-t border-luxury-gold/30"
+                >
+                  <span>+ Add Custom Location: "{searchTerm.trim()}"</span>
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function AdminManagement() {
   const dispatch = useDispatch();
@@ -714,28 +833,19 @@ export default function AdminManagement() {
                 </div>
 
                 {/* Store Location Scope */}
-                <div className="sm:col-span-2 space-y-1.5">
-                  <label className="text-[10px] font-bold text-gray-300 uppercase tracking-widest block">
-                    Store Location Scope
-                  </label>
-                  <select
-                    value={createForm.locationId}
-                    onChange={(e) => {
-                      const selectedLoc = DEFAULT_LOCATIONS.find(l => l.id === e.target.value);
+                <div className="sm:col-span-2">
+                  <SearchableLocationSelect
+                    selectedLocation={createForm.location}
+                    selectedLocationId={createForm.locationId}
+                    onChange={({ id, name }) => {
                       setCreateForm({
                         ...createForm,
-                        locationId: e.target.value,
-                        location: selectedLoc ? selectedLoc.name : e.target.value
+                        locationId: id,
+                        location: name
                       });
                     }}
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
-                  >
-                    {DEFAULT_LOCATIONS.map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        {loc.name}
-                      </option>
-                    ))}
-                  </select>
+                    label="Store Location Scope"
+                  />
                 </div>
               </div>
 
@@ -872,28 +982,19 @@ export default function AdminManagement() {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-300 uppercase tracking-widest block">
-                  Store Location
-                </label>
-                <select
-                  value={editForm.locationId}
-                  onChange={(e) => {
-                    const selectedLoc = DEFAULT_LOCATIONS.find(l => l.id === e.target.value);
+              <div>
+                <SearchableLocationSelect
+                  selectedLocation={editForm.location}
+                  selectedLocationId={editForm.locationId}
+                  onChange={({ id, name }) => {
                     setEditForm({
                       ...editForm,
-                      locationId: e.target.value,
-                      location: selectedLoc ? selectedLoc.name : e.target.value
+                      locationId: id,
+                      location: name
                     });
                   }}
-                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-white"
-                >
-                  {DEFAULT_LOCATIONS.map((loc) => (
-                    <option key={loc.id} value={loc.id}>
-                      {loc.name}
-                    </option>
-                  ))}
-                </select>
+                  label="Store Location"
+                />
               </div>
 
               {/* Status Select */}
