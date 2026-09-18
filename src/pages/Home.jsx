@@ -1726,16 +1726,16 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
         ref={updatesRef}
         className="relative w-full min-h-[600px] sm:min-h-[700px] h-[90vh] sm:h-screen flex items-center justify-center overflow-hidden bg-black text-white px-4 sm:px-6"
       >
-        {/* Background Image with slight opacity/fade */}
+        {/* Background Image with crisp opacity */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-65"
+          className="absolute inset-0 bg-cover bg-center opacity-85"
           style={{
             backgroundImage: `url(${homeImages.khroniq_updates || "/assets/khroniq_updates_bg.jpg"})`,
             backgroundAttachment: 'fixed',
           }}
         />
-        {/* Dark Overlay to align with the premium black theme */}
-        <div className="absolute inset-0 bg-black/40 z-10" />
+        {/* Subtle Dark Overlay */}
+        <div className="absolute inset-0 bg-black/20 z-10" />
 
         {/* Centered Wide Rectangular Frosted Glass KHRONIQ Updates Card */}
         <div
@@ -1743,11 +1743,11 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           onMouseLeave={() => setIsUpdatesHovered(false)}
           className="relative z-20 w-full max-w-[820px] rounded-3xl p-6 sm:p-9 lg:p-10 select-none overflow-hidden"
           style={{
-            background: 'rgba(8, 35, 32, 0.50)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(0, 220, 190, 0.25)',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.25), 0 0 35px rgba(0, 220, 190, 0.15)',
+            background: 'rgba(8, 25, 22, 0.22)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            border: '1px solid rgba(0, 220, 190, 0.3)',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.35), 0 0 35px rgba(0, 220, 190, 0.15)',
           }}
         >
           {/* Ambient Corner Glows */}
