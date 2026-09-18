@@ -148,16 +148,16 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
               transition: 'opacity 0.9s ease, transform 0.9s ease',
             }}>
               {/* Logo */}
-              <div className="flex items-center space-x-4 sm:space-x-5 mb-8">
+              <div className="flex items-center space-x-3 sm:space-x-4 mb-8">
                 <img
                   src="/assets/logo_icon.png"
                   alt="KHRONIQ Logo"
-                  className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 object-contain shrink-0"
+                  className="h-10 sm:h-14 md:h-16 w-auto object-contain shrink-0"
                 />
                 <img
                   src="/assets/logo_text.png"
                   alt="KHRONIQ"
-                  className="h-8 sm:h-12 md:h-16 w-auto max-w-[60vw] sm:max-w-none object-contain shrink-0"
+                  className="h-7 sm:h-10 md:h-12 w-auto max-w-[60vw] sm:max-w-none object-contain shrink-0"
                 />
               </div>
 
@@ -423,16 +423,16 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
           GIANT BRANDING BANNER (TISSOT STYLE)
       ══════════════════════════════════════════════════════ */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-2">
-        <div className="flex items-center justify-center space-x-4 sm:space-x-8 md:space-x-12 select-none pointer-events-none opacity-90">
+        <div className="flex items-center justify-center space-x-3 sm:space-x-6 md:space-x-8 select-none pointer-events-none opacity-90">
           <img
             src="/assets/logo_icon.png"
             alt="KHRONIQ Logo"
-            className="h-10 sm:h-20 md:h-28 lg:h-36 object-contain filter drop-shadow-[0_0_15px_rgba(4,120,87,0.2)]"
+            className="h-10 sm:h-18 md:h-24 lg:h-28 w-auto object-contain shrink-0 filter drop-shadow-[0_0_15px_rgba(4,120,87,0.2)]"
           />
           <img
             src="/assets/logo_text.png"
             alt="KHRONIQ"
-            className="h-8 sm:h-16 md:h-24 lg:h-32 max-w-[65vw] sm:max-w-none object-contain filter drop-shadow-[0_0_15px_rgba(4,120,87,0.2)]"
+            className="h-7 sm:h-13 md:h-17 lg:h-20 w-auto max-w-[65vw] sm:max-w-none object-contain shrink-0 filter drop-shadow-[0_0_15px_rgba(4,120,87,0.2)]"
           />
         </div>
       </div>
