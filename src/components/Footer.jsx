@@ -157,7 +157,7 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
                 <img
                   src="/assets/logo_text.png"
                   alt="KHRONIQ"
-                  className="h-7 sm:h-10 md:h-12 w-auto max-w-[60vw] sm:max-w-none object-contain shrink-0"
+                  className="h-7 sm:h-10 md:h-12 w-auto max-w-[60vw] sm:max-w-none object-contain shrink-0 -mt-1.5 sm:-mt-2.5 md:-mt-3"
                 />
               </div>
 
@@ -432,7 +432,7 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
           <img
             src="/assets/logo_text.png"
             alt="KHRONIQ"
-            className="h-7 sm:h-13 md:h-17 lg:h-20 w-auto max-w-[65vw] sm:max-w-none object-contain shrink-0 filter drop-shadow-[0_0_15px_rgba(4,120,87,0.2)]"
+            className="h-7 sm:h-13 md:h-17 lg:h-20 w-auto max-w-[65vw] sm:max-w-none object-contain shrink-0 -mt-2 sm:-mt-4 md:-mt-5 lg:-mt-6 filter drop-shadow-[0_0_15px_rgba(4,120,87,0.2)]"
           />
         </div>
       </div>
