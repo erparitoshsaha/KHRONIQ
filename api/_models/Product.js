@@ -22,7 +22,6 @@ const productSchema = new mongoose.Schema({
   uniqueCode: { type: String, default: '' },
   image: { type: String, required: true },
   images: [{ type: String }],
-  images360: [{ type: String }],
   brand: { type: String, default: 'KHRONIQ' },
   price: { type: Number, required: true },
   stock: { type: Number, required: true, default: 0 },

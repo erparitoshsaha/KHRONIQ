@@ -5,8 +5,7 @@ import { handleImageError } from '../utils/imageUtils';
 import { findProductInList } from '../utils/productRouting';
 import ProductCard from '../components/ProductCard';
 import BackButton from '../components/BackButton';
-import Watch360Viewer from '../components/Watch360Viewer';
-import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2, RotateCw } from 'lucide-react';
+import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 
 export default function ProductDetail({ params, onPageChange }) {
@@ -110,12 +109,10 @@ export default function ProductDetail({ params, onPageChange }) {
   };
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [is360Active, setIs360Active] = useState(false);
 
   // Reset selected image when navigating to a new product
   useEffect(() => {
     setSelectedImageIndex(0);
-    setIs360Active(false);
   }, [product?.id, product?._id]);
 
   // Gallery calculation strictly without any fake or placeholder fallbacks
@@ -288,108 +285,71 @@ export default function ProductDetail({ params, onPageChange }) {
         
         {/* Left Column: Image Gallery */}
         <div className="lg:col-span-6 space-y-6">
-          {is360Active ? (
-            <Watch360Viewer 
-              product={product} 
-              onClose={() => setIs360Active(false)} 
+          <div 
+            onMouseEnter={() => setIsZoomed(true)}
+            onMouseLeave={() => { setIsZoomed(false); setZoomPos({ x: 0, y: 0, pxX: 0, pxY: 0, width: 0, height: 0 }); }}
+            onMouseMove={handleMouseMove}
+            className="bg-luxury-gray border border-white/5 rounded-md aspect-square flex items-center justify-center p-0 overflow-hidden relative cursor-zoom-in group"
+          >
+            <img
+              src={currentImage}
+              alt={product.name}
+              onError={(e) => handleImageError(e)}
+              className="w-full h-full object-cover filter drop-shadow-[0_15px_35px_rgba(0,0,0,0.6)]"
             />
-          ) : (
-            <div 
-              onMouseEnter={() => setIsZoomed(true)}
-              onMouseLeave={() => { setIsZoomed(false); setZoomPos({ x: 0, y: 0, pxX: 0, pxY: 0, width: 0, height: 0 }); }}
-              onMouseMove={handleMouseMove}
-              className="bg-luxury-gray border border-white/5 rounded-md aspect-square flex items-center justify-center p-0 overflow-hidden relative cursor-zoom-in group"
-            >
-              <img
-                src={currentImage}
-                alt={product.name}
-                onError={(e) => handleImageError(e)}
-                className="w-full h-full object-cover filter drop-shadow-[0_15px_35px_rgba(0,0,0,0.6)]"
-              />
-              
-              {/* 360 Interactive View Trigger Button Overlay */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIs360Active(true);
+
+            {/* Hover Target Magnifying Square Lens */}
+            {isZoomed && (
+              <div 
+                className="absolute border-2 border-luxury-gold bg-[#0d0d0d] overflow-hidden rounded-full pointer-events-none hidden lg:block shadow-[0_20px_50px_rgba(0,0,0,0.65)] z-10"
+                style={{
+                  width: '180px',
+                  height: '180px',
+                  left: `${zoomPos.x}%`,
+                  top: `${zoomPos.y}%`,
+                  transform: 'translate(-50%, -50%)',
                 }}
-                className="absolute top-4 right-4 z-20 px-3.5 py-2 rounded-full bg-black/80 hover:bg-black text-luxury-gold hover:text-white border border-luxury-gold/50 shadow-xl backdrop-blur-md text-[11px] font-bold tracking-widest uppercase flex items-center gap-2 transition-all duration-300 transform hover:scale-105 cursor-pointer"
               >
-                <RotateCw className="w-4 h-4" />
-                <span>360° VIEW</span>
-              </button>
-
-              {/* Hover Target Magnifying Square Lens */}
-              {isZoomed && (
-                <div 
-                  className="absolute border-2 border-luxury-gold bg-[#0d0d0d] overflow-hidden rounded-full pointer-events-none hidden lg:block shadow-[0_20px_50px_rgba(0,0,0,0.65)] z-10"
+                <img 
+                  src={currentImage}
+                  alt="Zoomed view"
+                  onError={(e) => handleImageError(e)}
+                  className="absolute max-w-none"
                   style={{
-                    width: '180px',
-                    height: '180px',
-                    left: `${zoomPos.x}%`,
-                    top: `${zoomPos.y}%`,
-                    transform: 'translate(-50%, -50%)',
+                    width: `${zoomPos.width * 3}px`,
+                    height: `${zoomPos.height * 3}px`,
+                    left: `${90 - (zoomPos.pxX * 3)}px`,
+                    top: `${90 - (zoomPos.pxY * 3)}px`,
                   }}
-                >
-                  <img 
-                    src={currentImage}
-                    alt="Zoomed view"
-                    onError={(e) => handleImageError(e)}
-                    className="absolute max-w-none"
-                    style={{
-                      width: `${zoomPos.width * 3}px`,
-                      height: `${zoomPos.height * 3}px`,
-                      left: `${90 - (zoomPos.pxX * 3)}px`,
-                      top: `${90 - (zoomPos.pxY * 3)}px`,
-                    }}
-                  />
-                </div>
-              )}
+                />
+              </div>
+            )}
 
-              {product.stock === 0 && (
-                <div className="absolute inset-0 bg-black/75 flex items-center justify-center pointer-events-none z-15">
-                  <span className="text-luxury-red font-bold text-sm tracking-widest uppercase border border-luxury-red px-4 py-2">
-                    Sold Out
-                  </span>
-                </div>
-              )}
+            {product.stock === 0 && (
+              <div className="absolute inset-0 bg-black/75 flex items-center justify-center pointer-events-none z-15">
+                <span className="text-luxury-red font-bold text-sm tracking-widest uppercase border border-luxury-red px-4 py-2">
+                  Sold Out
+                </span>
+              </div>
+            )}
 
-              {product.stock > 0 && product.stock < 5 && (
-                <div className="absolute bottom-4 left-4 bg-luxury-red text-white uppercase text-[10px] tracking-[0.2em] font-semibold px-3 py-1.5 rounded-sm shadow-lg shadow-black/30 flex items-center gap-1.5 z-15">
-                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                  Hurry, only {product.stock} left!
-                </div>
-              )}
-            </div>
-          )}
+            {product.stock > 0 && product.stock < 5 && (
+              <div className="absolute bottom-4 left-4 bg-luxury-red text-white uppercase text-[10px] tracking-[0.2em] font-semibold px-3 py-1.5 rounded-sm shadow-lg shadow-black/30 flex items-center gap-1.5 z-15">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                Hurry, only {product.stock} left!
+              </div>
+            )}
+          </div>
 
-          {/* Multi-image thumbnail strip + 360 Mode Button */}
+          {/* Multi-image thumbnail strip */}
           <div className="flex items-center gap-3 overflow-x-auto py-1 scrollbar-none">
-            {/* 360 Thumbnail Button */}
-            <button
-              type="button"
-              onClick={() => setIs360Active(!is360Active)}
-              className={`relative flex-shrink-0 px-3 h-16 sm:h-20 rounded border flex flex-col items-center justify-center gap-1 transition-all duration-200 cursor-pointer ${
-                is360Active
-                  ? 'border-luxury-gold bg-luxury-gold/20 text-luxury-gold ring-1 ring-luxury-gold shadow-md scale-105'
-                  : 'border-white/10 bg-neutral-900/80 text-gray-300 hover:border-luxury-gold/50 hover:text-luxury-gold'
-              }`}
-            >
-              <RotateCw className={`w-5 h-5 ${is360Active ? 'animate-spin' : ''}`} />
-              <span className="text-[9px] font-bold tracking-widest uppercase">360° SPIN</span>
-            </button>
-
             {allImages.map((imgUrl, idx) => {
-              const isSelected = !is360Active && idx === selectedImageIndex;
+              const isSelected = idx === selectedImageIndex;
               return (
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => {
-                    setIs360Active(false);
-                    setSelectedImageIndex(idx);
-                  }}
+                  onClick={() => setSelectedImageIndex(idx)}
                   className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded border transition-all duration-200 overflow-hidden cursor-pointer ${
                     isSelected
                       ? 'border-luxury-gold ring-1 ring-luxury-gold shadow-md shadow-black/40 scale-105'
