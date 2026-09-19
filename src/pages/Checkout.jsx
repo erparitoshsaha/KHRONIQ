@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { createRazorpayOrder, verifyRazorpayPayment, validateCoupon, selectCurrentCurrency, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
+import { createRazorpayOrder, verifyRazorpayPayment, validateCoupon, selectCurrentCurrency, formatPrice, getDiscountedPrice, getProductMrp, getSellingPrice } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 
@@ -78,14 +78,17 @@ export default function Checkout({ params, onPageChange }) {
   const cartItemsWithDetails = cart.map(item => {
     const itemProdId = (item.productId?._id || item.productId)?.toString();
     const product = products.find(p => (p.id && p.id.toString() === itemProdId) || (p._id && p._id.toString() === itemProdId));
-    const itemPrice = item.price !== undefined ? item.price : getDiscountedPrice(product);
-    return { ...item, product, itemPrice };
+    const itemMrp = item.mrp || getProductMrp(product);
+    const itemPrice = item.price !== undefined ? item.price : getSellingPrice(product);
+    return { ...item, product, itemMrp, itemPrice };
   }).filter(item => item.product !== undefined);
 
+  const mrpTotal = cartItemsWithDetails.reduce((sum, item) => sum + (item.itemMrp * item.quantity), 0);
   const subtotal = cartItemsWithDetails.reduce((sum, item) => sum + (item.itemPrice * item.quantity), 0);
   const discount = appliedCoupon ? Math.round(subtotal * (appliedCoupon.discountPercent / 100)) : 0;
-  const gst = Math.round(subtotal * 0.18);
-  const total = Math.max(0, subtotal - discount + gst);
+  const finalSellingPrice = Math.max(0, subtotal - discount);
+  const gst = Math.round(((finalSellingPrice * 18) / 118) * 100) / 100;
+  const total = finalSellingPrice;
 
   const handleShippingSubmit = (e) => {
     e.preventDefault();
@@ -332,9 +335,10 @@ export default function Checkout({ params, onPageChange }) {
       y += 6;
     }
 
-    const orderGst = Math.round(Number(orderReceipt.subtotal) * 0.18);
-    doc.text('GST (18%)', totalsX, y);
-    doc.text(`Rs. ${orderGst.toLocaleString('en-IN')}`, pageWidth - marginX, y, { align: 'right' });
+    const finalSp = Math.max(0, Number(orderReceipt.subtotal) - (Number(orderReceipt.discount) || 0));
+    const orderGst = Math.round(((finalSp * 18) / 118) * 100) / 100;
+    doc.text('GST (18% included)', totalsX, y);
+    doc.text(`Rs. ${orderGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - marginX, y, { align: 'right' });
     y += 6;
 
     doc.setDrawColor(0, 0, 0);
@@ -567,7 +571,7 @@ export default function Checkout({ params, onPageChange }) {
 
           {/* Right Summary */}
           <div className="lg:col-span-5 space-y-6">
-            <CheckoutSummary cartItems={cartItemsWithDetails} subtotal={subtotal} discount={discount} gst={gst} total={total} zipCode={shippingForm.zipCode} />
+            <CheckoutSummary cartItems={cartItemsWithDetails} mrpTotal={mrpTotal} subtotal={subtotal} discount={discount} gst={gst} total={total} zipCode={shippingForm.zipCode} />
           </div>
         </div>
       )}
@@ -755,7 +759,7 @@ export default function Checkout({ params, onPageChange }) {
 
           {/* Right Summary */}
           <div className="lg:col-span-5 space-y-6">
-            <CheckoutSummary cartItems={cartItemsWithDetails} subtotal={subtotal} discount={discount} gst={gst} total={total} zipCode={shippingForm.zipCode} />
+            <CheckoutSummary cartItems={cartItemsWithDetails} mrpTotal={mrpTotal} subtotal={subtotal} discount={discount} gst={gst} total={total} zipCode={shippingForm.zipCode} />
           </div>
         </div>
       )}
@@ -801,7 +805,7 @@ export default function Checkout({ params, onPageChange }) {
 
           {/* Right Summary */}
           <div className="lg:col-span-5 space-y-6">
-            <CheckoutSummary cartItems={cartItemsWithDetails} subtotal={subtotal} discount={discount} gst={gst} total={total} zipCode={shippingForm.zipCode} />
+            <CheckoutSummary cartItems={cartItemsWithDetails} mrpTotal={mrpTotal} subtotal={subtotal} discount={discount} gst={gst} total={total} zipCode={shippingForm.zipCode} />
           </div>
         </div>
       )}
@@ -880,7 +884,7 @@ export default function Checkout({ params, onPageChange }) {
   );
 
   // Sub-component for Order Summary
-  function CheckoutSummary({ cartItems, subtotal, discount, gst, total, zipCode }) {
+  function CheckoutSummary({ cartItems, mrpTotal, subtotal, discount, gst, total, zipCode }) {
     const currentCurrency = useSelector(selectCurrentCurrency);
     const deliveryDate = getExpectedDeliveryDate(zipCode);
     return (
@@ -899,7 +903,9 @@ export default function Checkout({ params, onPageChange }) {
         {/* Items list */}
         <div className="space-y-4 max-h-60 overflow-y-auto">
           {cartItems.map((item) => {
-            const itemPrice = item.price !== undefined ? item.price : getDiscountedPrice(item.product);
+            const itemMrp = item.mrp || getProductMrp(item.product);
+            const itemPrice = item.price !== undefined ? item.price : getSellingPrice(item.product);
+            const isDiscounted = itemMrp > itemPrice;
             return (
               <div key={item.productId} className="flex items-center space-x-3 pb-3 border-b border-white/5 last:border-b-0 last:pb-0">
                 <div className="h-12 w-12 bg-luxury-dark rounded border border-white/5 flex-shrink-0 flex items-center justify-center p-0 overflow-hidden">
@@ -907,7 +913,12 @@ export default function Checkout({ params, onPageChange }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-white text-xs font-semibold truncate uppercase tracking-wide">{item.product.name}</h4>
-                  <p className="text-[10px] text-gray-500">Qty: {item.quantity} × {formatPrice(itemPrice, currentCurrency)}</p>
+                  <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
+                    <span>Qty: {item.quantity} × {formatPrice(itemPrice, currentCurrency)}</span>
+                    {isDiscounted && (
+                      <span className="line-through text-gray-400">{formatPrice(itemMrp, currentCurrency)}</span>
+                    )}
+                  </div>
                 </div>
                 <span className="text-white text-xs font-bold">{formatPrice(itemPrice * item.quantity, currentCurrency)}</span>
               </div>
@@ -916,13 +927,15 @@ export default function Checkout({ params, onPageChange }) {
         </div>
 
         <div className="border-t border-white/5 pt-4 space-y-2 text-xs">
+          {mrpTotal > subtotal && (
+            <div className="flex justify-between text-gray-400">
+              <span>MRP</span>
+              <span className="line-through">{formatPrice(mrpTotal, currentCurrency)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-gray-300">
-            <span>Subtotal</span>
+            <span>Selling Price</span>
             <span>{formatPrice(subtotal, currentCurrency)}</span>
-          </div>
-          <div className="flex justify-between text-gray-300">
-            <span>GST (18%)</span>
-            <span>{formatPrice(gst, currentCurrency)}</span>
           </div>
           {discount > 0 && (
             <div className="flex justify-between text-emerald-400">
@@ -930,6 +943,10 @@ export default function Checkout({ params, onPageChange }) {
               <span>-{formatPrice(discount, currentCurrency)}</span>
             </div>
           )}
+          <div className="flex justify-between text-gray-300">
+            <span>GST (18% included)</span>
+            <span>{formatPrice(gst, currentCurrency, 2)}</span>
+          </div>
           <div className="flex justify-between text-gray-300">
             <span>Courier Delivery</span>
             <span className="text-emerald-400 uppercase tracking-widest text-[9px] font-bold">Free</span>

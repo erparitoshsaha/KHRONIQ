@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { addToCart, toggleWishlist, selectCurrentCurrency, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
+import { addToCart, toggleWishlist, selectCurrentCurrency, formatPrice, getProductMrp, getSellingPrice, getDiscountPercent } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import { ShoppingBag, Heart, Star } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
@@ -68,9 +68,11 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
   if (product.specs?.movement) specItems.push(product.specs.movement);
   if (product.specs?.strap) specItems.push(product.specs.strap);
   const specLine = specItems.length > 0 ? specItems.join(' • ') : 'Khroniq Caliber';
-  const discountedPrice = getDiscountedPrice(product);
-  const isDiscounted = Number(product.discountPercent) > 0 && discountedPrice < product.price;
-  const savedAmount = isDiscounted ? product.price - discountedPrice : 0;
+  const mrp = getProductMrp(product);
+  const sellingPrice = getSellingPrice(product);
+  const discountPercent = getDiscountPercent(product);
+  const isDiscounted = mrp > sellingPrice && discountPercent > 0;
+  const savedAmount = isDiscounted ? mrp - sellingPrice : 0;
 
   return (
     <div
@@ -110,9 +112,9 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
             style={{ transform: isHovered ? 'translateX(120%)' : 'translateX(-120%)' }}
           />
 
-          {product.discountPercent > 0 && (
+          {discountPercent > 0 && (
             <div className="product-card-badge absolute top-2.5 left-2.5 bg-luxury-red !text-white uppercase text-[9px] tracking-wider font-semibold px-2 py-0.5 rounded-sm shadow-md">
-              {product.discountPercent}% OFF
+              {discountPercent}% OFF
             </div>
           )}
 
@@ -173,7 +175,7 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
             <div className="space-y-0.5">
               {isDiscounted ? (
                 <>
-                  <p className="text-[10px] text-red-400 line-through">{formatPrice(product.price, currentCurrency)}</p>
+                  <p className="text-[10px] text-red-400 line-through">{formatPrice(mrp, currentCurrency)}</p>
                   <p
                     className="text-luxury-text text-xs sm:text-[13px] font-bold transition-transform duration-300"
                     style={{
@@ -181,7 +183,7 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
                       transformOrigin: 'left center',
                     }}
                   >
-                    {formatPrice(discountedPrice, currentCurrency)}
+                    {formatPrice(sellingPrice, currentCurrency)}
                   </p>
                 </>
               ) : (
@@ -192,7 +194,7 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
                     transformOrigin: 'left center',
                   }}
                 >
-                  {formatPrice(product.price, currentCurrency)}
+                  {formatPrice(sellingPrice, currentCurrency)}
                 </p>
               )}
             </div>

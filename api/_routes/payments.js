@@ -27,6 +27,7 @@ async function calculateAuthoritativeCart(items, couponCode) {
     throw { statusCode: 400, message: 'Cart items cannot be empty.' };
   }
 
+  let mrpTotal = 0;
   let subtotal = 0;
   const validatedItems = [];
 
@@ -48,11 +49,24 @@ async function calculateAuthoritativeCart(items, couponCode) {
       };
     }
 
-    subtotal += product.price * qty;
+    // Authoritatively determine MRP and Selling Price (SP)
+    const mrp = Number(product.mrp !== undefined && product.mrp !== null ? product.mrp : product.price) || 0;
+    const discountPercent = Number(product.discountPercent) || 0;
+    let sp = mrp;
+    if (product.sellingPrice !== undefined && product.sellingPrice !== null) {
+      sp = Number(product.sellingPrice) || 0;
+    } else if (discountPercent > 0 && discountPercent <= 100) {
+      sp = Math.round(mrp * (100 - discountPercent) / 100);
+    }
+
+    mrpTotal += mrp * qty;
+    subtotal += sp * qty;
+
     validatedItems.push({
       productId: product._id.toString(),
       name: product.name,
-      price: product.price,
+      price: sp, // Authoritative Selling Price
+      mrp,
       quantity: qty,
       image: product.image,
       warrantyMonths: product.warrantyMonths || 12
@@ -71,13 +85,19 @@ async function calculateAuthoritativeCart(items, couponCode) {
     }
   }
 
-  const gst = Math.round(subtotal * 0.18);
-  const total = Math.max(0, subtotal - discount + gst);
+  const finalSellingPrice = Math.max(0, subtotal - discount);
+  // GST is 18% INCLUDED in the Selling Price: GST = SP * 18 / 118
+  const gst = Math.round(((finalSellingPrice * 18) / 118) * 100) / 100;
+  const basePrice = Math.round(((finalSellingPrice * 100) / 118) * 100) / 100;
+  // Total customer payment is the final Selling Price (do NOT add GST again)
+  const total = finalSellingPrice;
 
   return {
+    mrpTotal,
     subtotal,
     discount,
     gst,
+    basePrice,
     total,
     validatedItems,
     appliedCoupon: appliedCouponDoc
@@ -244,6 +264,7 @@ router.post('/verify', protect, paymentLimiter, async (req, res, next) => {
           productId: item.productId,
           name: item.name,
           price: item.price,
+          mrp: item.mrp,
           quantity: 1,
           image: item.image,
           serialNumber,
@@ -319,7 +340,7 @@ router.post('/verify', protect, paymentLimiter, async (req, res, next) => {
               <tbody>${itemsHtml}</tbody>
             </table>
             <p>Subtotal: ₹${subtotal.toLocaleString('en-IN')}</p>
-            <p>GST (18%): ₹${gst.toLocaleString('en-IN')}</p>
+            <p>GST (18% included): ₹${gst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
             ${discount > 0 ? `<p style="color: #1f4d3a;">Discount: -₹${discount.toLocaleString('en-IN')}</p>` : ''}
             <p style="font-size: 16px; font-weight: bold;">Total Paid: ₹${total.toLocaleString('en-IN')}</p>
             <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />

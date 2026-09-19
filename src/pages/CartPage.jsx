@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { updateCartQty, removeFromCart, selectCurrentCurrency, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
+import { updateCartQty, removeFromCart, selectCurrentCurrency, formatPrice, getDiscountedPrice, getProductMrp, getSellingPrice } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import { ShoppingBag, Trash2, Plus, Minus, Tag, ArrowRight, ShieldCheck } from 'lucide-react';
 import BackButton from '../components/BackButton';
@@ -25,10 +25,12 @@ export default function CartPage({ onPageChange }) {
   const cartItemsWithDetails = cart.map(item => {
     const itemProdId = (item.productId?._id || item.productId)?.toString();
     const product = products.find(p => (p.id && p.id.toString() === itemProdId) || (p._id && p._id.toString() === itemProdId));
-    const itemPrice = item.price !== undefined ? item.price : getDiscountedPrice(product);
+    const itemMrp = item.mrp || getProductMrp(product);
+    const itemPrice = item.price !== undefined ? item.price : getSellingPrice(product);
     return {
       ...item,
       product,
+      itemMrp,
       itemPrice
     };
   }).filter(item => item.product !== undefined);
@@ -56,6 +58,7 @@ export default function CartPage({ onPageChange }) {
 
   // Compute prices
   const subtotal = cartItemsWithDetails.reduce((sum, item) => sum + (item.itemPrice * item.quantity), 0);
+  const totalSavings = cartItemsWithDetails.reduce((sum, item) => sum + (item.itemMrp > item.itemPrice ? (item.itemMrp - item.itemPrice) * item.quantity : 0), 0);
    
   const handleApplyCoupon = (e) => {
     e.preventDefault();
@@ -186,9 +189,9 @@ export default function CartPage({ onPageChange }) {
                 <div className="col-span-2 text-center flex md:block justify-between w-full md:w-auto border-t md:border-t-0 border-luxury-text/10 pt-2 md:pt-0">
                   <span className="md:hidden text-[10px] text-luxury-muted font-bold uppercase">Price</span>
                   <div className="space-y-1">
-                    {item.itemPrice !== item.product.price ? (
+                    {item.itemMrp > item.itemPrice ? (
                       <>
-                        <span className="text-[10px] text-red-400 line-through block">{formatPrice(item.product.price, currentCurrency)}</span>
+                        <span className="text-[10px] text-red-400 line-through block">{formatPrice(item.itemMrp, currentCurrency)}</span>
                         <span className="text-luxury-gold-dark text-xs font-semibold">{formatPrice(item.itemPrice, currentCurrency)}</span>
                       </>
                     ) : (
@@ -246,6 +249,13 @@ export default function CartPage({ onPageChange }) {
                 <span className="font-semibold text-luxury-text">{formatPrice(subtotal, currentCurrency)}</span>
               </div>
               
+              {totalSavings > 0 && (
+                <div className="flex justify-between text-emerald-600">
+                  <span className="tracking-wide">Total Savings</span>
+                  <span className="font-semibold">-{formatPrice(totalSavings, currentCurrency)}</span>
+                </div>
+              )}
+
               {appliedCoupon && (
                 <div className="flex justify-between text-emerald-600">
                   <div className="flex items-center space-x-1.5">

@@ -5,6 +5,28 @@ import { protect } from '../_middleware/auth.js';
 
 const router = express.Router();
 
+const formatCartItem = (item) => {
+  if (!item || !item.productId) return null;
+  const prod = item.productId;
+  const mrp = Number(prod.mrp !== undefined && prod.mrp !== null ? prod.mrp : prod.price) || 0;
+  const discountPercent = Number(prod.discountPercent) || 0;
+  let sp = mrp;
+  if (prod.sellingPrice !== undefined && prod.sellingPrice !== null) {
+    sp = Number(prod.sellingPrice) || 0;
+  } else if (discountPercent > 0 && discountPercent <= 100) {
+    sp = Math.round(mrp * (100 - discountPercent) / 100);
+  }
+  return {
+    productId: prod._id,
+    name: prod.name,
+    image: prod.image,
+    price: sp, // Selling Price (actual payable product price)
+    mrp,       // Reference MRP
+    stock: prod.stock,
+    quantity: item.quantity
+  };
+};
+
 // @route   GET /api/cart
 // @desc    Get user's cart
 // @access  Private
@@ -16,30 +38,21 @@ router.get('/', protect, async (req, res) => {
     }
     
     let cartModified = false;
-    // Format cart to send to client and auto-clamp any item whose quantity exceeds available stock
-    const cartItems = user.cart.map(item => {
-      if (!item.productId) return null;
+    // Auto-clamp any item whose quantity exceeds available stock
+    user.cart.forEach(item => {
+      if (!item.productId) return;
       const availableStock = Math.max(0, item.productId.stock ?? 0);
-      let qty = item.quantity;
-      if (qty > availableStock) {
-        qty = availableStock;
-        item.quantity = qty;
+      if (item.quantity > availableStock) {
+        item.quantity = availableStock;
         cartModified = true;
       }
-      return {
-        productId: item.productId._id,
-        name: item.productId.name,
-        image: item.productId.image,
-        price: item.productId.price,
-        stock: item.productId.stock,
-        quantity: qty
-      };
-    }).filter(Boolean);
+    });
 
     if (cartModified) {
       await user.save();
     }
 
+    const cartItems = user.cart.map(formatCartItem).filter(Boolean);
     res.json({ success: true, cart: cartItems });
   } catch (error) {
     console.error('Fetch cart error:', error);
@@ -88,17 +101,7 @@ router.post('/sync', protect, async (req, res) => {
     await user.save();
 
     const populatedUser = await User.findById(user._id).populate('cart.productId');
-    const cartItems = populatedUser.cart.map(item => {
-      if (!item.productId) return null;
-      return {
-        productId: item.productId._id,
-        name: item.productId.name,
-        image: item.productId.image,
-        price: item.productId.price,
-        stock: item.productId.stock,
-        quantity: item.quantity
-      };
-    }).filter(Boolean);
+    const cartItems = populatedUser.cart.map(formatCartItem).filter(Boolean);
 
     res.json({ success: true, cart: cartItems });
   } catch (error) {
@@ -145,17 +148,7 @@ router.post('/add', protect, async (req, res) => {
     }
 
     const populatedUser = await User.findById(user._id).populate('cart.productId');
-    const cartItems = populatedUser.cart.map(item => {
-      if (!item.productId) return null;
-      return {
-        productId: item.productId._id,
-        name: item.productId.name,
-        image: item.productId.image,
-        price: item.productId.price,
-        stock: item.productId.stock,
-        quantity: item.quantity
-      };
-    }).filter(Boolean);
+    const cartItems = populatedUser.cart.map(formatCartItem).filter(Boolean);
 
     res.json({ success: true, cart: cartItems });
   } catch (error) {
@@ -199,17 +192,7 @@ router.post('/update', protect, async (req, res) => {
     await user.save();
 
     const populatedUser = await User.findById(user._id).populate('cart.productId');
-    const cartItems = populatedUser.cart.map(item => {
-      if (!item.productId) return null;
-      return {
-        productId: item.productId._id,
-        name: item.productId.name,
-        image: item.productId.image,
-        price: item.productId.price,
-        stock: item.productId.stock,
-        quantity: item.quantity
-      };
-    }).filter(Boolean);
+    const cartItems = populatedUser.cart.map(formatCartItem).filter(Boolean);
 
     res.json({ success: true, cart: cartItems });
   } catch (error) {
@@ -234,17 +217,7 @@ router.delete('/:productId', protect, async (req, res) => {
     await user.save();
 
     const populatedUser = await User.findById(user._id).populate('cart.productId');
-    const cartItems = populatedUser.cart.map(item => {
-      if (!item.productId) return null;
-      return {
-        productId: item.productId._id,
-        name: item.productId.name,
-        image: item.productId.image,
-        price: item.productId.price,
-        stock: item.productId.stock,
-        quantity: item.quantity
-      };
-    }).filter(Boolean);
+    const cartItems = populatedUser.cart.map(formatCartItem).filter(Boolean);
 
     res.json({ success: true, cart: cartItems });
   } catch (error) {
@@ -269,17 +242,7 @@ router.post('/remove', protect, async (req, res) => {
     await user.save();
 
     const populatedUser = await User.findById(user._id).populate('cart.productId');
-    const cartItems = populatedUser.cart.map(item => {
-      if (!item.productId) return null;
-      return {
-        productId: item.productId._id,
-        name: item.productId.name,
-        image: item.productId.image,
-        price: item.productId.price,
-        stock: item.productId.stock,
-        quantity: item.quantity
-      };
-    }).filter(Boolean);
+    const cartItems = populatedUser.cart.map(formatCartItem).filter(Boolean);
 
     res.json({ success: true, cart: cartItems });
   } catch (error) {

@@ -493,7 +493,7 @@ const watchSlice = createSlice({
       state.orders = [];
     },
     addToCartAction: (state, action) => {
-      const { productId, quantity, price, customization } = action.payload;
+      const { productId, quantity, price, mrp, customization } = action.payload;
       const targetId = (productId?._id || productId)?.toString();
       const existing = state.cart.find(item => {
         const itemProdId = (item.productId?._id || item.productId)?.toString();
@@ -502,8 +502,10 @@ const watchSlice = createSlice({
       });
       if (existing) {
         existing.quantity += quantity;
+        if (price !== undefined) existing.price = price;
+        if (mrp !== undefined) existing.mrp = mrp;
       } else {
-        state.cart.push({ productId: targetId, quantity, price, customization });
+        state.cart.push({ productId: targetId, quantity, price, mrp, customization });
       }
     },
     removeFromCartAction: (state, action) => {
@@ -641,25 +643,66 @@ const clampDiscountPercent = (value) => {
   return Math.min(100, Math.max(0, percent));
 };
 
-export const formatPrice = (price, currency) => {
+export const formatPrice = (price, currency, decimals = 0) => {
   const numPrice = Number(price) || 0;
   if (currency === 'INR') {
-    return `₹ ${numPrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+    return `₹ ${numPrice.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
   } else if (currency === 'EUR') {
-    return `€ ${(numPrice / 90).toLocaleString('en-GB', { maximumFractionDigits: 0 })}`;
+    return `€ ${(numPrice / 90).toLocaleString('en-GB', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
   }
-  return `$ ${(numPrice / 83).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  return `$ ${(numPrice / 83).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
 };
 
-export const getDiscountedPrice = (product) => {
+export const getProductMrp = (product) => {
   if (!product) return 0;
+  if (product.mrp !== undefined && product.mrp !== null) return Number(product.mrp) || 0;
+  if (product.originalPrice !== undefined && product.originalPrice !== null) return Number(product.originalPrice) || 0;
+  return Number(product.price) || 0;
+};
+
+export const getSellingPrice = (product) => {
+  if (!product) return 0;
+  if (product.sellingPrice !== undefined && product.sellingPrice !== null) return Number(product.sellingPrice) || 0;
+  if (product.salePrice !== undefined && product.salePrice !== null) return Number(product.salePrice) || 0;
+  const mrp = getProductMrp(product);
   const discountPercent = clampDiscountPercent(product.discountPercent);
-  return Math.round(product.price * (100 - discountPercent) / 100);
+  if (discountPercent > 0) {
+    return Math.round(mrp * (100 - discountPercent) / 100);
+  }
+  return mrp;
+};
+
+// Backward-compatible alias for getSellingPrice
+export const getDiscountedPrice = (product) => {
+  return getSellingPrice(product);
+};
+
+export const getDiscountPercent = (product) => {
+  if (!product) return 0;
+  const mrp = getProductMrp(product);
+  const sp = getSellingPrice(product);
+  if (mrp > sp && mrp > 0) {
+    return Math.round(((mrp - sp) / mrp) * 100);
+  }
+  return clampDiscountPercent(product.discountPercent || 0);
 };
 
 export const getDiscountAmount = (product) => {
   if (!product) return 0;
-  return Math.max(0, product.price - getDiscountedPrice(product));
+  const mrp = getProductMrp(product);
+  const sp = getSellingPrice(product);
+  return Math.max(0, mrp - sp);
+};
+
+export const calculateGstBreakdown = (sellingPrice) => {
+  const sp = Number(sellingPrice) || 0;
+  const basePrice = Math.round(((sp * 100) / 118) * 100) / 100;
+  const gst = Math.round(((sp * 18) / 118) * 100) / 100;
+  return {
+    basePrice,
+    gst,
+    total: sp
+  };
 };
 
 // Async Thunks using native fetch
@@ -1048,14 +1091,15 @@ export const addToCart = (productId, quantity = 1, price = null, customization =
   const remainingStock = availableStock - currentQty;
   const addQty = Math.min(quantity, remainingStock);
 
-  const finalPrice = price !== null ? price : getDiscountedPrice(product);
+  const productMrp = getProductMrp(product);
+  const finalPrice = price !== null ? price : getSellingPrice(product);
 
   if (currentUser) {
     try {
       const res = await fetch('/api/cart/add', {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ productId: targetId, quantity: addQty, price: finalPrice, customization })
+        body: JSON.stringify({ productId: targetId, quantity: addQty, price: finalPrice, mrp: productMrp, customization })
       });
       const data = await res.json();
       if (data.success) {
@@ -1067,7 +1111,7 @@ export const addToCart = (productId, quantity = 1, price = null, customization =
     }
   }
 
-  dispatch(addToCartAction({ productId: targetId, quantity: addQty, price: finalPrice, customization }));
+  dispatch(addToCartAction({ productId: targetId, quantity: addQty, price: finalPrice, mrp: productMrp, customization }));
   return { success: true, message: 'Added to Cart' };
 };
 
@@ -1168,15 +1212,17 @@ export const placeOrder = (shippingDetails, paymentDetails, appliedCoupon, gifti
 
   let subtotal = 0;
   const items = cart.map(item => {
-    const p = products.find(prod => prod.id === item.productId);
-    const finalPrice = item.price !== undefined ? item.price : getDiscountedPrice(p);
+    const p = products.find(prod => (prod.id && prod.id.toString() === item.productId?.toString()) || (prod._id && prod._id.toString() === item.productId?.toString()));
+    const finalPrice = item.price !== undefined ? item.price : getSellingPrice(p);
+    const itemMrp = item.mrp !== undefined ? item.mrp : getProductMrp(p);
     subtotal += finalPrice * item.quantity;
     return {
       productId: item.productId,
-      name: p.name,
+      name: p?.name || '',
       price: finalPrice,
+      mrp: itemMrp,
       quantity: item.quantity,
-      image: p.image
+      image: p?.image || ''
     };
   });
 

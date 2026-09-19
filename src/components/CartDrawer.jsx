@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { updateCartQty, removeFromCart, selectCurrentCurrency, formatPrice, getDiscountedPrice  } from '../store/slices/watchSlice';
+import { updateCartQty, removeFromCart, selectCurrentCurrency, formatPrice, getDiscountedPrice, getProductMrp, getSellingPrice } from '../store/slices/watchSlice';
 import { X, Trash2, ShoppingBag, Plus, Minus, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,7 +36,15 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
     });
   }, [isOpen, cart, products, dispatch]);
 
-  const subtotal = cartItemsWithDetails.reduce((sum, item) => sum + ((item.price !== undefined ? item.price : getDiscountedPrice(item.product)) * item.quantity), 0);
+  const subtotal = cartItemsWithDetails.reduce((sum, item) => {
+    const sp = item.price !== undefined ? item.price : getSellingPrice(item.product);
+    return sum + (sp * item.quantity);
+  }, 0);
+  const totalSavings = cartItemsWithDetails.reduce((sum, item) => {
+    const mrp = item.mrp || getProductMrp(item.product);
+    const sp = item.price !== undefined ? item.price : getSellingPrice(item.product);
+    return sum + (mrp > sp ? (mrp - sp) * item.quantity : 0);
+  }, 0);
   const handleCheckoutClick = () => {
     onClose();
     if (currentUser) {
@@ -101,7 +109,12 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
                   </button>
                 </div>
               ) : (
-                cartItemsWithDetails.map((item) => (
+                cartItemsWithDetails.map((item) => {
+                  const itemMrp = item.mrp || getProductMrp(item.product);
+                  const itemSp = item.price !== undefined ? item.price : getSellingPrice(item.product);
+                  const isDiscounted = itemMrp > itemSp;
+
+                  return (
                   <div key={item.productId} className="flex space-x-4 border-b border-luxury-text/10 pb-6">
                     <div className="w-24 h-24 bg-luxury-gray/40 border border-luxury-text/5 rounded-md overflow-hidden flex-shrink-0 flex items-center justify-center p-0">
                       <img
@@ -129,9 +142,16 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
                             <Trash2 size={16} />
                           </button>
                         </div>
-                        <p className="text-luxury-gold-dark text-xs font-medium mt-1">
-                          {formatPrice(item.price !== undefined ? item.price : getDiscountedPrice(item.product), currentCurrency)} each
-                        </p>
+                        <div className="flex items-baseline gap-2 mt-1">
+                          {isDiscounted && (
+                            <span className="text-luxury-muted text-xs line-through">
+                              {formatPrice(itemMrp, currentCurrency)}
+                            </span>
+                          )}
+                          <span className="text-luxury-gold-dark text-xs font-medium">
+                            {formatPrice(itemSp, currentCurrency)} each
+                          </span>
+                        </div>
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -162,13 +182,21 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
                         </div>
 
                         {/* Total Price for item */}
-                        <p className="text-luxury-text text-sm font-bold">
-                          {formatPrice((item.price !== undefined ? item.price : getDiscountedPrice(item.product)) * item.quantity, currentCurrency)}
-                        </p>
+                        <div className="text-right">
+                          <p className="text-luxury-text text-sm font-bold">
+                            {formatPrice(itemSp * item.quantity, currentCurrency)}
+                          </p>
+                          {isDiscounted && (
+                            <p className="text-[10px] text-green-600 font-medium">
+                              Save {formatPrice((itemMrp - itemSp) * item.quantity, currentCurrency)}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))
+                );
+              })
               )}
             </div>
 
@@ -179,6 +207,12 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
                   <span className="text-luxury-muted tracking-wider">Subtotal</span>
                   <span className="text-luxury-text font-bold text-lg">{formatPrice(subtotal, currentCurrency)}</span>
                 </div>
+                {totalSavings > 0 && (
+                  <div className="flex justify-between items-center text-xs text-green-600 font-medium">
+                    <span>Total Savings</span>
+                    <span>{formatPrice(totalSavings, currentCurrency)}</span>
+                  </div>
+                )}
                 
                 <p className="text-luxury-muted text-[10px] leading-relaxed">
                   Shipping, taxes, and discounts calculated at checkout. Khroniq timepieces feature free secure priority shipping.

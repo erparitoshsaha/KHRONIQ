@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { addToCart, toggleWishlist, addReview, selectCurrentCurrency, formatPrice, getDiscountedPrice, fetchSingleProduct } from '../store/slices/watchSlice';
+import { addToCart, toggleWishlist, addReview, selectCurrentCurrency, formatPrice, getDiscountedPrice, fetchSingleProduct, getProductMrp, getSellingPrice, getDiscountPercent } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import { findProductInList } from '../utils/productRouting';
 import ProductCard from '../components/ProductCard';
@@ -156,7 +156,7 @@ export default function ProductDetail({ params, onPageChange }) {
           '@type': 'Offer',
           url: window.location.href,
           priceCurrency: 'INR',
-          price: product.price,
+          price: getSellingPrice(product),
           availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
           itemCondition: 'https://schema.org/NewCondition'
         }
@@ -216,8 +216,10 @@ export default function ProductDetail({ params, onPageChange }) {
   const averageRating = approvedReviews.length > 0
     ? (approvedReviews.reduce((sum, r) => sum + r.rating, 0) / approvedReviews.length).toFixed(1)
     : null;
-  const discountedPrice = getDiscountedPrice(product);
-  const isDiscounted = Number(product.discountPercent) > 0 && discountedPrice < product.price;
+  const mrp = getProductMrp(product);
+  const sellingPrice = getSellingPrice(product);
+  const discountPercent = getDiscountPercent(product);
+  const isDiscounted = mrp > sellingPrice && discountPercent > 0;
 
   const handleAddToCart = async () => {
     const targetId = product.id || product._id;
@@ -413,12 +415,12 @@ export default function ProductDetail({ params, onPageChange }) {
           <div className="space-y-2">
             {isDiscounted ? (
               <div className="space-y-1">
-                <p className="text-[14px] text-red-400 line-through">{formatPrice(product.price, currentCurrency)}</p>
-                <p className="text-2xl font-bold text-luxury-text">{formatPrice(discountedPrice, currentCurrency)}</p>
-                <p className="text-[11px] text-luxury-gold uppercase tracking-[0.24em] font-semibold">Save {formatPrice(product.price - discountedPrice, currentCurrency)}</p>
+                <p className="text-[14px] text-red-400 line-through">{formatPrice(mrp, currentCurrency)}</p>
+                <p className="text-2xl font-bold text-luxury-text">{formatPrice(sellingPrice, currentCurrency)}</p>
+                <p className="text-[11px] text-luxury-gold uppercase tracking-[0.24em] font-semibold">Save {formatPrice(mrp - sellingPrice, currentCurrency)}</p>
               </div>
             ) : (
-              <p className="text-2xl font-bold text-luxury-text">{formatPrice(product.price, currentCurrency)}</p>
+              <p className="text-2xl font-bold text-luxury-text">{formatPrice(sellingPrice, currentCurrency)}</p>
             )}
           </div>
            
