@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { selectCurrentCurrency, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectCurrentCurrency, formatPrice, getDiscountedPrice, fetchFeaturedReviews } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import ProductCard from '../components/ProductCard';
 import LogoMark from '../components/LogoMark';
@@ -15,7 +15,7 @@ import {
   useScroll,
   AnimatePresence,
 } from 'framer-motion';
-import { Star, Award, ArrowRight, ArrowLeft, Calendar, ChevronDown, ChevronLeft, ChevronRight, Play, Pause, Cpu, Layers, Droplet, Clock, Gem } from 'lucide-react';
+import { Star, Award, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Play, Pause, Cpu, Layers, Droplet, Clock, Gem, Calendar } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────
    ANIMATED COUNTER
@@ -818,43 +818,108 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages }) {
   );
 }
 
-export const defaultHomeImages = {
-  gender_men: '/assets/men_watches.jpg',
-  gender_women: '/assets/women_watches_beach.jpeg',
-  khronomaster_professional: '/assets/spotlight_red_angled.png',
-  dive_deeper_tile1: '/assets/spotlight_green_side.jpeg',
-  dive_deeper_tile2: '/assets/spotlight_red_overhead.png',
-  hero_slide1_lifestyle: '/assets/lifestyle_red.jpg',
-  hero_slide1_product: '/assets/watch_red.jpg',
-  hero_slide2_lifestyle: '/assets/slide_green_lifestyle.jpg',
-  hero_slide2_product: '/assets/watch_green.jpg',
-  hero_slide3_lifestyle: '/assets/lifestyle_black_cafe.jpg',
-  hero_slide3_product: '/assets/watch_black_steel.png',
-  hero_slide4_lifestyle: '/assets/lifestyle_blue_window.jpg',
-  hero_slide4_product: '/assets/watch_blue_brown.png',
-  hero_slide5_lifestyle: '/assets/lifestyle_pink_cafe.jpg',
-  hero_slide5_product: '/assets/slide_white_product.png',
-  khroniq_updates: '/assets/khroniq_updates_bg.jpg'
-};
+export const HOMEPAGE_MEDIA_SECTIONS = [
+  {
+    key: 'gender_men',
+    title: "Shop by Gender — Men's Banner",
+    slots: [{ key: 'gender_men', label: "Banner Image", default: '/assets/men_watches.jpg' }]
+  },
+  {
+    key: 'gender_women',
+    title: "Shop by Gender — Women's Banner",
+    slots: [{ key: 'gender_women', label: "Banner Image", default: '/assets/women_watches_beach.jpeg' }]
+  },
+  {
+    key: 'khronomaster_professional',
+    title: 'Classic Professional — Hero Image',
+    description: '5-slide carousel for the homepage Classic Professional spotlight.',
+    slots: [
+      { key: 'khronomaster_professional', label: 'Slide 1', default: '/assets/spotlight_red_angled.png' },
+      { key: 'khronomaster_professional_slide2', label: 'Slide 2', default: '/assets/spotlight_green_side.jpeg' },
+      { key: 'khronomaster_professional_slide3', label: 'Slide 3', default: '/assets/spotlight_red_overhead.png' },
+      { key: 'khronomaster_professional_slide4', label: 'Slide 4', default: '/assets/watch_green.jpg' },
+      { key: 'khronomaster_professional_slide5', label: 'Slide 5', default: '/assets/watch_red.jpg' }
+    ]
+  },
+  {
+    key: 'dive_deeper_tile1',
+    title: 'Classic Professional — Tile 1 (Emerald Green)',
+    slots: [{ key: 'dive_deeper_tile1', label: 'Tile Image', default: '/assets/spotlight_green_side.jpeg' }]
+  },
+  {
+    key: 'dive_deeper_tile2',
+    title: 'Classic Professional — Tile 2 (Crimson Red)',
+    slots: [{ key: 'dive_deeper_tile2', label: 'Tile Image', default: '/assets/spotlight_red_overhead.png' }]
+  },
+  {
+    key: 'hero_slide1_lifestyle',
+    title: 'Hero Slide 1 — Crimson Red (Lifestyle)',
+    slots: [{ key: 'hero_slide1_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_red.jpg' }]
+  },
+  {
+    key: 'hero_slide1_product',
+    title: 'Hero Slide 1 — Crimson Red (Watch)',
+    slots: [{ key: 'hero_slide1_product', label: 'Watch Image', default: '/assets/watch_red.jpg' }]
+  },
+  {
+    key: 'hero_slide2_lifestyle',
+    title: 'Hero Slide 2 — Emerald Green (Lifestyle)',
+    slots: [{ key: 'hero_slide2_lifestyle', label: 'Lifestyle Image', default: '/assets/slide_green_lifestyle.jpg' }]
+  },
+  {
+    key: 'hero_slide2_product',
+    title: 'Hero Slide 2 — Emerald Green (Watch)',
+    slots: [{ key: 'hero_slide2_product', label: 'Watch Image', default: '/assets/watch_green.jpg' }]
+  },
+  {
+    key: 'hero_slide3_lifestyle',
+    title: 'Hero Slide 3 — Midnight Black (Lifestyle)',
+    slots: [{ key: 'hero_slide3_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_black_cafe.jpg' }]
+  },
+  {
+    key: 'hero_slide3_product',
+    title: 'Hero Slide 3 — Midnight Black (Watch)',
+    slots: [{ key: 'hero_slide3_product', label: 'Watch Image', default: '/assets/watch_black_steel.png' }]
+  },
+  {
+    key: 'hero_slide4_lifestyle',
+    title: 'Hero Slide 4 — Cobalt Blue (Lifestyle)',
+    slots: [{ key: 'hero_slide4_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_blue_window.jpg' }]
+  },
+  {
+    key: 'hero_slide4_product',
+    title: 'Hero Slide 4 — Cobalt Blue (Watch)',
+    slots: [{ key: 'hero_slide4_product', label: 'Watch Image', default: '/assets/watch_blue_brown.png' }]
+  },
+  {
+    key: 'hero_slide5_lifestyle',
+    title: 'Hero Slide 5 — Sterling Silver (Lifestyle)',
+    slots: [{ key: 'hero_slide5_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_pink_cafe.jpg' }]
+  },
+  {
+    key: 'hero_slide5_product',
+    title: 'Hero Slide 5 — Sterling Silver (Watch)',
+    slots: [{ key: 'hero_slide5_product', label: 'Watch Image', default: '/assets/slide_white_product.png' }]
+  },
+  {
+    key: 'khroniq_updates',
+    title: 'Khroniq Updates — Drawer / Header Banner',
+    slots: [{ key: 'khroniq_updates', label: 'Banner Image', default: '/assets/khroniq_updates_bg.jpg' }]
+  }
+];
 
-export const HOMEPAGE_SECTION_LABELS = {
-  gender_men: "Shop by Gender — Men's Banner",
-  gender_women: "Shop by Gender — Women's Banner",
-  khronomaster_professional: 'Classic Professional — Hero Image',
-  dive_deeper_tile1: 'Classic Professional — Tile 1 (Emerald Green)',
-  dive_deeper_tile2: 'Classic Professional — Tile 2 (Crimson Red)',
-  khroniq_updates: 'Khroniq Updates — Drawer / Header Banner',
-  hero_slide1_lifestyle: 'Hero Slide 1 — Crimson Red (Lifestyle)',
-  hero_slide1_product: 'Hero Slide 1 — Crimson Red (Watch)',
-  hero_slide2_lifestyle: 'Hero Slide 2 — Emerald Green (Lifestyle)',
-  hero_slide2_product: 'Hero Slide 2 — Emerald Green (Watch)',
-  hero_slide3_lifestyle: 'Hero Slide 3 — Midnight Black (Lifestyle)',
-  hero_slide3_product: 'Hero Slide 3 — Midnight Black (Watch)',
-  hero_slide4_lifestyle: 'Hero Slide 4 — Cobalt Blue (Lifestyle)',
-  hero_slide4_product: 'Hero Slide 4 — Cobalt Blue (Watch)',
-  hero_slide5_lifestyle: 'Hero Slide 5 — Sterling Silver (Lifestyle)',
-  hero_slide5_product: 'Hero Slide 5 — Sterling Silver (Watch)'
-};
+export const defaultHomeImages = Object.fromEntries(
+  HOMEPAGE_MEDIA_SECTIONS.flatMap(sec => sec.slots.map(slot => [slot.key, slot.default]))
+);
+
+export const HOMEPAGE_SECTION_LABELS = Object.fromEntries(
+  HOMEPAGE_MEDIA_SECTIONS.flatMap(sec =>
+    sec.slots.map(slot => [
+      slot.key,
+      sec.slots.length > 1 ? `${sec.title} (${slot.label})` : sec.title
+    ])
+  )
+);
 
 const updateSlideVariants = {
   enter: (direction) => ({
@@ -875,17 +940,17 @@ let publicMediaCache = null;
 let publicMediaPromise = null;
 
 export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, updatesOpen }) {
+  const dispatch = useDispatch();
   const products = useSelector(state => state.watch.products);
+  const featuredReviews = useSelector(state => state.watch.featuredReviews || []);
   const [homeImages, setHomeImages] = useState(defaultHomeImages);
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
-  const spotlightImage = homeImages.khronomaster_professional || "/assets/spotlight_red_angled.png";
   const spotlightImages = [
-    spotlightImage,
-    "/assets/spotlight_green_side.jpeg",
-    "/assets/spotlight_red_overhead.png",
-    // "/assets/watch_uploaded_2.png",
-    "/assets/watch_green.jpg",
-    "/assets/watch_red.jpg",
+    homeImages.khronomaster_professional || "/assets/spotlight_red_angled.png",
+    homeImages.khronomaster_professional_slide2 || "/assets/spotlight_green_side.jpeg",
+    homeImages.khronomaster_professional_slide3 || "/assets/spotlight_red_overhead.png",
+    homeImages.khronomaster_professional_slide4 || "/assets/watch_green.jpg",
+    homeImages.khronomaster_professional_slide5 || "/assets/watch_red.jpg",
   ];
 
   const [currentSpotlight, setCurrentSpotlight] = useState(0);
@@ -899,6 +964,12 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   const currentCurrency = useSelector(selectCurrentCurrency);
   const filters = useSelector(state => state.watch.filters || []);
   const contentSections = useSelector(state => state.watch.contentSections || []);
+
+  // Fetch featured reviews for testimonials section
+  useEffect(() => {
+    dispatch(fetchFeaturedReviews());
+  }, [dispatch]);
+
 
   useEffect(() => {
     document.title = 'KHRONIQ — Born from The Movement Of Time';
@@ -1024,36 +1095,53 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     fetchUpdates();
   }, []);
 
-  const [activeUpdateIdx, setActiveUpdateIdx] = useState(0);
-  const [slideDirection, setSlideDirection] = useState(1);
-  const [isUpdatesHovered, setIsUpdatesHovered] = useState(false);
+  // Auto-opening updates drawer disabled as requested
 
-  const handleNextUpdate = useCallback(() => {
-    if (!brandUpdates || brandUpdates.length <= 1) return;
-    setSlideDirection(1);
-    setActiveUpdateIdx(prev => (prev + 1) % brandUpdates.length);
-  }, [brandUpdates]);
+  const defaultUpdates = [
+    {
+      _id: 'up-1',
+      title: 'GENESIS COLLECTION LAUNCH',
+      detail: 'Unveiling Khroniq inaugural luxury timepieces. Crafted for those who master time.',
+      createdAt: '2026-09-25',
+    },
+    {
+      _id: 'up-2',
+      title: 'SWISS CRAFTSMANSHIP',
+      detail: 'Precision engineered automatic movements with anti-reflective sapphire crystal.',
+      createdAt: '2026-08-05',
+    },
+    {
+      _id: 'up-3',
+      title: 'LIMITED EDITION COLLECTION',
+      detail: 'Exclusive hand-crafted timepieces coming soon to select luxury boutiques.',
+      createdAt: '2026-08-20',
+    },
+  ];
 
-  const handlePrevUpdate = useCallback(() => {
-    if (!brandUpdates || brandUpdates.length <= 1) return;
-    setSlideDirection(-1);
-    setActiveUpdateIdx(prev => (prev === 0 ? brandUpdates.length - 1 : prev - 1));
-  }, [brandUpdates]);
+  const displayedUpdates = (brandUpdates && brandUpdates.length >= 3)
+    ? brandUpdates
+    : (brandUpdates && brandUpdates.length > 0)
+      ? [...brandUpdates, ...defaultUpdates.slice(brandUpdates.length)]
+      : defaultUpdates;
+  const [currentUpdateIndex, setCurrentUpdateIndex] = useState(0);
 
-  // Auto-cycle through updates every 6 seconds if multiple exist, pausing when hovered
   useEffect(() => {
-    if (!brandUpdates || brandUpdates.length <= 1 || isUpdatesHovered) return;
+    if (!displayedUpdates || displayedUpdates.length <= 1) return;
     const interval = setInterval(() => {
-      handleNextUpdate();
-    }, 6000);
+      setCurrentUpdateIndex((prev) => (prev + 1) % displayedUpdates.length);
+    }, 5000);
     return () => clearInterval(interval);
-  }, [brandUpdates, isUpdatesHovered, handleNextUpdate]);
+  }, [displayedUpdates.length]);
 
-  useEffect(() => {
-    if (activeUpdateIdx >= brandUpdates.length && brandUpdates.length > 0) {
-      setActiveUpdateIdx(0);
-    }
-  }, [brandUpdates, activeUpdateIdx]);
+  const handlePrevUpdate = (e) => {
+    e?.stopPropagation();
+    setCurrentUpdateIndex((prev) => (prev - 1 + displayedUpdates.length) % displayedUpdates.length);
+  };
+
+  const handleNextUpdate = (e) => {
+    e?.stopPropagation();
+    setCurrentUpdateIndex((prev) => (prev + 1) % displayedUpdates.length);
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -1713,11 +1801,108 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           </div>
         )}
       </div>
+
+      {/* ══════════ CLIENT TESTIMONIALS ══════════ */}
+      {featuredReviews.length > 0 && (
+        <section className="w-full py-20 sm:py-28 bg-[#0e0d0b] overflow-hidden">
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+            {/* Section Header */}
+            <div className="text-center mb-14 space-y-4">
+              <motion.p
+                className="text-[10px] font-extrabold tracking-[0.35em] uppercase text-[#34d399]"
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                What Our Patrons Say
+              </motion.p>
+              <motion.h2
+                className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-wide uppercase"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+              >
+                Client Testimonials
+              </motion.h2>
+              <motion.div
+                className="w-12 h-[1.5px] bg-[#34d399] mx-auto"
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+              />
+            </div>
+
+            {/* Reviews Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+              {featuredReviews.slice(0, 6).map((review, idx) => (
+                <motion.div
+                  key={review.id || idx}
+                  className="relative bg-[#1a1916]/80 border border-white/[0.06] rounded-2xl p-6 sm:p-7 space-y-4 backdrop-blur-sm hover:border-[#34d399]/30 transition-all duration-500 group"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.08 }}
+                >
+                  {/* Glow on hover */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[#34d399]/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                  {/* Stars */}
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        size={14}
+                        fill={star <= review.rating ? '#c5a880' : 'transparent'}
+                        stroke={star <= review.rating ? '#c5a880' : '#555'}
+                        strokeWidth={1.5}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Comment */}
+                  <p className="text-white/80 text-sm leading-relaxed font-light italic line-clamp-4">
+                    &ldquo;{review.comment}&rdquo;
+                  </p>
+
+                  {/* Reviewer Info */}
+                  <div className="flex items-center gap-3 pt-2 border-t border-white/[0.06]">
+                    {review.productImage && (
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10 border border-white/10 flex-shrink-0">
+                        <img
+                          src={review.productImage}
+                          alt={review.productName}
+                          onError={(e) => handleImageError(e)}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-white text-xs font-semibold tracking-wide truncate">
+                        {review.userName}
+                      </p>
+                      <p className="text-[10px] text-[#34d399]/70 font-medium tracking-wider uppercase truncate">
+                        on {review.productName}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Spacer to shift KHRONIQ updates section lower */}
+      <div className="w-full h-32 bg-black relative z-30" />
+
       {/* ══════════ FULL SCREEN IMAGE BACKGROUND UPDATES SECTION ══════════ */}
       {/* ══════════ KHRONIQ UPDATE PARALLAX BANNER SECTION ══════════ */}
       <div
         ref={updatesRef}
-        className="relative w-full min-h-[600px] sm:min-h-[700px] h-[90vh] sm:h-screen flex items-center justify-center overflow-hidden bg-black text-white px-4 sm:px-6"
+        className="relative w-full h-[100vh] flex items-center justify-center overflow-hidden bg-black text-white"
       >
         {/* Background Image with crisp opacity */}
         <div
@@ -1757,145 +1942,112 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
               <div className="w-16 sm:w-20 h-[2px] bg-teal-400 mt-2.5 rounded-full shadow-[0_0_8px_rgba(20,184,166,0.6)]" />
             </div>
 
-            {brandUpdates && brandUpdates.length > 1 && (
-              <div className="flex items-center gap-3 sm:gap-4">
-                <span className="text-white/70 text-xs sm:text-sm font-mono tracking-widest">
-                  {activeUpdateIdx + 1} / {brandUpdates.length}
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handlePrevUpdate}
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-white/20 hover:border-teal-400 bg-white/5 hover:bg-teal-400/10 text-white/70 hover:text-teal-300 flex items-center justify-center transition cursor-pointer active:scale-95"
-                    aria-label="Previous update"
-                  >
-                    <ArrowLeft size={16} className="stroke-[2.2]" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNextUpdate}
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-teal-400 bg-teal-400/15 hover:bg-teal-400/25 text-teal-300 flex items-center justify-center transition cursor-pointer active:scale-95 shadow-[0_0_12px_rgba(20,184,166,0.35)]"
-                    aria-label="Next update"
-                  >
-                    <ArrowRight size={16} className="stroke-[2.2]" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Card Body — Content Slides Horizontally */}
-          <div className="relative z-10 overflow-hidden min-h-[160px] sm:min-h-[180px] flex flex-col justify-center mt-6 sm:mt-8">
-            {brandUpdates && brandUpdates.length > 0 ? (
-              (() => {
-                const currentUpdate = brandUpdates[activeUpdateIdx] || brandUpdates[0];
-                return (
-                  <AnimatePresence mode="wait" custom={slideDirection}>
-                    <motion.div
-                      key={currentUpdate._id || currentUpdate.id || activeUpdateIdx}
-                      custom={slideDirection}
-                      variants={updateSlideVariants}
-                      initial="enter"
-                      animate="center"
-                      exit="exit"
-                      transition={{
-                        x: { type: 'spring', stiffness: 350, damping: 30 },
-                        opacity: { duration: 0.2 },
-                      }}
-                      className="w-full grid grid-cols-1 md:grid-cols-12 gap-6 items-center"
-                    >
-                      {/* Left / Main Update Content */}
-                      <div className="md:col-span-7 flex flex-col">
-                        {/* Pill Badge */}
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-teal-400/30 bg-teal-400/10 text-teal-300 text-[10px] sm:text-[11px] font-bold tracking-[0.2em] uppercase mb-3.5 w-fit">
-                          <span className="w-1.5 h-1.5 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(20,184,166,0.9)]" />
-                          <span>UPDATE</span>
-                        </div>
-
-                        {/* Title */}
-                        <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white uppercase leading-tight">
-                          {currentUpdate.title}
-                        </h3>
-
-                        {/* Description */}
-                        {currentUpdate.detail && (
-                          <p className="text-neutral-300 text-xs sm:text-sm lg:text-base font-light leading-relaxed mt-2.5 sm:mt-3 whitespace-pre-line break-words max-w-lg">
-                            {currentUpdate.detail}
-                          </p>
-                        )}
-
-                        {/* Date with Calendar Icon */}
-                        {currentUpdate.createdAt && !isNaN(new Date(currentUpdate.createdAt).getTime()) && (
-                          <div className="flex items-center gap-2 text-white/50 text-xs sm:text-sm font-mono tracking-wider uppercase mt-4 sm:mt-5">
-                            <Calendar size={14} className="text-teal-400/80 shrink-0" />
-                            <span>
-                              {new Date(currentUpdate.createdAt).toLocaleDateString('en-GB', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric',
-                              }).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Right / Decorative Horological Detail */}
-                      <div className="hidden md:flex md:col-span-5 flex-col items-center justify-center pl-6 border-l border-white/10 select-none">
-                        <div className="relative w-36 h-36 lg:w-40 lg:h-40 flex items-center justify-center">
-                          {/* Ambient decorative glowing arc */}
-                          <div className="absolute inset-0 rounded-full border border-teal-400/20 shadow-[0_0_24px_rgba(20,184,166,0.15)]" />
-                          <div className="absolute inset-3 rounded-full border border-white/10" />
-                          <LogoMark className="w-10 h-10 lg:w-12 lg:h-12 opacity-80" />
-                        </div>
-                        <div className="text-center mt-3">
-                          <span className="font-serif text-[10px] tracking-[0.25em] text-white/50 uppercase block">
-                            Crafted For What Matters
-                          </span>
-                          <div className="w-8 h-[1.5px] bg-teal-400/70 mx-auto mt-1.5 rounded-full" />
-                        </div>
-                      </div>
-                    </motion.div>
-                  </AnimatePresence>
-                );
-              })()
-            ) : (
-              <div className="text-xs sm:text-sm text-white/60 font-bold uppercase tracking-wider text-center py-6">
-                Stay Tuned For Announcements
-              </div>
-            )}
-          </div>
-
-          {/* Bottom Bar: Progress Dots */}
-          <div className="relative z-10 border-t border-white/10 mt-6 sm:mt-8 pt-4 sm:pt-5 flex items-center justify-between">
-            {brandUpdates && brandUpdates.length > 1 ? (
-              <div className="flex items-center gap-2">
-                {brandUpdates.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => {
-                      setSlideDirection(i > activeUpdateIdx ? 1 : -1);
-                      setActiveUpdateIdx(i);
-                    }}
-                    className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                      i === activeUpdateIdx
-                        ? 'w-6 bg-teal-400 shadow-[0_0_8px_rgba(20,184,166,0.8)]'
-                        : 'w-1.5 bg-white/25 hover:bg-white/50'
-                    }`}
-                    aria-label={`Go to update ${i + 1}`}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div />
-            )}
-
-            {/* Subtle Brand Watermark Detail */}
-            <span className="text-[10px] font-mono tracking-[0.22em] text-white/40 uppercase">
-              KHRONIQ TIMEPIECES
+          {/* Top Header: Title on Left, Slide Counter on Right */}
+          <div className="flex items-center justify-between border-b border-[#34d399]/25 pb-3">
+            <span className="text-xs sm:text-sm uppercase font-black tracking-[0.3em] text-[#34d399] drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">
+              KHRONIQ UPDATES
+            </span>
+            <span className="text-xs font-mono font-bold tracking-widest text-emerald-200/90 bg-black/40 px-3 py-1 rounded-full border border-emerald-500/20">
+              {currentUpdateIndex + 1} / {displayedUpdates.length}
             </span>
           </div>
+
+          {/* Slider Content Row: Previous Arrow (<), Center Details, Next Arrow (>) */}
+          <div className="flex items-center justify-between gap-3 sm:gap-6 py-2">
+
+            {/* Left Previous Arrow Button */}
+            <button
+              onClick={handlePrevUpdate}
+              aria-label="Previous Update"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#34d399]/60 bg-[#031c18]/50 hover:bg-[#34d399]/25 hover:border-[#34d399] hover:scale-110 active:scale-95 text-[#34d399] flex items-center justify-center transition-all duration-300 shadow-[0_0_15px_rgba(4,120,87,0.3)] shrink-0 cursor-pointer"
+            >
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
+            </button>
+
+            {/* Center Animated Slide Info */}
+            <div className="flex-1 text-center space-y-3 px-1 min-h-[130px] flex flex-col justify-center items-center">
+              <div className="flex items-center justify-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#34d399] animate-pulse shadow-[0_0_10px_#34d399]" />
+                <h3 className="font-serif text-lg sm:text-2xl font-black uppercase tracking-wider text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
+                  {displayedUpdates[currentUpdateIndex]?.title || 'WEB HOSTING SOON'}
+                </h3>
+              </div>
+
+              <p className="text-xs sm:text-sm text-emerald-50/90 font-medium leading-relaxed max-w-md drop-shadow">
+                {displayedUpdates[currentUpdateIndex]?.detail || 'khroniq is launching its timepieces :wait is over'}
+              </p>
+
+              <div className="w-full max-w-xs border-b border-emerald-500/25 my-1" />
+
+              <div className="flex items-center justify-center gap-2 text-emerald-300 font-bold font-mono text-xs tracking-widest pt-0.5">
+                <Calendar className="w-3.5 h-3.5 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                <span>
+                  {displayedUpdates[currentUpdateIndex]?.createdAt
+                    ? new Date(displayedUpdates[currentUpdateIndex].createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
+                    : '17 JUL 2026'}
+                </span>
+              </div>
+            </div>
+
+            {/* Right Next Arrow Button */}
+            <button
+              onClick={handleNextUpdate}
+              aria-label="Next Update"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#34d399]/60 bg-[#031c18]/50 hover:bg-[#34d399]/25 hover:border-[#34d399] hover:scale-110 active:scale-95 text-[#34d399] flex items-center justify-center transition-all duration-300 shadow-[0_0_15px_rgba(4,120,87,0.3)] shrink-0 cursor-pointer"
+            >
+              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
+            </button>
+
+          </div>
+
+          {/* Bottom Dot Indicators */}
+          {displayedUpdates.length > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-1">
+              {displayedUpdates.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentUpdateIndex(idx);
+                  }}
+                  className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${idx === currentUpdateIndex
+                    ? 'w-7 bg-[#34d399] shadow-[0_0_8px_#34d399]'
+                    : 'w-2 bg-emerald-950/60 border border-emerald-500/30 hover:bg-emerald-500/50'
+                    }`}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
+
         </div>
+
+        {/* Vertical Tab sticking to the extreme left of this section only — COMMENTED OUT AS REQUESTED */}
+        {/*
+        <button
+          onClick={() => onUpdatesOpen && onUpdatesOpen()}
+          className="absolute left-0 top-0 h-full w-20 sm:w-24 text-white font-black text-[22px] sm:text-[26px] tracking-[0.35em] uppercase border-r border-[#047857]/30 shadow-2xl hover:opacity-100 hover:translate-x-1.5 transition-all duration-300 z-30 cursor-pointer flex flex-col items-center justify-center select-none rounded-none group"
+          style={{
+            writingMode: 'vertical-lr',
+            textOrientation: 'mixed',
+            background: 'linear-gradient(180deg, #047857 0%, #065f46 45%, #022c22 100%)',
+          }}
+        >
+          <div className="absolute top-10 flex items-center justify-center">
+            <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-white opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+          </div>
+
+          <span className="group-hover:scale-105 transition-transform duration-300">
+            KHRONIQ UPDATES
+          </span>
+
+          <div className="absolute bottom-10 flex items-center justify-center">
+            <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-white opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+          </div>
+        </button>
+        */}
       </div>
     </>
   );

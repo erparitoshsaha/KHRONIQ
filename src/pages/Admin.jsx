@@ -48,7 +48,7 @@ import WebsiteContentManager from '../components/admin/WebsiteContentManager';
 import AdminMediaField from '../components/admin/AdminMediaField';
 import AdminManagement from '../components/admin/AdminManagement';
 import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
-import { defaultHomeImages, HOMEPAGE_SECTION_LABELS } from './Home';
+import { defaultHomeImages, HOMEPAGE_SECTION_LABELS, HOMEPAGE_MEDIA_SECTIONS } from './Home';
 import {
   Menu, BarChart3, Plus, Edit, Trash2, Check, X, Tag, Star,
   Package, AlertTriangle, ShieldAlert, ArrowLeft, ArrowUpRight,
@@ -772,23 +772,27 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
 // --- MEDIA MANAGER STATES ---
   const [mediaSection, setMediaSection] = useState('');
   const [mediaFiles, setMediaFiles] = useState([]);
-  const [mediaList, setMediaList] = useState([]);
+  const [mediaList, setMediaList] = useState({});
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [mediaUploadStatus, setMediaUploadStatus] = useState({});
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('khroniq_token');
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
-  const HOMEPAGE_SECTIONS = Object.keys(defaultHomeImages || {}).map((key) => ({
-    key,
-    label:
-      (HOMEPAGE_SECTION_LABELS && HOMEPAGE_SECTION_LABELS[key]) ||
-      key
-        .split('_')
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ')
-  }));
+  const HOMEPAGE_SECTIONS = (HOMEPAGE_MEDIA_SECTIONS && HOMEPAGE_MEDIA_SECTIONS.length > 0)
+    ? HOMEPAGE_MEDIA_SECTIONS
+    : Object.keys(defaultHomeImages || {}).map((key) => ({
+        key,
+        title:
+          (HOMEPAGE_SECTION_LABELS && HOMEPAGE_SECTION_LABELS[key]) ||
+          key
+            .split('_')
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' '),
+        slots: [{ key, label: (HOMEPAGE_SECTION_LABELS && HOMEPAGE_SECTION_LABELS[key]) || key, default: defaultHomeImages[key] || '' }]
+      }));
 
   useEffect(() => {
     if (isAdminRole(currentUser?.role) && activeTab === 'media') {
@@ -810,10 +814,11 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
     }
   }, [currentUser, activeTab]);
 
-  const handleSectionImageUpload = async (e, sectionKey) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleSectionImageUpload = async (fileOrEvent, sectionKey) => {
+    const file = fileOrEvent?.target?.files ? fileOrEvent.target.files[0] : fileOrEvent;
+    if (!file) return null;
 
+    setMediaUploadStatus(prev => ({ ...prev, [sectionKey]: 'uploading' }));
     setUploadingMedia(true);
     try {
       const formData = new FormData();
@@ -822,20 +827,23 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
       const token = localStorage.getItem('khroniq_token');
       const res = await fetch('/api/admin/media', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData
       });
       const data = await res.json();
-      if (data.success && data.media?.[0]) {
-        setMediaList(prev => ({ ...prev, [sectionKey]: data.media[0].url }));
+      if (data.success && data.media?.[0]?.url) {
+        const uploadedUrl = data.media[0].url;
+        setMediaList(prev => ({ ...prev, [sectionKey]: uploadedUrl }));
+        setMediaUploadStatus(prev => ({ ...prev, [sectionKey]: 'uploaded' }));
+        return uploadedUrl;
       } else {
-        alert(data.message || 'Upload failed.');
+        setMediaUploadStatus(prev => ({ ...prev, [sectionKey]: 'failed' }));
+        return null;
       }
     } catch (err) {
       console.error('Section image upload error:', err);
-      alert(err.message || 'Failed to upload image.');
+      setMediaUploadStatus(prev => ({ ...prev, [sectionKey]: 'failed' }));
+      return null;
     } finally {
       setUploadingMedia(false);
     }
@@ -7570,37 +7578,146 @@ const handleEditImageUpload = async (e) => {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {HOMEPAGE_SECTIONS.map((section) => (
-              <div key={section.key} className="bg-luxury-gray border border-white/10 rounded p-4 space-y-3 shadow-sm">
-                <AdminMediaField
-                  label={section.label}
-                  value={mediaList[section.key] || ''}
-                  onChange={(newUrl) => {
-                    setMediaList(prev => ({ ...prev, [section.key]: newUrl }));
-                  }}
-                  onUpload={async (file) => {
-                    const formData = new FormData();
-                    formData.append('files', file);
-                    formData.append('section', section.key);
-                    const token = localStorage.getItem('khroniq_token');
-                    const res = await fetch('/api/admin/media', {
-                      method: 'POST',
-                      headers: token ? { Authorization: `Bearer ${token}` } : {},
-                      body: formData
-                    });
-                    const data = await res.json();
-                    if (data.success && data.media?.[0]?.url) {
-                      setMediaList(prev => ({ ...prev, [section.key]: data.media[0].url }));
-                      return data.media[0].url;
+            {HOMEPAGE_SECTIONS.map((section) => {
+              // Multi-slot section (e.g. Classic Professional — Hero Image with 5 slides)
+              if (section.slots && section.slots.length > 1) {
+                return (
+                  <div key={section.key} className="bg-luxury-gray border border-white/10 rounded p-4 space-y-4 shadow-sm md:col-span-2">
+                    <div className="border-b border-white/10 pb-2">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-white">{section.title}</h4>
+                      <p className="text-gray-400 text-[11px] mt-0.5">
+                        {section.description || `${section.slots.length}-slide carousel for this section.`}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {section.slots.map((slot) => {
+                        const status = mediaUploadStatus[slot.key];
+                        const isUploading = status === 'uploading';
+                        return (
+                          <div key={slot.key} className="bg-black/30 border border-white/5 rounded p-3 space-y-3">
+                            <AdminMediaField
+                              label={slot.label}
+                              value={mediaList[slot.key] || ''}
+                              onChange={(newUrl) => {
+                                setMediaList(prev => ({ ...prev, [slot.key]: newUrl }));
+                                if (mediaUploadStatus[slot.key]) {
+                                  setMediaUploadStatus(prev => ({ ...prev, [slot.key]: null }));
+                                }
+                              }}
+                              onUpload={(file) => handleSectionImageUpload(file, slot.key)}
+                              uploading={isUploading}
+                              placeholder={slot.default || "https://... or /assets/..."}
+                              helperText={
+                                status === 'uploading' ? (
+                                  <span className="text-luxury-gold not-italic font-semibold">Uploading...</span>
+                                ) : status === 'uploaded' ? (
+                                  <span className="text-emerald-400 not-italic font-semibold flex items-center space-x-1">
+                                    <Check size={11} className="text-emerald-400 inline mr-1" />
+                                    <span>Uploaded</span>
+                                  </span>
+                                ) : status === 'failed' ? (
+                                  <span className="text-red-400 not-italic font-semibold flex items-center space-x-1">
+                                    <AlertTriangle size={11} className="text-red-400 inline mr-1" />
+                                    <span>Upload failed</span>
+                                  </span>
+                                ) : (
+                                  'Supports live preview, direct URL entry, or file replacement'
+                                )
+                              }
+                            />
+                            {status && (
+                              <div className="flex items-center justify-between text-xs pt-2 border-t border-white/10">
+                                <span className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold">Upload Status</span>
+                                {status === 'uploading' && (
+                                  <span className="text-luxury-gold font-bold flex items-center space-x-1 text-[11px]">
+                                    <span>Uploading...</span>
+                                  </span>
+                                )}
+                                {status === 'uploaded' && (
+                                  <span className="text-emerald-400 font-bold flex items-center space-x-1 text-[11px]">
+                                    <Check size={12} className="text-emerald-400" />
+                                    <span>Uploaded</span>
+                                  </span>
+                                )}
+                                {status === 'failed' && (
+                                  <span className="text-red-400 font-bold flex items-center space-x-1 text-[11px]">
+                                    <AlertTriangle size={12} className="text-red-400" />
+                                    <span>Upload failed</span>
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Single-slot section
+              const slot = section.slots ? section.slots[0] : section;
+              const slotKey = slot.key || section.key;
+              const slotLabel = section.title || section.label;
+              const status = mediaUploadStatus[slotKey];
+              const isUploading = status === 'uploading';
+              return (
+                <div key={slotKey} className="bg-luxury-gray border border-white/10 rounded p-4 space-y-3 shadow-sm">
+                  <AdminMediaField
+                    label={slotLabel}
+                    value={mediaList[slotKey] || ''}
+                    onChange={(newUrl) => {
+                      setMediaList(prev => ({ ...prev, [slotKey]: newUrl }));
+                      if (mediaUploadStatus[slotKey]) {
+                        setMediaUploadStatus(prev => ({ ...prev, [slotKey]: null }));
+                      }
+                    }}
+                    onUpload={(file) => handleSectionImageUpload(file, slotKey)}
+                    uploading={isUploading}
+                    placeholder={slot.default || defaultHomeImages[slotKey] || "https://... or /assets/..."}
+                    helperText={
+                      status === 'uploading' ? (
+                        <span className="text-luxury-gold not-italic font-semibold">Uploading...</span>
+                      ) : status === 'uploaded' ? (
+                        <span className="text-emerald-400 not-italic font-semibold flex items-center space-x-1">
+                          <Check size={11} className="text-emerald-400 inline mr-1" />
+                          <span>Uploaded</span>
+                        </span>
+                      ) : status === 'failed' ? (
+                        <span className="text-red-400 not-italic font-semibold flex items-center space-x-1">
+                          <AlertTriangle size={11} className="text-red-400 inline mr-1" />
+                          <span>Upload failed</span>
+                        </span>
+                      ) : (
+                        'Supports live preview, direct URL entry, or file replacement'
+                      )
                     }
-                    return null;
-                  }}
-                  uploading={uploadingMedia}
-                  placeholder="https://... or /assets/..."
-                  helperText="Supports live preview, direct URL entry, or file replacement"
-                />
-              </div>
-            ))}
+                  />
+                  {status && (
+                    <div className="flex items-center justify-between text-xs pt-2 border-t border-white/10">
+                      <span className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold">Upload Status</span>
+                      {status === 'uploading' && (
+                        <span className="text-luxury-gold font-bold flex items-center space-x-1 text-[11px]">
+                          <span>Uploading...</span>
+                        </span>
+                      )}
+                      {status === 'uploaded' && (
+                        <span className="text-emerald-400 font-bold flex items-center space-x-1 text-[11px]">
+                          <Check size={12} className="text-emerald-400" />
+                          <span>Uploaded</span>
+                        </span>
+                      )}
+                      {status === 'failed' && (
+                        <span className="text-red-400 font-bold flex items-center space-x-1 text-[11px]">
+                          <AlertTriangle size={12} className="text-red-400" />
+                          <span>Upload failed</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
