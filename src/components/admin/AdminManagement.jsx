@@ -538,7 +538,7 @@ export default function AdminManagement() {
                 </tr>
               ) : (
                 filteredAdmins.map((admin) => {
-                  const isSuper = admin.role === 'super_admin' || admin.email === 'er.paritoshsaha@gmail.com';
+                  const isSuper = admin.role === 'super_admin' || admin.email === 'er.paritoshsaha@gmail.com' || admin.email === 'khroniqofficial@gmail.com';
                   const isSelf = admin._id === currentUser?.id || admin.id === currentUser?.id;
                   const perms = admin.permissions || [];
 

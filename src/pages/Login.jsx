@@ -4,7 +4,8 @@ import { loginUser, registerUser, checkAdminEmail, requestAdminCode, verifyAdmin
 import { Star, CheckCircle2, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { isAdminRole } from '../constants/permissions';
 
-const SUPER_ADMIN_EMAIL = 'er.paritoshsaha@gmail.com';
+const SUPER_ADMIN_EMAILS = ['er.paritoshsaha@gmail.com', 'khroniqofficial@gmail.com'];
+const checkIsSuperAdmin = (email) => SUPER_ADMIN_EMAILS.includes((email || '').trim().toLowerCase());
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Login({ params, onPageChange }) {
@@ -48,8 +49,8 @@ export default function Login({ params, onPageChange }) {
 
     if (authMode === 'login') {
       const clean = (val || '').trim().toLowerCase();
-      // If user typed or pasted the exact super admin email, adapt the view seamlessly
-      if (clean === SUPER_ADMIN_EMAIL) {
+      // If user typed or pasted a super admin email, adapt the view seamlessly
+      if (checkIsSuperAdmin(clean)) {
         setIsAdminEmail(true);
         setIsSuperAdminEmail(true);
         setRequiresOtp(true);
@@ -72,7 +73,7 @@ export default function Login({ params, onPageChange }) {
     const clean = (email || '').trim().toLowerCase();
     if (!clean || !EMAIL_REGEX.test(clean)) return;
 
-    if (clean === SUPER_ADMIN_EMAIL) {
+    if (checkIsSuperAdmin(clean)) {
       setIsAdminEmail(true);
       setIsSuperAdminEmail(true);
       setRequiresOtp(true);
@@ -129,7 +130,7 @@ export default function Login({ params, onPageChange }) {
 
       setLoading(true);
       try {
-        const isSuper = cleanEmail === SUPER_ADMIN_EMAIL;
+        const isSuper = checkIsSuperAdmin(cleanEmail);
 
         if (isSuper) {
           setIsAdminEmail(true);
@@ -319,7 +320,7 @@ export default function Login({ params, onPageChange }) {
                 setOtpSentMsg(false);
                 setAdminStep('email');
                 setAdminCode('');
-                if (email.trim().toLowerCase() === SUPER_ADMIN_EMAIL) {
+                if (checkIsSuperAdmin(email)) {
                   setIsAdminEmail(true);
                   setIsSuperAdminEmail(true);
                   setRequiresOtp(true);
@@ -366,9 +367,12 @@ export default function Login({ params, onPageChange }) {
         )}
 
         {forgotSuccess && (
-          <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded text-emerald-400 text-xs font-medium flex items-center space-x-1.5">
-            <CheckCircle2 size={14} />
-            <span>A secure credential reset key has been dispatched to your email inbox.</span>
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded text-emerald-400 text-xs font-medium flex items-start space-x-2">
+            <CheckCircle2 size={14} className="shrink-0 mt-0.5" />
+            <div>
+              <p>A secure credential reset key has been dispatched to your email inbox.</p>
+              <p className="mt-0.5">If you don't see it in your inbox, please check your spam folder.</p>
+            </div>
           </div>
         )}
 

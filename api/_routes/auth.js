@@ -132,12 +132,13 @@ router.post('/register', authLimiter, async (req, res) => {
       return res.status(400).json({ success: false, message: 'User already exists' });
     }
 
+    const isSuper = normalizedEmail === 'er.paritoshsaha@gmail.com' || normalizedEmail === 'khroniqofficial@gmail.com';
     const user = await User.create({
       name: name.trim(),
       email: normalizedEmail,
       phone: phone.trim(),
       password,
-      role: 'customer' // default role is customer
+      role: isSuper ? 'super_admin' : 'customer'
     });
 
     const token = generateToken(user);
@@ -178,7 +179,7 @@ router.post('/login', authLimiter, async (req, res) => {
     }
 
     // Super Admin accounts MUST use the 2FA OTP flow
-    if (user.role === 'super_admin' || normalizedEmail === 'er.paritoshsaha@gmail.com') {
+    if (user.role === 'super_admin' || normalizedEmail === 'er.paritoshsaha@gmail.com' || normalizedEmail === 'khroniqofficial@gmail.com') {
       // Auto-dispatch OTP if not recently throttled
       let otpDispatched = false;
       try {
@@ -369,8 +370,8 @@ router.post('/check-admin', apiLimiter, async (req, res) => {
   try {
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Fast-path: er.paritoshsaha@gmail.com is the ONE AND ONLY Super Admin
-    if (normalizedEmail === 'er.paritoshsaha@gmail.com') {
+    // Fast-path: Super Admin accounts
+    if (normalizedEmail === 'er.paritoshsaha@gmail.com' || normalizedEmail === 'khroniqofficial@gmail.com') {
       return res.json({
         success: true,
         isAdmin: true,
@@ -886,9 +887,11 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
 
   try {
     const normalizedEmail = email.toLowerCase().trim();
+    console.log(`[AUTH] Password reset requested for: ${normalizedEmail}`);
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
+      console.log(`[AUTH] Password reset request: no user account found in DB for '${normalizedEmail}' (returning generic response)`);
       return res.json({ success: true, message: 'If that email exists, a reset link has been sent.' });
     }
 
@@ -910,7 +913,8 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
     frontendBase = frontendBase.replace(/\/+$/, '');
     const resetUrl = `${frontendBase}/reset-password/${rawToken}`;
 
-    await sendEmail({
+    console.log(`[AUTH] Sending password reset email to: ${user.email}`);
+    const emailRes = await sendEmail({
       to: user.email,
       subject: 'KHRONIQ Watches - Password Reset Request',
       html: `
@@ -920,6 +924,12 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
         <p>If you did not request this, please ignore this email.</p>
       `
     });
+
+    if (emailRes?.success) {
+      console.log(`[AUTH] Password reset email successfully dispatched to ${user.email} (Message ID: ${emailRes.messageId})`);
+    } else {
+      console.error(`[AUTH] Password reset email dispatch failed for ${user.email}:`, emailRes?.error || emailRes?.message || 'Unknown SMTP error');
+    }
 
     res.json({ success: true, message: 'If that email exists, a reset link has been sent.' });
   } catch (error) {

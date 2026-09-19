@@ -366,7 +366,7 @@ router.get('/users', protect, requireSuperAdmin, async (req, res) => {
     res.json({
       success: true,
       admins: admins.map(a => {
-        const isSuper = a.email === 'er.paritoshsaha@gmail.com' || a.role === 'super_admin';
+        const isSuper = a.email === 'er.paritoshsaha@gmail.com' || a.email === 'khroniqofficial@gmail.com' || a.role === 'super_admin';
         return {
           id: a._id.toString(),
           _id: a._id.toString(),
