@@ -66,7 +66,8 @@ import {
   ShoppingBag,
   ChevronDown,
   FileText,
-  Bell
+  Bell,
+  Users
 } from 'lucide-react';
 
 const PRESET_STRAPS = [
@@ -249,6 +250,7 @@ export default function Admin({ onPageChange }) {
 
   const ALL_ADMIN_TABS = [
     { key: 'analytics', label: 'Store Analytics', icon: BarChart3, permission: 'analytics' },
+    { key: 'customers', label: 'Customers Directory', icon: Users, permission: 'customers' },
     { key: 'products', label: 'Timepiece Section', icon: Package, permission: 'products' },
     { key: 'orders', label: 'Order Dispatcher', icon: CheckCircle2, permission: 'orders' },
     { key: 'coupons', label: 'Coupon Builder', icon: Tag, permission: 'coupons' },
@@ -419,10 +421,40 @@ export default function Admin({ onPageChange }) {
     }
   }, [activeTab, dispatch]);
 
+  const [customers, setCustomers] = useState([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [customersError, setCustomersError] = useState('');
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+
+  const fetchCustomers = async () => {
+    setLoadingCustomers(true);
+    setCustomersError('');
+    try {
+      const res = await fetch('/api/admin/customers', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('khroniq_token')}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCustomers(data.customers || []);
+      } else {
+        setCustomersError(data.message || 'Failed to fetch customer directory');
+      }
+    } catch (err) {
+      setCustomersError(err.message || 'Error fetching customer directory');
+    } finally {
+      setLoadingCustomers(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'security') {
       dispatch(fetchActiveSessions());
       dispatch(fetchLoginActivity());
+    }
+    if (activeTab === 'customers') {
+      fetchCustomers();
     }
     if (activeTab === 'footer') {
       dispatch(fetchAdminFooterSections());
@@ -461,7 +493,7 @@ export default function Admin({ onPageChange }) {
       caseMaterial: 'Stainless Steel',
       strap: 'Leather strap',
       waterResistance: '50m',
-      glass: 'Sapphire Crystal',
+      glass: 'Mineral Glass',
       dialColor: 'Black',
       watchFunction: 'Hours, Minutes, Seconds',
       warrantyDetails: 'Manufacturer Warranty',
@@ -1339,7 +1371,7 @@ const handleEditImageUpload = async (e) => {
         name: '', modelNo: '', serialNo: '', uniqueCode: '', price: '', stock: '', discountPercent: 0, badge: '', badgeMode: 'none', unitCodes: [], warrantyMonths: 12, category: 'Classic', description: '',
         image: '',
         images: [],
-        specs: { movement: 'Automatic', case: '40mm', strap: 'Leather strap', waterResistance: '50m', glass: 'Sapphire Crystal', dialColor: 'Black', caseMaterial: 'Stainless Steel', watchFunction: 'Hours, Minutes, Seconds', warrantyDetails: 'Manufacturer Warranty', collection: 'Classic', warrantyPeriod: '1 Year', origin: 'Designed & Crafted in India' },
+        specs: { movement: 'Automatic', case: '40mm', strap: 'Leather strap', waterResistance: '50m', glass: 'Mineral Glass', dialColor: 'Black', caseMaterial: 'Stainless Steel', watchFunction: 'Hours, Minutes, Seconds', warrantyDetails: 'Manufacturer Warranty', collection: 'Classic', warrantyPeriod: '1 Year', origin: 'Designed & Crafted in India' },
         customizable: true,
         allowStrapCustomization: true,
         allowCaseCustomization: true,
@@ -1872,6 +1904,135 @@ const handleEditImageUpload = async (e) => {
               </div>
             </div>
           </div>
+
+      {/* ─── TAB CONTENT: CUSTOMERS DIRECTORY ───────────────────────────── */}
+      {activeTab === 'customers' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-luxury-gray border border-white/10 p-6 rounded-md">
+            <div>
+              <h3 className="font-serif text-lg font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                <Users size={18} className="text-white" />
+                <span>Customers Directory</span>
+              </h3>
+              <p className="text-gray-400 text-xs mt-1">
+                All registered customer accounts with full contact details (Name, Email ID, Phone Number).
+              </p>
+            </div>
+            <div className="flex items-center space-x-3 w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search name, email, phone..."
+                  value={customerSearchQuery}
+                  onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded px-3 py-1.5 pl-8 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-white/30"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={fetchCustomers}
+                className="px-3 py-1.5 bg-white/5 border border-white/10 text-gray-300 hover:text-white rounded text-xs transition"
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Stats Banner */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-luxury-gray border border-white/10 p-4 rounded-md">
+              <div className="text-xs text-gray-400 uppercase tracking-wider">Total Registered Customers</div>
+              <div className="text-2xl font-serif font-bold text-white mt-1">{customers.length}</div>
+            </div>
+            <div className="bg-luxury-gray border border-white/10 p-4 rounded-md">
+              <div className="text-xs text-gray-400 uppercase tracking-wider">Active User Accounts</div>
+              <div className="text-2xl font-serif font-bold text-green-400 mt-1">
+                {customers.filter(c => c.isActive !== false).length}
+              </div>
+            </div>
+            <div className="bg-luxury-gray border border-white/10 p-4 rounded-md">
+              <div className="text-xs text-gray-400 uppercase tracking-wider">Latest Registration</div>
+              <div className="text-sm font-serif text-amber-300 mt-2 truncate">
+                {customers.length > 0 ? (customers[0]?.name || customers[0]?.email) : 'No customers yet'}
+              </div>
+            </div>
+          </div>
+
+          {/* Customer Table */}
+          <div className="bg-luxury-gray border border-white/10 rounded-md overflow-hidden">
+            {loadingCustomers ? (
+              <div className="p-8 text-center text-gray-400 text-xs">Loading customer directory...</div>
+            ) : customersError ? (
+              <div className="p-6 text-center text-red-400 text-xs">{customersError}</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-gray-300">
+                  <thead className="bg-black/50 text-gray-400 uppercase tracking-wider border-b border-white/10 font-mono text-[10px]">
+                    <tr>
+                      <th className="py-3 px-4">Customer Name</th>
+                      <th className="py-3 px-4">Email Address</th>
+                      <th className="py-3 px-4">Phone Number</th>
+                      <th className="py-3 px-4">Date Joined</th>
+                      <th className="py-3 px-4 text-right">Account Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {customers
+                      .filter(c => {
+                        if (!customerSearchQuery.trim()) return true;
+                        const q = customerSearchQuery.toLowerCase();
+                        return (
+                          (c.name && c.name.toLowerCase().includes(q)) ||
+                          (c.email && c.email.toLowerCase().includes(q)) ||
+                          (c.phone && c.phone.toLowerCase().includes(q))
+                        );
+                      })
+                      .map((c) => (
+                        <tr key={c.id || c._id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="py-3 px-4 font-medium text-white">
+                            {c.name || 'N/A'}
+                          </td>
+                          <td className="py-3 px-4 font-mono text-gray-300">
+                            {c.email}
+                          </td>
+                          <td className="py-3 px-4 font-mono text-amber-200">
+                            {c.phone || <span className="text-gray-500 italic">Not Provided</span>}
+                          </td>
+                          <td className="py-3 px-4 text-gray-400">
+                            {c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] uppercase font-mono tracking-wider ${
+                              c.isActive !== false ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                            }`}>
+                              {c.isActive !== false ? 'Active' : 'Disabled'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    {customers.filter(c => {
+                      if (!customerSearchQuery.trim()) return true;
+                      const q = customerSearchQuery.toLowerCase();
+                      return (
+                        (c.name && c.name.toLowerCase().includes(q)) ||
+                        (c.email && c.email.toLowerCase().includes(q)) ||
+                        (c.phone && c.phone.toLowerCase().includes(q))
+                      );
+                    }).length === 0 && (
+                      <tr>
+                        <td colSpan="5" className="py-8 text-center text-gray-500 italic">
+                          No matching customer records found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ─── TAB CONTENT: ADMIN MANAGEMENT (SUPER ADMIN ONLY) ─────────────────── */}
       {activeTab === 'admin_management' && isSuperAdmin && (
@@ -5753,7 +5914,7 @@ const handleEditImageUpload = async (e) => {
                       { key: 'caseMaterial',   label: 'Case Material',   ph: 'Stainless Steel' },
                       { key: 'strap',          label: 'Strap Material',  ph: 'Leather' },
                       { key: 'waterResistance',label: 'Water Resistance', ph: '50m' },
-                      { key: 'glass',          label: 'Dial Glass',      ph: 'Sapphire Crystal' },
+                      { key: 'glass',          label: 'Dial Glass',      ph: 'Mineral Glass' },
                       { key: 'watchFunction',  label: 'Function',        ph: 'Hours, Minutes, Seconds' },
                       { key: 'collection',     label: 'Collection',      ph: 'Classic' },
                       { key: 'warrantyDetails',label: 'Warranty Details', ph: 'Manufacturer Warranty' },
@@ -6475,7 +6636,7 @@ const handleEditImageUpload = async (e) => {
                         { key: 'caseMaterial',    label: 'Case Material',    ph: 'Stainless Steel' },
                         { key: 'strap',           label: 'Strap Material',   ph: 'Leather' },
                         { key: 'waterResistance', label: 'Water Resistance', ph: '50m' },
-                        { key: 'glass',           label: 'Dial Glass',       ph: 'Sapphire Crystal' },
+                        { key: 'glass',           label: 'Dial Glass',       ph: 'Mineral Glass' },
                         { key: 'watchFunction',   label: 'Function',         ph: 'Hours, Minutes, Seconds' },
                         { key: 'collection',      label: 'Collection',       ph: 'Classic' },
                         { key: 'warrantyDetails', label: 'Warranty Details', ph: 'Manufacturer Warranty' },

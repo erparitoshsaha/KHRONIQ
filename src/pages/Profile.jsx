@@ -255,19 +255,14 @@ export default function Profile({ params, onPageChange }) {
       
       {/* Profile Header Banner */}
       <div className="bg-luxury-gray border border-white/5 p-6 sm:p-8 rounded-md flex flex-col sm:flex-row items-center justify-between gap-6">
-        <div className="flex items-center space-x-4">
-          <div className="h-16 w-16 bg-luxury-dark rounded-full border border-luxury-gold/50 flex items-center justify-center text-luxury-gold text-xl font-bold">
-            {currentUser.name.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white uppercase tracking-wider">{currentUser.name}</h1>
-            <p className="text-xs text-gray-400 font-light mt-0.5">{currentUser.email}</p>
-            {isAdminRole(currentUser.role) && (
-              <span className={`inline-block ${isSuperAdminRole(currentUser.role) ? 'bg-luxury-gold text-black' : 'bg-luxury-red text-white'} text-[9px] font-bold tracking-widest px-2 py-0.5 rounded uppercase mt-1`}>
-                {isSuperAdminRole(currentUser.role) ? 'SUPER ADMIN ACCESS' : 'ADMIN ACCESS'}
-              </span>
-            )}
-          </div>
+        <div>
+          <h1 className="text-xl font-bold text-white uppercase tracking-wider">{currentUser.name}</h1>
+          <p className="text-xs text-gray-400 font-light mt-0.5">{currentUser.email}</p>
+          {isAdminRole(currentUser.role) && (
+            <span className={`inline-block ${isSuperAdminRole(currentUser.role) ? 'bg-luxury-gold text-black' : 'bg-luxury-red text-white'} text-[9px] font-bold tracking-widest px-2 py-0.5 rounded uppercase mt-1`}>
+              {isSuperAdminRole(currentUser.role) ? 'SUPER ADMIN ACCESS' : 'ADMIN ACCESS'}
+            </span>
+          )}
         </div>
 
         <div className="flex space-x-3">

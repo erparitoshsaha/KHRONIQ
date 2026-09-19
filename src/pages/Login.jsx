@@ -19,6 +19,7 @@ export default function Login({ params, onPageChange }) {
   // Forms states
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
 
   // Status states
@@ -265,8 +266,8 @@ export default function Login({ params, onPageChange }) {
       return;
     }
 
-    if (!email || !password || (authMode === 'register' && !name)) {
-      setErrorMsg('Please complete all form inputs.');
+    if (!email || !password || (authMode === 'register' && (!name || !phone))) {
+      setErrorMsg('Please complete all form inputs including Phone Number.');
       return;
     }
 
@@ -284,7 +285,7 @@ export default function Login({ params, onPageChange }) {
 
       setLoading(true);
       try {
-        const res = await dispatch(registerUser(name.trim(), email.trim().toLowerCase(), password));
+        const res = await dispatch(registerUser(name.trim(), email.trim().toLowerCase(), password, phone.trim()));
         if (res.success) {
           if (redirectPage === 'checkout') {
             onPageChange('checkout', { appliedCoupon });
@@ -380,19 +381,32 @@ export default function Login({ params, onPageChange }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
 
-          {/* Name (Registration Only) */}
+          {/* Name & Phone (Registration Only) */}
           {authMode === 'register' && (
-            <div className="space-y-1.5">
-              <label className="text-[10px] text-white font-bold uppercase tracking-widest block">Full Name</label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Username"
-                className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
-              />
-            </div>
+            <>
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-white font-bold uppercase tracking-widest block">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Harsh Jain"
+                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-white font-bold uppercase tracking-widest block">Phone Number *</label>
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+91 9876543210"
+                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                />
+              </div>
+            </>
           )}
 
           {/* Email (Always Needed) */}

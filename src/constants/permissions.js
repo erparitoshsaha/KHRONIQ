@@ -10,13 +10,15 @@ export const PERMISSIONS = {
   HOMEPAGE_MEDIA: 'homepage_media',
   BRAND_UPDATES: 'brand_updates',
   BLOGS: 'blogs',
-  LOGIN_ACTIVITY: 'login_activity'
+  LOGIN_ACTIVITY: 'login_activity',
+  CUSTOMERS: 'customers'
 };
 
 export const PERMISSION_LIST = [
   { key: 'analytics', label: 'Store Analytics', description: 'View sales trends, revenue metrics, and performance charts' },
   { key: 'products', label: 'Products / Timepieces', description: 'Manage watches, specifications, images, and catalog details' },
   { key: 'orders', label: 'Orders / Order Dispatcher', description: 'Process customer orders, update delivery status and warranties' },
+  { key: 'customers', label: 'Registered Customers', description: 'View registered customer directory with full name, email, and phone number' },
   { key: 'coupons', label: 'Coupon Builder', description: 'Create and revoke promotional discount coupon codes' },
   { key: 'reviews', label: 'Reviews Manager', description: 'Moderate, approve, and remove customer watch reviews' },
   { key: 'website_content', label: 'Website Content', description: 'Edit homepage sections, banners, timepieces, and CMS copy' },

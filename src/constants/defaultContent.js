@@ -131,7 +131,7 @@ export const DEFAULT_CONTENT_SECTIONS = [
           dark: false,
           specs: [
             { label: 'Quartz Movement', icon: 'Cpu' },
-            { label: 'Sapphire Crystal', icon: 'Gem' }
+            { label: 'Mineral Glass', icon: 'Gem' }
           ]
         },
         order: 1,
@@ -151,7 +151,7 @@ export const DEFAULT_CONTENT_SECTIONS = [
           dark: false,
           specs: [
             { label: 'Quartz Movement', icon: 'Cpu' },
-            { label: 'Sapphire Crystal', icon: 'Gem' }
+            { label: 'Mineral Glass', icon: 'Gem' }
           ]
         },
         order: 2,
@@ -263,7 +263,7 @@ export const DEFAULT_CONTENT_SECTIONS = [
         id: 'item-ft-3',
         title: 'W4 CHRONOGRAPH',
         subtitle: 'PRECISION AT EVERY LEVEL',
-        description: 'Dynamic sports chronograph with contrasting indices and scratch-resistant sapphire crystal.',
+        description: 'Dynamic sports chronograph with contrasting indices and scratch-resistant mineral glass.',
         image: 'https://res.cloudinary.com/ysl2umba/image/upload/v1784981707/zenith-watches/yt1nbb5p0wia55oh8smt.png',
         price: 1425,
         buttonText: 'EXPLORE',

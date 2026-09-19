@@ -1146,8 +1146,13 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
       desc: customItem?.description || art.desc,
       specs: (customItem?.metadata?.specs || [
         { label: 'Quartz Movement', icon: 'Cpu' },
-        { label: 'Sapphire Crystal', icon: 'Gem' }
-      ]).map(s => (/automatic/i.test(s.label) ? { ...s, label: 'Quartz Movement' } : s)),
+        { label: 'Mineral Glass', icon: 'Gem' }
+      ]).map(s => {
+        let label = s.label;
+        if (/automatic/i.test(label)) label = 'Quartz Movement';
+        if (/sapphire/i.test(label)) label = 'Mineral Glass';
+        return { ...s, label };
+      }),
       dark: customItem?.metadata?.dark !== undefined ? customItem.metadata.dark : art.dark,
       filter: { category: opt.value || opt.slug || opt.name }
     };

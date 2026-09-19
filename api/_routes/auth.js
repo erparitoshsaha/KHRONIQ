@@ -104,10 +104,10 @@ async function recordFailedLoginAttempt(req, user, email, failureReason, loginMe
 // @desc    Register a new user
 // @access  Public
 router.post('/register', authLimiter, async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, phone } = req.body;
 
-  if (!email || !password || !name) {
-    return res.status(400).json({ success: false, message: 'Please provide all required fields.' });
+  if (!email || !password || !name || !phone) {
+    return res.status(400).json({ success: false, message: 'Please provide all required fields including Phone Number.' });
   }
 
   // Password validation
@@ -135,6 +135,7 @@ router.post('/register', authLimiter, async (req, res) => {
     const user = await User.create({
       name: name.trim(),
       email: normalizedEmail,
+      phone: phone.trim(),
       password,
       role: 'customer' // default role is customer
     });
@@ -148,6 +149,7 @@ router.post('/register', authLimiter, async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone || '',
         role: user.role
       }
     });
@@ -344,6 +346,7 @@ router.post('/login', authLimiter, async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone || user.shippingAddress?.phone || '',
         role: user.role
       }
     });
@@ -800,6 +803,7 @@ router.get('/profile', protect, async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone || user.shippingAddress?.phone || '',
         role: user.role,
         permissions: user.permissions || [],
         location: user.location || 'Main Store',

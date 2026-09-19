@@ -388,6 +388,35 @@ router.get('/users', protect, requireSuperAdmin, async (req, res) => {
   }
 });
 
+// @route   GET /api/admin/customers
+// @desc    List all registered customer accounts (Name, Email, Phone, Status)
+// @access  Private/Admin
+router.get('/customers', protect, adminOnly, async (req, res) => {
+  try {
+    const customers = await User.find({ role: 'customer' })
+      .select('-password -adminOtp -adminOtpExpires -adminLoginCode -adminLoginCodeExpire -resetPasswordToken -resetPasswordExpire')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      customers: customers.map(c => ({
+        id: c._id.toString(),
+        _id: c._id.toString(),
+        name: c.name,
+        email: c.email,
+        phone: c.phone || c.shippingAddress?.phone || 'N/A',
+        role: c.role || 'customer',
+        isActive: c.isActive !== false,
+        lastLogin: c.lastLogin || c.updatedAt || null,
+        createdAt: c.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error('Fetch customers error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch registered customers.' });
+  }
+});
+
 // @route   POST /api/admin/users
 // @desc    Create a new restricted Admin account (Super Admin only)
 // @access  Private/SuperAdmin

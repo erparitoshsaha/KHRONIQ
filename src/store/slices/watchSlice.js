@@ -29,7 +29,7 @@ const getMockProducts = () => [
       case: 'Rose Gold PVD Steel (40mm)',
       strap: 'Rose Gold Stainless Steel Bracelet',
       waterResistance: '50m (5 ATM)',
-      glass: 'Scratch-resistant Sapphire Crystal'
+      glass: 'Scratch-resistant Mineral Glass'
     },
     customizable: true,
     allowStrapCustomization: true,
@@ -56,7 +56,7 @@ const getMockProducts = () => [
       case: 'Matte Black Ceramic (42mm)',
       strap: 'Black Rubberized Steel Link',
       waterResistance: '100m (10 ATM)',
-      glass: 'Double Anti-reflective Sapphire'
+      glass: 'Double Anti-reflective Mineral Glass'
     },
     customizable: true,
     allowStrapCustomization: true,
@@ -82,7 +82,7 @@ const getMockProducts = () => [
       case: '18K Yellow Gold (39mm)',
       strap: 'Brown Alligator Leather',
       waterResistance: '30m (3 ATM)',
-      glass: 'Dome Sapphire Crystal'
+      glass: 'Dome Mineral Glass'
     },
     customizable: true,
     allowStrapCustomization: true,
@@ -108,7 +108,7 @@ const getMockProducts = () => [
       case: 'Brushed Stainless Steel (41mm)',
       strap: 'Brown Leather with Rubber Backing',
       waterResistance: '100m (10 ATM)',
-      glass: 'Scratch-resistant Sapphire'
+      glass: 'Scratch-resistant Mineral Glass'
     },
     customizable: true,
     allowStrapCustomization: true,
@@ -134,7 +134,7 @@ const getMockProducts = () => [
       case: 'Polished Steel (42mm)',
       strap: 'Alligator Leather Strap',
       waterResistance: '100m (10 ATM)',
-      glass: 'Domed Sapphire Crystal'
+      glass: 'Domed Mineral Glass'
     },
     customizable: true,
     allowStrapCustomization: true,
@@ -158,7 +158,7 @@ const getMockProducts = () => [
       case: 'Steel with Diamond Bezel (37mm)',
       strap: 'White Satin Strap',
       waterResistance: '30m (3 ATM)',
-      glass: 'Sapphire Crystal'
+      glass: 'Mineral Glass'
     },
     customizable: true,
     allowStrapCustomization: true,
@@ -182,7 +182,7 @@ const getMockProducts = () => [
       case: 'Yellow Gold PVD (40mm)',
       strap: 'Black Leather Strap',
       waterResistance: '50m (5 ATM)',
-      glass: 'Sapphire Crystal'
+      glass: 'Mineral Glass'
     },
     customizable: true,
     allowStrapCustomization: true,
@@ -212,7 +212,7 @@ const getMockProducts = () => [
       case: 'Brushed Steel Octagonal (41mm)',
       strap: 'Black Rubber Strap',
       waterResistance: '100m (10 ATM)',
-      glass: 'Sapphire Crystal'
+      glass: 'Mineral Glass'
     },
     customizable: true,
     allowStrapCustomization: true,
@@ -236,7 +236,7 @@ const getMockProducts = () => [
       case: 'Rose Gold Steel (42mm)',
       strap: 'Brown Alligator Leather',
       waterResistance: '100m (10 ATM)',
-      glass: 'Scratch-Resistant Sapphire'
+      glass: 'Scratch-Resistant Mineral Glass'
     },
     customizable: true,
     allowStrapCustomization: true,
@@ -260,7 +260,7 @@ const getMockProducts = () => [
       case: 'Brushed Steel (41mm)',
       strap: 'Blue Alligator Leather',
       waterResistance: '100m (10 ATM)',
-      glass: 'Double Anti-Reflective Sapphire'
+      glass: 'Double Anti-Reflective Mineral Glass'
     },
     customizable: true,
     allowStrapCustomization: true,
@@ -284,7 +284,7 @@ const getMockProducts = () => [
       case: 'Integrated Stainless Steel (40mm)',
       strap: 'Brushed Steel Link Bracelet',
       waterResistance: '100m (10 ATM)',
-      glass: 'Domed Sapphire Crystal'
+      glass: 'Domed Mineral Glass'
     },
     customizable: true,
     allowStrapCustomization: true,
@@ -875,12 +875,12 @@ export const fetchUserProfile = () => async (dispatch) => {
   }
 };
 
-export const registerUser = (name, email, password) => async (dispatch, getState) => {
+export const registerUser = (name, email, password, phone = '') => async (dispatch, getState) => {
   try {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password })
+      body: JSON.stringify({ name, email, password, phone })
     });
     const data = await res.json();
     if (data.success) {

@@ -598,7 +598,7 @@ export default function ProductDetail({ params, onPageChange }) {
               Each Khroniq watch is crafted with painstaking precision in our state-of-the-art manufacture. By integrating design, case tooling, assembly, and fine-tuning calibration under a single roof, Khroniq ensures every component complies with strict chronometer specifications and Swadeshi premium quality.
             </p>
             <p className="text-gray-600 font-normal">
-              The double anti-reflective sapphire dial glass ensures absolute clarity, shielding the watch indexes from solar glare and scratches. Fitted with premium gaskets, the case delivers advanced seals for water safety, maintaining structural integrity across varying atmospheres.
+              The double anti-reflective mineral dial glass ensures absolute clarity, shielding the watch indexes from solar glare and scratches. Fitted with premium gaskets, the case delivers advanced seals for water safety, maintaining structural integrity across varying atmospheres.
             </p>
           </div>
         )}
