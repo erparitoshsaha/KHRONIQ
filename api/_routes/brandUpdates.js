@@ -13,11 +13,26 @@ const DEFAULT_BRAND_UPDATES = [
   }
 ];
 
+const LEGACY_DEFAULT_TITLES = [
+  'SWISS CRAFTSMANSHIP',
+  'LIMITED EDITION RELEASE',
+  'HERITAGE COLLECTION',
+  'EXCLUSIVITY REDEFINED'
+];
+
 // @route   GET /api/brand-updates
 // @desc    Get all approved brand updates for public homepage
 // @access  Public
 router.get('/', async (req, res) => {
   try {
+    // Purge legacy multi-updates if present in DB
+    await BrandUpdate.deleteMany({
+      $or: [
+        { title: { $in: LEGACY_DEFAULT_TITLES } },
+        { detail: { $regex: /anti-reflective sapphire crystal/i } }
+      ]
+    });
+
     let updates = await BrandUpdate.find({ approved: true }).sort({ createdAt: -1 });
     if (!updates || updates.length === 0) {
       const count = await BrandUpdate.countDocuments({});
@@ -38,6 +53,13 @@ router.get('/', async (req, res) => {
 // @access  Private/Admin
 router.get('/admin', protect, requirePermission('brand_updates'), async (req, res) => {
   try {
+    await BrandUpdate.deleteMany({
+      $or: [
+        { title: { $in: LEGACY_DEFAULT_TITLES } },
+        { detail: { $regex: /anti-reflective sapphire crystal/i } }
+      ]
+    });
+
     let updates = await BrandUpdate.find({}).sort({ createdAt: -1 });
     if (!updates || updates.length === 0) {
       const count = await BrandUpdate.countDocuments({});
