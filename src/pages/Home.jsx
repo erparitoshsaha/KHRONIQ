@@ -1933,7 +1933,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
 
           {/* Card Header Row */}
-          <div className="relative z-10 flex items-start justify-between">
+          <div className="relative z-10 flex items-start justify-between border-b border-[#34d399]/25 pb-3">
             <div>
               <span className="font-sans font-bold text-xs sm:text-sm tracking-[0.28em] text-white uppercase block">
                 KHRONIQ UPDATES
@@ -1941,12 +1941,6 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
               {/* Subtle Teal Accent Line */}
               <div className="w-16 sm:w-20 h-[2px] bg-teal-400 mt-2.5 rounded-full shadow-[0_0_8px_rgba(20,184,166,0.6)]" />
             </div>
-
-          {/* Top Header: Title on Left, Slide Counter on Right */}
-          <div className="flex items-center justify-between border-b border-[#34d399]/25 pb-3">
-            <span className="text-xs sm:text-sm uppercase font-black tracking-[0.3em] text-[#34d399] drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">
-              KHRONIQ UPDATES
-            </span>
             <span className="text-xs font-mono font-bold tracking-widest text-emerald-200/90 bg-black/40 px-3 py-1 rounded-full border border-emerald-500/20">
               {currentUpdateIndex + 1} / {displayedUpdates.length}
             </span>
