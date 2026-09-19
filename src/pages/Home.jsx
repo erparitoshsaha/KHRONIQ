@@ -1097,32 +1097,9 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
 
   // Auto-opening updates drawer disabled as requested
 
-  const defaultUpdates = [
-    {
-      _id: 'up-1',
-      title: 'GENESIS COLLECTION LAUNCH',
-      detail: 'Unveiling Khroniq inaugural luxury timepieces. Crafted for those who master time.',
-      createdAt: '2026-09-25',
-    },
-    {
-      _id: 'up-2',
-      title: 'SWISS CRAFTSMANSHIP',
-      detail: 'Precision engineered automatic movements with anti-reflective sapphire crystal.',
-      createdAt: '2026-08-05',
-    },
-    {
-      _id: 'up-3',
-      title: 'LIMITED EDITION COLLECTION',
-      detail: 'Exclusive hand-crafted timepieces coming soon to select luxury boutiques.',
-      createdAt: '2026-08-20',
-    },
-  ];
-
-  const displayedUpdates = (brandUpdates && brandUpdates.length >= 3)
+  const displayedUpdates = (brandUpdates && brandUpdates.length > 0)
     ? brandUpdates
-    : (brandUpdates && brandUpdates.length > 0)
-      ? [...brandUpdates, ...defaultUpdates.slice(brandUpdates.length)]
-      : defaultUpdates;
+    : DEFAULT_BRAND_UPDATES;
   const [currentUpdateIndex, setCurrentUpdateIndex] = useState(0);
 
   useEffect(() => {
@@ -1941,22 +1918,26 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
               {/* Subtle Teal Accent Line */}
               <div className="w-16 sm:w-20 h-[2px] bg-teal-400 mt-2.5 rounded-full shadow-[0_0_8px_rgba(20,184,166,0.6)]" />
             </div>
-            <span className="text-xs font-mono font-bold tracking-widest text-emerald-200/90 bg-black/40 px-3 py-1 rounded-full border border-emerald-500/20">
-              {currentUpdateIndex + 1} / {displayedUpdates.length}
-            </span>
+            {displayedUpdates.length > 1 && (
+              <span className="text-xs font-mono font-bold tracking-widest text-emerald-200/90 bg-black/40 px-3 py-1 rounded-full border border-emerald-500/20">
+                {currentUpdateIndex + 1} / {displayedUpdates.length}
+              </span>
+            )}
           </div>
 
           {/* Slider Content Row: Previous Arrow (<), Center Details, Next Arrow (>) */}
           <div className="flex items-center justify-between gap-3 sm:gap-6 py-2">
 
             {/* Left Previous Arrow Button */}
-            <button
-              onClick={handlePrevUpdate}
-              aria-label="Previous Update"
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#34d399]/60 bg-[#031c18]/50 hover:bg-[#34d399]/25 hover:border-[#34d399] hover:scale-110 active:scale-95 text-[#34d399] flex items-center justify-center transition-all duration-300 shadow-[0_0_15px_rgba(4,120,87,0.3)] shrink-0 cursor-pointer"
-            >
-              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
-            </button>
+            {displayedUpdates.length > 1 && (
+              <button
+                onClick={handlePrevUpdate}
+                aria-label="Previous Update"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#34d399]/60 bg-[#031c18]/50 hover:bg-[#34d399]/25 hover:border-[#34d399] hover:scale-110 active:scale-95 text-[#34d399] flex items-center justify-center transition-all duration-300 shadow-[0_0_15px_rgba(4,120,87,0.3)] shrink-0 cursor-pointer"
+              >
+                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
+              </button>
+            )}
 
             {/* Center Animated Slide Info */}
             <div className="flex-1 text-center space-y-3 px-1 min-h-[130px] flex flex-col justify-center items-center">
@@ -1984,13 +1965,15 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
             </div>
 
             {/* Right Next Arrow Button */}
-            <button
-              onClick={handleNextUpdate}
-              aria-label="Next Update"
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#34d399]/60 bg-[#031c18]/50 hover:bg-[#34d399]/25 hover:border-[#34d399] hover:scale-110 active:scale-95 text-[#34d399] flex items-center justify-center transition-all duration-300 shadow-[0_0_15px_rgba(4,120,87,0.3)] shrink-0 cursor-pointer"
-            >
-              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
-            </button>
+            {displayedUpdates.length > 1 && (
+              <button
+                onClick={handleNextUpdate}
+                aria-label="Next Update"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#34d399]/60 bg-[#031c18]/50 hover:bg-[#34d399]/25 hover:border-[#34d399] hover:scale-110 active:scale-95 text-[#34d399] flex items-center justify-center transition-all duration-300 shadow-[0_0_15px_rgba(4,120,87,0.3)] shrink-0 cursor-pointer"
+              >
+                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
+              </button>
+            )}
 
           </div>
 
