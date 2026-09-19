@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { resetPassword } from '../store/slices/watchSlice';
+import { resetPassword, logoutUser } from '../store/slices/watchSlice';
 import { Star, CheckCircle2 } from 'lucide-react';
 
 export default function ResetPassword({ params, onPageChange }) {
@@ -14,7 +14,8 @@ export default function ResetPassword({ params, onPageChange }) {
 
   useEffect(() => {
     document.title = 'Reset Credentials | KHRONIQ';
-  }, []);
+    dispatch(logoutUser());
+  }, [dispatch]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,6 +28,7 @@ export default function ResetPassword({ params, onPageChange }) {
 
     const res = await dispatch(resetPassword(token, password));
     if (res.success) {
+      dispatch(logoutUser());
       setSuccess(true);
     } else {
       setErrorMsg(res.message || 'Failed to reset password.');
