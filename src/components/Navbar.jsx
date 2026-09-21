@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { logoutUser, setCurrencyAction, selectCurrentCurrency, formatPrice } from '../store/slices/watchSlice';
+import { logoutUser, setCurrencyAction, selectCurrentCurrency, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
 import {
   ShoppingBag, Search, Menu, X, User, Heart, Star, Sparkles, Tag, ShieldAlert,
   ArrowRight, Shield, RefreshCw, Truck, Check, Trash2, Clock, CheckCircle2, ChevronRight, XCircle
@@ -13,6 +13,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
   const cart = useSelector(state => state.watch.cart);
   const wishlist = useSelector(state => state.watch.wishlist);
   const currentUser = useSelector(state => state.watch.currentUser);
+  const products = useSelector(state => state.watch.products);
 
   const handleLogout = () => {
     dispatch(logoutUser());
@@ -40,6 +41,23 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
     USD: { symbol: '$', label: 'US Currency (Dollar)' },
     EUR: { symbol: '€', label: 'British Currency (Euro)' }
   };
+
+  const priceTiers = useMemo(() => {
+    const prices = (products || []).map(p => getDiscountedPrice(p)).filter(p => typeof p === 'number' && !isNaN(p) && p > 0);
+    const maxPriceVal = prices.length > 0 ? Math.max(...prices) : 5000;
+    const minPriceVal = prices.length > 0 ? Math.min(...prices) : 1000;
+
+    const lowTier = Math.min(1000, Math.max(500, Math.floor(minPriceVal / 500) * 500));
+    const midTier = 3000;
+    const highTier = Math.max(5000, Math.ceil(maxPriceVal / 1000) * 1000);
+
+    return [
+      { label: `Under ${formatPrice(lowTier, currentCurrency)}`, maxPrice: lowTier },
+      { label: `${formatPrice(lowTier, currentCurrency)} - ${formatPrice(midTier, currentCurrency)}`, minPrice: lowTier, maxPrice: midTier },
+      { label: `${formatPrice(midTier, currentCurrency)} - ${formatPrice(highTier, currentCurrency)}`, minPrice: midTier, maxPrice: highTier },
+      { label: `Above ${formatPrice(highTier, currentCurrency)}`, minPrice: highTier },
+    ];
+  }, [products, currentCurrency]);
 
   // Synchronize navbar visibility and scrolled state on mount and route change
   useEffect(() => {
@@ -87,11 +105,29 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
 
   const navLinks = [
     { label: 'HOME', page: 'home' },
-    { label: 'MEN', page: 'shop', filter: { gender: 'men' } },
-    { label: 'WOMEN', page: 'shop', filter: { gender: 'women' } },
+    {
+      label: 'MEN',
+      page: 'shop',
+      filter: { gender: 'men' },
+      megaMenu: true,
+      gender: 'men',
+      bannerTitle: "MEN'S TIMEPIECES",
+      bannerSubtitle: "Crafted for those who master time.",
+      bannerBg: "/assets/men_watches.jpg"
+    },
+    {
+      label: 'WOMEN',
+      page: 'shop',
+      filter: { gender: 'women' },
+      megaMenu: true,
+      gender: 'women',
+      bannerTitle: "WOMEN'S TIMEPIECES",
+      bannerSubtitle: "Elegance redefined for the modern connoisseur.",
+      bannerBg: "/assets/women_watches_beach.jpeg"
+    },
     { label: 'SHOP ALL', page: 'shop', filter: { shopAll: true } },
     { label: 'CUSTOMIZE', page: 'customization' },
-    { label: '🎁 GIFTING', page: 'gifting', megaMenu: true },
+    { label: '🎁 GIFTING', page: 'gifting', megaMenu: true, type: 'gifting' },
   ];
 
   const handleNavLinkClick = (link) => {
@@ -199,15 +235,27 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                             <span>Shop By Price</span>
                             <span className="text-[10px]">&rarr;</span>
                           </button>
-                          <button
-                            type="button"
-                            onMouseEnter={() => setActiveSubMenu('recipient')}
-                            className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'recipient' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
-                              }`}
-                          >
-                            <span>Watches For Recipient</span>
-                            <span className="text-[10px]">&rarr;</span>
-                          </button>
+                          {link.type === 'gifting' ? (
+                            <button
+                              type="button"
+                              onMouseEnter={() => setActiveSubMenu('recipient')}
+                              className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'recipient' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
+                                }`}
+                            >
+                              <span>Watches For Recipient</span>
+                              <span className="text-[10px]">&rarr;</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onMouseEnter={() => setActiveSubMenu('collections')}
+                              className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'collections' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
+                                }`}
+                            >
+                              <span>Collections</span>
+                              <span className="text-[10px]">&rarr;</span>
+                            </button>
+                          )}
                         </div>
 
                         {/* Middle Column: Sub-menu items */}
@@ -216,18 +264,16 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                             <div className="space-y-6">
                               <h4 className="text-[10px] font-black tracking-[0.25em] text-black uppercase">Shop By Price</h4>
                               <div className="grid grid-cols-2 gap-4">
-                                {[
-                                  { label: `Under ${formatPrice(1000, currentCurrency)}`, maxPrice: 1000 },
-                                  { label: `${formatPrice(1000, currentCurrency)} - ${formatPrice(3000, currentCurrency)}`, minPrice: 1000, maxPrice: 3000 },
-                                  { label: `${formatPrice(3000, currentCurrency)} - ${formatPrice(5000, currentCurrency)}`, minPrice: 3000, maxPrice: 5000 },
-                                  { label: `Above ${formatPrice(5000, currentCurrency)}`, minPrice: 5000 },
-                                ].map((p) => (
+                                {priceTiers.map((p) => (
                                   <button
                                     key={p.label}
                                     onClick={() => {
                                       localStorage.setItem('khroniq_is_gifting_journey', 'false');
                                       setMegaMenuForceClosed(true);
-                                      onPageChange('shop', { minPrice: p.minPrice, maxPrice: p.maxPrice });
+                                      const shopFilter = link.gender
+                                        ? { gender: link.gender, minPrice: p.minPrice, maxPrice: p.maxPrice }
+                                        : { minPrice: p.minPrice, maxPrice: p.maxPrice };
+                                      onPageChange('shop', shopFilter);
                                     }}
                                     className="text-left text-xs text-black hover:text-black/60 transition duration-150 font-bold uppercase tracking-wider py-1.5 cursor-pointer block border-b border-transparent hover:border-black/40 w-fit"
                                   >
@@ -238,7 +284,38 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                             </div>
                           )}
 
-                          {activeSubMenu === 'recipient' && (
+                          {activeSubMenu === 'collections' && link.gender && (
+                            <div className="space-y-6">
+                              <h4 className="text-[10px] font-black tracking-[0.25em] text-black uppercase">Collections</h4>
+                              <div className="grid grid-cols-2 gap-x-8 gap-y-3.5">
+                                {(link.gender === 'men' ? [
+                                  { label: 'Classic Khronomaster', filter: { gender: 'men', category: 'classic' } },
+                                  { label: 'Automatic Movement', filter: { gender: 'men', category: 'automatic' } },
+                                  { label: 'Sport & Chrono Series', filter: { gender: 'men', category: 'sport' } },
+                                  { label: 'All Men\'s Timepieces', filter: { gender: 'men' } }
+                                ] : [
+                                  { label: 'Classic Elegance', filter: { gender: 'women', category: 'classic' } },
+                                  { label: 'Automatic Luxury', filter: { gender: 'women', category: 'automatic' } },
+                                  { label: 'Sport & Casual', filter: { gender: 'women', category: 'sport' } },
+                                  { label: 'All Women\'s Timepieces', filter: { gender: 'women' } }
+                                ]).map((col) => (
+                                  <button
+                                    key={col.label}
+                                    onClick={() => {
+                                      localStorage.setItem('khroniq_is_gifting_journey', 'false');
+                                      setMegaMenuForceClosed(true);
+                                      onPageChange('shop', col.filter);
+                                    }}
+                                    className="text-left text-xs text-black hover:text-black/60 transition duration-150 font-bold uppercase tracking-wider py-1.5 cursor-pointer block border-b border-transparent hover:border-black/40 w-fit"
+                                  >
+                                    {col.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {activeSubMenu === 'recipient' && link.type === 'gifting' && (
                             <div className="space-y-6">
                               <h4 className="text-[10px] font-black tracking-[0.25em] text-black uppercase">Watches For Recipient</h4>
                               {/* 2 Column Recipient Layout to match screenshot */}
@@ -286,24 +363,45 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                           )}
                         </div>
 
-                        {/* Right Column: Looking for a Gift card */}
-                        <div className="col-span-4 relative overflow-hidden rounded-xl bg-neutral-950 text-white flex flex-col justify-between p-6 min-h-[220px] shadow-lg group/gift">
-                          <div className="absolute inset-0 bg-cover bg-center opacity-60 scale-100 group-hover/gift:scale-105 transition duration-700" style={{ backgroundImage: "url('/assets/gift_partner.jpg')" }} />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                          <div className="relative z-10 space-y-1">
-                            <span className="text-[9px] font-bold tracking-[0.3em] uppercase text-luxury-gold">Curated Gifting</span>
-                            <h4 className="font-serif text-2xl font-black tracking-wider leading-tight text-white mt-1">LOOKING<br />for<br />A GIFT?</h4>
+                        {/* Right Column: Featured Banner Card */}
+                        {link.type === 'gifting' ? (
+                          <div className="col-span-4 relative overflow-hidden rounded-xl bg-neutral-950 text-white flex flex-col justify-between p-6 min-h-[220px] shadow-lg group/gift">
+                            <div className="absolute inset-0 bg-cover bg-center opacity-60 scale-100 group-hover/gift:scale-105 transition duration-700" style={{ backgroundImage: "url('/assets/gift_partner.jpg')" }} />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                            <div className="relative z-10 space-y-1">
+                              <span className="text-[9px] font-bold tracking-[0.3em] uppercase text-luxury-gold">Curated Gifting</span>
+                              <h4 className="font-serif text-2xl font-black tracking-wider leading-tight text-white mt-1">LOOKING<br />for<br />A GIFT?</h4>
+                            </div>
+                            <button
+                              onClick={() => {
+                                localStorage.setItem('khroniq_is_gifting_journey', 'true');
+                                onPageChange('gifting');
+                              }}
+                              className="relative z-10 w-full py-3 bg-white text-neutral-950 font-black text-xs uppercase tracking-widest rounded-lg hover:bg-neutral-800 hover:text-white transition duration-300 shadow-md cursor-pointer"
+                            >
+                              Shop Gifting Solutions
+                            </button>
                           </div>
-                          <button
-                            onClick={() => {
-                              localStorage.setItem('khroniq_is_gifting_journey', 'true');
-                              onPageChange('gifting');
-                            }}
-                            className="relative z-10 w-full py-3 bg-white text-neutral-950 font-black text-xs uppercase tracking-widest rounded-lg hover:bg-neutral-800 hover:text-white transition duration-300 shadow-md cursor-pointer"
-                          >
-                            Shop Gifting Solutions
-                          </button>
-                        </div>
+                        ) : (
+                          <div className="col-span-4 relative overflow-hidden rounded-xl bg-neutral-950 text-white flex flex-col justify-between p-6 min-h-[220px] shadow-lg group/featured">
+                            <div className="absolute inset-0 bg-cover bg-center opacity-60 scale-100 group-hover/featured:scale-105 transition duration-700" style={{ backgroundImage: `url('${link.bannerBg}')` }} />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                            <div className="relative z-10 space-y-1">
+                              <span className="text-[9px] font-bold tracking-[0.3em] uppercase text-luxury-gold">Curated Collection</span>
+                              <h4 className="font-serif text-2xl font-black tracking-wider leading-tight text-white mt-1">{link.bannerTitle}</h4>
+                              <p className="text-xs text-gray-300 font-light mt-1">{link.bannerSubtitle}</p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                localStorage.setItem('khroniq_is_gifting_journey', 'false');
+                                onPageChange('shop', link.filter);
+                              }}
+                              className="relative z-10 w-full py-3 bg-white text-neutral-950 font-black text-xs uppercase tracking-widest rounded-lg hover:bg-neutral-800 hover:text-white transition duration-300 shadow-md cursor-pointer mt-4"
+                            >
+                              Explore Collection
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -2004,8 +2004,8 @@ const handleEditImageUpload = async (e) => {
                           <td className="py-3 px-4 font-mono text-gray-300">
                             {c.email}
                           </td>
-                          <td className="py-3 px-4 font-mono text-amber-200">
-                            {c.phone || <span className="text-gray-500 italic">Not Provided</span>}
+                          <td className="py-3 px-4 font-mono text-black font-semibold">
+                            {c.phone || <span className="text-gray-600 italic font-normal">N/A</span>}
                           </td>
                           <td className="py-3 px-4 text-gray-400">
                             {c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}

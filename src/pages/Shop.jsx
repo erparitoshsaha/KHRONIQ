@@ -154,13 +154,13 @@ export default function Shop({ onPageChange, filterParams }) {
       });
   }, [baseCategories]);
 
-  // Calculate dynamic price boundaries from available products based on MRP
+  // Calculate dynamic price boundaries from available products based on selling price
   const { minPrice, maxPrice } = useMemo(() => {
     if (!products || products.length === 0) {
       return { minPrice: 0, maxPrice: 1000 };
     }
     const prices = products
-      .map(p => getProductMrp(p))
+      .map(p => getDiscountedPrice(p))
       .filter(p => typeof p === 'number' && !isNaN(p) && p > 0);
 
     if (prices.length === 0) {
@@ -325,12 +325,12 @@ export default function Shop({ onPageChange, filterParams }) {
       }
     }
 
-    // 2. Price Range Match (by MRP)
-    const productMrp = getProductMrp(product);
-    if (typeof priceRange === 'number' && productMrp > currentMaxPrice) {
+    // 2. Price Range Match (by Selling Price)
+    const effectivePrice = getDiscountedPrice(product);
+    if (typeof priceRange === 'number' && effectivePrice > currentMaxPrice) {
       return false;
     }
-    if (typeof minPriceFilter === 'number' && productMrp < minPriceFilter) {
+    if (typeof minPriceFilter === 'number' && effectivePrice < minPriceFilter) {
       return false;
     }
 

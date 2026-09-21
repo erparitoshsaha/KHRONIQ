@@ -5,7 +5,7 @@ import { handleImageError } from '../utils/imageUtils';
 import { findProductInList } from '../utils/productRouting';
 import ProductCard from '../components/ProductCard';
 import BackButton from '../components/BackButton';
-import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2, Zap } from 'lucide-react';
 import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 
 export default function ProductDetail({ params, onPageChange }) {
@@ -228,6 +228,20 @@ export default function ProductDetail({ params, onPageChange }) {
       alert("ADDED TO CART");
     } else {
       alert(result?.message || "Failed to add to cart");
+    }
+  };
+
+  const handleBuyNow = async () => {
+    const targetId = product.id || product._id;
+    const result = await dispatch(addToCart(targetId, qty));
+    if (result && result.success) {
+      if (currentUser) {
+        onPageChange('checkout');
+      } else {
+        onPageChange('login', { redirect: 'checkout' });
+      }
+    } else {
+      alert(result?.message || "Failed to proceed to checkout");
     }
   };
 
@@ -463,21 +477,31 @@ export default function ProductDetail({ params, onPageChange }) {
               <span className="text-xs text-luxury-red font-semibold uppercase tracking-wider block">Currently Out of Stock</span>
             )}
 
-            {/* Actions (Add to Cart / Wishlist) */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-2">
+            {/* Actions (Add to Cart / Buy Now / Wishlist) */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               {product.stock > 0 && (
-                <button
-                  onClick={handleAddToCart}
-                  className="flex-1 py-4 bg-luxury-red hover:bg-red-700 text-white text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-luxury-red/10"
-                >
-                  <ShoppingBag size={16} />
-                  <span>Add to Shopping Bag</span>
-                </button>
+                <>
+                  <button
+                    onClick={handleAddToCart}
+                    className="flex-1 py-4 bg-luxury-red hover:bg-red-700 text-white text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-luxury-red/10"
+                  >
+                    <ShoppingBag size={16} />
+                    <span>Add to Shopping Bag</span>
+                  </button>
+
+                  <button
+                    onClick={handleBuyNow}
+                    className="flex-1 py-4 bg-luxury-gold hover:bg-luxury-gold-dark text-luxury-dark text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-luxury-gold/10"
+                  >
+                    <Zap size={16} />
+                    <span>Buy Now</span>
+                  </button>
+                </>
               )}
               
               <button
                 onClick={() => dispatch(toggleWishlist(product.id))}
-                className={`py-4 px-6 border text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer ${
+                className={`py-4 px-5 border text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer ${
                   isWishlisted 
                     ? 'border-luxury-gold-dark bg-luxury-gold-dark text-white'
                     : 'border-luxury-text/10 hover:border-luxury-text text-luxury-text bg-white'
