@@ -1461,8 +1461,8 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
         {/* Bottom half — 2-up product mini grid */}
         <div className="grid grid-cols-2 border-t border-luxury-text/8">
           {[
-            { img: homeImages.dive_deeper_tile1 || '/assets/spotlight_green_side.jpeg', label: 'Khroniq Emerald Green', sub: 'Heritage Automatic', style: { backgroundPosition: 'center center' } },
-            { img: homeImages.dive_deeper_tile2 || '/assets/spotlight_red_overhead.png', label: 'Khroniq Crimson Red', sub: 'Heritage Automatic', style: { backgroundPosition: 'center center' } },
+            { img: homeImages.dive_deeper_tile1 || '/assets/spotlight_green_side.jpeg', label: 'Khroniq Emerald Green', sub: 'Khroniq - femina green', style: { backgroundPosition: 'center center' } },
+            { img: homeImages.dive_deeper_tile2 || '/assets/spotlight_red_overhead.png', label: 'Khroniq Crimson Red', sub: 'Khroniq - femina red', style: { backgroundPosition: 'center center' } },
           ].map(({ img, label, sub, style }, i) => (
             <motion.div
               key={i}
