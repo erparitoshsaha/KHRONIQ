@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import ProductCard from '../components/ProductCard';
 import BackButton from '../components/BackButton';
-import { getDiscountedPrice, selectCurrentCurrency, formatPrice, fetchFilters, fetchProducts } from '../store/slices/watchSlice';
+import { getDiscountedPrice, getProductMrp, selectCurrentCurrency, formatPrice, fetchFilters, fetchProducts } from '../store/slices/watchSlice';
 import { SlidersHorizontal, Search, RotateCcw, X, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   productMatchesFilterOption,
@@ -154,19 +154,14 @@ export default function Shop({ onPageChange, filterParams }) {
       });
   }, [baseCategories]);
 
-  // Calculate dynamic price boundaries from available products
+  // Calculate dynamic price boundaries from available products based on MRP
   const { minPrice, maxPrice } = useMemo(() => {
     if (!products || products.length === 0) {
       return { minPrice: 0, maxPrice: 1000 };
     }
     const prices = products
-      .map(p => {
-        const discounted = getDiscountedPrice(p);
-        return typeof discounted === 'number' && !isNaN(discounted) && discounted > 0
-          ? discounted
-          : (Number(p.price) || 0);
-      })
-      .filter(p => p > 0);
+      .map(p => getProductMrp(p))
+      .filter(p => typeof p === 'number' && !isNaN(p) && p > 0);
 
     if (prices.length === 0) {
       return { minPrice: 0, maxPrice: 1000 };
@@ -330,12 +325,12 @@ export default function Shop({ onPageChange, filterParams }) {
       }
     }
 
-    // 2. Price Range Match
-    const effectivePrice = getDiscountedPrice(product);
-    if (typeof priceRange === 'number' && effectivePrice > currentMaxPrice) {
+    // 2. Price Range Match (by MRP)
+    const productMrp = getProductMrp(product);
+    if (typeof priceRange === 'number' && productMrp > currentMaxPrice) {
       return false;
     }
-    if (typeof minPriceFilter === 'number' && effectivePrice < minPriceFilter) {
+    if (typeof minPriceFilter === 'number' && productMrp < minPriceFilter) {
       return false;
     }
 
