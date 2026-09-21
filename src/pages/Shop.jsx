@@ -188,6 +188,7 @@ export default function Shop({ onPageChange, filterParams }) {
   const [searchQuery, setSearchQuery] = useState(filterParams?.search || '');
   const [selectedFilters, setSelectedFilters] = useState({}); // { [categorySlug]: string[] }
   const [priceRange, setPriceRange] = useState(null);
+  const [minPriceFilter, setMinPriceFilter] = useState(null);
   const [sortOption, setSortOption] = useState('featured');
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState({});
@@ -222,30 +223,41 @@ export default function Shop({ onPageChange, filterParams }) {
       setSearchQuery('');
       setSelectedFilters({});
       setPriceRange(null);
+      setMinPriceFilter(null);
       setSortOption('featured');
     } else if (filterParams?.category) {
       const cat = filterParams.category === 'Khronomaster' ? 'classic' : filterParams.category.toLowerCase();
       setSelectedFilters({ collection: [cat] });
       setSearchQuery('');
       setPriceRange(null);
+      setMinPriceFilter(null);
     } else if (filterParams?.gender) {
       setSelectedFilters({ gender: [filterParams.gender.toLowerCase()] });
       setSearchQuery('');
       setPriceRange(null);
+      setMinPriceFilter(null);
     } else if (filterParams?.search !== undefined) {
       setSearchQuery(filterParams.search);
       setSelectedFilters({});
       setPriceRange(null);
+      setMinPriceFilter(null);
     }
-    if (filterParams?.maxPrice) {
+    if (filterParams?.maxPrice !== undefined) {
       setPriceRange(filterParams.maxPrice);
+    } else {
+      setPriceRange(null);
+    }
+    if (filterParams?.minPrice !== undefined) {
+      setMinPriceFilter(filterParams.minPrice);
+    } else {
+      setMinPriceFilter(null);
     }
   }, [filterParams]);
 
   // Reset page when filters or sorting changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedFilters, currentMaxPrice, sortOption]);
+  }, [searchQuery, selectedFilters, currentMaxPrice, minPriceFilter, sortOption]);
 
   const toggleSection = (slug) => {
     setCollapsedSections(prev => ({ ...prev, [slug]: !prev[slug] }));
@@ -320,7 +332,10 @@ export default function Shop({ onPageChange, filterParams }) {
 
     // 2. Price Range Match
     const effectivePrice = getDiscountedPrice(product);
-    if (effectivePrice > currentMaxPrice) {
+    if (typeof priceRange === 'number' && effectivePrice > currentMaxPrice) {
+      return false;
+    }
+    if (typeof minPriceFilter === 'number' && effectivePrice < minPriceFilter) {
       return false;
     }
 

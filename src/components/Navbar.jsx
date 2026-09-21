@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { logoutUser, setCurrencyAction, selectCurrentCurrency } from '../store/slices/watchSlice';
+import { logoutUser, setCurrencyAction, selectCurrentCurrency, formatPrice } from '../store/slices/watchSlice';
 import {
   ShoppingBag, Search, Menu, X, User, Heart, Star, Sparkles, Tag, ShieldAlert,
   ArrowRight, Shield, RefreshCw, Truck, Check, Trash2, Clock, CheckCircle2, ChevronRight, XCircle
@@ -217,17 +217,17 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                               <h4 className="text-[10px] font-black tracking-[0.25em] text-black uppercase">Shop By Price</h4>
                               <div className="grid grid-cols-2 gap-4">
                                 {[
-                                  { label: 'Under ₹50,000', maxPrice: 1000 },
-                                  { label: '₹50,000 - ₹1,00,000', maxPrice: 2000 },
-                                  { label: '₹1,00,000 - ₹2,00,000', maxPrice: 4500 },
-                                  { label: 'Above ₹2,00,000', maxPrice: 6000 },
+                                  { label: `Under ${formatPrice(1000, currentCurrency)}`, maxPrice: 1000 },
+                                  { label: `${formatPrice(1000, currentCurrency)} - ${formatPrice(3000, currentCurrency)}`, minPrice: 1000, maxPrice: 3000 },
+                                  { label: `${formatPrice(3000, currentCurrency)} - ${formatPrice(5000, currentCurrency)}`, minPrice: 3000, maxPrice: 5000 },
+                                  { label: `Above ${formatPrice(5000, currentCurrency)}`, minPrice: 5000 },
                                 ].map((p) => (
                                   <button
                                     key={p.label}
                                     onClick={() => {
                                       localStorage.setItem('khroniq_is_gifting_journey', 'false');
                                       setMegaMenuForceClosed(true);
-                                      onPageChange('shop', { maxPrice: p.maxPrice });
+                                      onPageChange('shop', { minPrice: p.minPrice, maxPrice: p.maxPrice });
                                     }}
                                     className="text-left text-xs text-black hover:text-black/60 transition duration-150 font-bold uppercase tracking-wider py-1.5 cursor-pointer block border-b border-transparent hover:border-black/40 w-fit"
                                   >
