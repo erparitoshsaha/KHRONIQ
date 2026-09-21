@@ -28,7 +28,7 @@ export default function Checkout({ params, onPageChange }) {
     if (typeof window !== 'undefined') {
       try {
         saved = JSON.parse(localStorage.getItem('khroniq_saved_shipping') || 'null');
-      } catch (e) {}
+      } catch (e) { }
     }
     return {
       fullName: currentUser?.name || saved?.fullName || '',
@@ -49,7 +49,7 @@ export default function Checkout({ params, onPageChange }) {
       try {
         const saved = JSON.parse(localStorage.getItem('khroniq_saved_shipping') || 'null');
         return saved?.gstNumber || '';
-      } catch (e) {}
+      } catch (e) { }
     }
     return '';
   });
@@ -505,63 +505,49 @@ export default function Checkout({ params, onPageChange }) {
         {isGiftingJourney ? (
           <>
             <div className="flex items-center gap-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step === 1 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
-              }`}>1</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${
-                step === 1 ? 'text-black' : 'text-neutral-400'
-              }`}>GIFTING</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step === 1 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
+                }`}>1</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step === 1 ? 'text-black' : 'text-neutral-400'
+                }`}>GIFTING</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step === 2 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
-              }`}>2</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${
-                step === 2 ? 'text-black' : 'text-neutral-400'
-              }`}>SHIPPING</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step === 2 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
+                }`}>2</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step === 2 ? 'text-black' : 'text-neutral-400'
+                }`}>SHIPPING</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step === 3 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
-              }`}>3</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${
-                step === 3 ? 'text-black' : 'text-neutral-400'
-              }`}>PAYMENT</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step === 3 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
+                }`}>3</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step === 3 ? 'text-black' : 'text-neutral-400'
+                }`}>PAYMENT</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step === 4 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
-              }`}>4</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${
-                step === 4 ? 'text-black' : 'text-neutral-400'
-              }`}>ORDER REVIEW</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step === 4 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
+                }`}>4</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step === 4 ? 'text-black' : 'text-neutral-400'
+                }`}>ORDER REVIEW</span>
             </div>
           </>
         ) : (
           <>
             <div className="flex items-center gap-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step === 2 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
-              }`}>1</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${
-                step === 2 ? 'text-black' : 'text-neutral-400'
-              }`}>SHIPPING</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step === 2 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
+                }`}>1</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step === 2 ? 'text-black' : 'text-neutral-400'
+                }`}>SHIPPING</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step === 3 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
-              }`}>2</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${
-                step === 3 ? 'text-black' : 'text-neutral-400'
-              }`}>PAYMENT</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step === 3 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
+                }`}>2</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step === 3 ? 'text-black' : 'text-neutral-400'
+                }`}>PAYMENT</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step === 4 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
-              }`}>3</span>
-              <span className={`text-xs font-bold tracking-wider uppercase ${
-                step === 4 ? 'text-black' : 'text-neutral-400'
-              }`}>ORDER REVIEW</span>
+              <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${step === 4 ? 'bg-black text-white' : 'border border-neutral-300 text-neutral-400'
+                }`}>3</span>
+              <span className={`text-xs font-bold tracking-wider uppercase ${step === 4 ? 'text-black' : 'text-neutral-400'
+                }`}>ORDER REVIEW</span>
             </div>
           </>
         )}
@@ -590,19 +576,17 @@ export default function Checkout({ params, onPageChange }) {
                     key={occ.id}
                     type="button"
                     onClick={() => setGiftOccasion(occ.id)}
-                    className={`relative p-4 rounded border text-center transition-all duration-200 cursor-pointer ${
-                      giftOccasion === occ.id
-                        ? 'border-black bg-gray-50 shadow-md'
-                        : 'border-gray-200 bg-white hover:border-gray-400'
-                    }`}
+                    className={`relative p-4 rounded border text-center transition-all duration-200 cursor-pointer ${giftOccasion === occ.id
+                      ? 'border-black bg-gray-50 shadow-md'
+                      : 'border-gray-200 bg-white hover:border-gray-400'
+                      }`}
                   >
                     {giftOccasion === occ.id && (
                       <Check size={12} className="absolute top-2 right-2 text-black" strokeWidth={3} />
                     )}
                     <span className="text-xl block mb-1">{occ.emoji}</span>
-                    <p className={`text-[10px] font-bold tracking-wide uppercase ${
-                      giftOccasion === occ.id ? 'text-black' : 'text-gray-500'
-                    }`}>{occ.label}</p>
+                    <p className={`text-[10px] font-bold tracking-wide uppercase ${giftOccasion === occ.id ? 'text-black' : 'text-gray-500'
+                      }`}>{occ.label}</p>
                   </button>
                 ))}
               </div>
@@ -623,21 +607,18 @@ export default function Checkout({ params, onPageChange }) {
                     key={pkg.id}
                     type="button"
                     onClick={() => setPackagingType(pkg.id)}
-                    className={`relative p-4 rounded border text-left transition-all duration-200 cursor-pointer ${
-                      packagingType === pkg.id
-                        ? 'border-black bg-gray-50 shadow-md'
-                        : 'border-gray-200 bg-white hover:border-gray-400'
-                    }`}
+                    className={`relative p-4 rounded border text-left transition-all duration-200 cursor-pointer ${packagingType === pkg.id
+                      ? 'border-black bg-gray-50 shadow-md'
+                      : 'border-gray-200 bg-white hover:border-gray-400'
+                      }`}
                   >
                     {packagingType === pkg.id && (
                       <Check size={12} className="absolute top-2 right-2 text-black" strokeWidth={3} />
                     )}
-                    <p className={`text-xs font-bold tracking-wide uppercase ${
-                      packagingType === pkg.id ? 'text-black' : 'text-gray-600'
-                    }`}>{pkg.label}</p>
-                    <p className={`text-[10px] mt-1 leading-normal ${
-                      packagingType === pkg.id ? 'text-gray-700' : 'text-gray-400'
-                    }`}>{pkg.desc}</p>
+                    <p className={`text-xs font-bold tracking-wide uppercase ${packagingType === pkg.id ? 'text-black' : 'text-gray-600'
+                      }`}>{pkg.label}</p>
+                    <p className={`text-[10px] mt-1 leading-normal ${packagingType === pkg.id ? 'text-gray-700' : 'text-gray-400'
+                      }`}>{pkg.desc}</p>
                   </button>
                 ))}
               </div>
@@ -857,7 +838,7 @@ export default function Checkout({ params, onPageChange }) {
                     </span>
                   </div>
                   <p className="text-xs text-neutral-500">
-                    Add your GST number to claim eligible input tax credit.
+                    Add your GSTIN to claim ITC(Input Tax Credit).
                   </p>
 
                   {appliedGst ? (
@@ -886,7 +867,7 @@ export default function Checkout({ params, onPageChange }) {
                           setGstInput(e.target.value.toUpperCase());
                           setGstError('');
                         }}
-                        placeholder="Enter GST Number (e.g. 27ABCDE1234F1Z5)"
+                        placeholder="Enter GSTIN (e.g. 27ABCDE1234F1Z5)"
                         className="flex-1 bg-white border border-neutral-200 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-black uppercase transition"
                       />
                       <button
@@ -1017,7 +998,7 @@ export default function Checkout({ params, onPageChange }) {
                 <span className="text-xs font-serif font-bold tracking-[0.3em] text-neutral-800">K H R O N I Q</span>
                 <div className="w-12 h-[1px] bg-neutral-200" />
               </div>
-              <p className="text-xs text-neutral-400 italic">Timeless for a Better Tomorrow</p>
+              <p className="text-xs text-neutral-400 italic">Born From The Movement Of Time</p>
             </div>
           </div>
         </>
@@ -1247,7 +1228,7 @@ export default function Checkout({ params, onPageChange }) {
           <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-semibold text-neutral-900">
-              {appliedGst ? 'GSTIN added for tax invoice.' : 'Add GST number to claim eligible input tax credit.'}
+              {appliedGst ? 'GSTIN added for tax invoice.' : 'Add GSTIN to claim ITC(Input Tax Credit).'}
             </p>
             {appliedGst && (
               <p className="text-[11px] text-neutral-500 mt-0.5">
