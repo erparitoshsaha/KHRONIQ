@@ -31,7 +31,9 @@ const orderSchema = new mongoose.Schema({
     streetAddress: { type: String, required: true },
     city: { type: String, required: true },
     zipCode: { type: String, required: true },
-    country: { type: String, default: 'United States' }
+    country: { type: String, default: 'India' },
+    phone: { type: String },
+    gstNumber: { type: String }
   },
   paymentDetails: {
     method: { type: String, required: true },

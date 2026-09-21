@@ -289,7 +289,9 @@ router.post('/verify', protect, paymentLimiter, async (req, res, next) => {
         streetAddress: shippingDetails.streetAddress.trim(),
         city: shippingDetails.city.trim(),
         zipCode: shippingDetails.zipCode.trim(),
-        country: shippingDetails.country || 'India'
+        country: shippingDetails.country || 'India',
+        phone: shippingDetails.phone ? shippingDetails.phone.trim() : '',
+        gstNumber: shippingDetails.gstNumber ? shippingDetails.gstNumber.trim().toUpperCase() : undefined
       },
       paymentDetails: {
         method: 'Razorpay',
