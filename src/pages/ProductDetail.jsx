@@ -478,12 +478,12 @@ export default function ProductDetail({ params, onPageChange }) {
             )}
 
             {/* Actions (Add to Cart / Buy Now / Wishlist) */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <div className="space-y-3 pt-2">
               {product.stock > 0 && (
-                <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     onClick={handleAddToCart}
-                    className="flex-1 py-4 bg-luxury-red hover:bg-red-700 text-white text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-luxury-red/10"
+                    className="py-4 px-4 bg-luxury-red hover:bg-red-700 text-white text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-luxury-red/10 text-center whitespace-nowrap"
                   >
                     <ShoppingBag size={16} />
                     <span>Add to Shopping Bag</span>
@@ -491,17 +491,17 @@ export default function ProductDetail({ params, onPageChange }) {
 
                   <button
                     onClick={handleBuyNow}
-                    className="flex-1 py-4 bg-luxury-gold hover:bg-luxury-gold-dark text-luxury-dark text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-luxury-gold/10"
+                    className="py-4 px-4 bg-black hover:bg-neutral-800 text-white text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-black/10 text-center whitespace-nowrap"
                   >
-                    <Zap size={16} />
+                    <Zap size={16} className="text-amber-400 fill-amber-400" />
                     <span>Buy Now</span>
                   </button>
-                </>
+                </div>
               )}
               
               <button
                 onClick={() => dispatch(toggleWishlist(product.id))}
-                className={`py-4 px-5 border text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer ${
+                className={`w-full py-3.5 px-6 border text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer ${
                   isWishlisted 
                     ? 'border-luxury-gold-dark bg-luxury-gold-dark text-white'
                     : 'border-luxury-text/10 hover:border-luxury-text text-luxury-text bg-white'
