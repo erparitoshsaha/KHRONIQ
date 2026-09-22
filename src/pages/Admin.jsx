@@ -849,6 +849,24 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
     }
   };
 
+  const handleDirectUrlSave = async (url, sectionKey) => {
+    if (!sectionKey || !url) return;
+    try {
+      const token = localStorage.getItem('khroniq_token');
+      const formData = new FormData();
+      formData.append('url', url);
+      formData.append('section', sectionKey);
+      await fetch('/api/admin/media', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData
+      });
+      setMediaList(prev => ({ ...prev, [sectionKey]: url }));
+    } catch (e) {
+      console.error('Failed to save media URL:', e);
+    }
+  };
+
   // --- BLOGS ADMIN STATES & OPERATIONS ---
   const [showAddBlogForm, setShowAddBlogForm] = useState(false);
   const [newBlog, setNewBlog] = useState({ title: '', category: 'Horology', image: '', content: '', author: '' });
@@ -7604,6 +7622,7 @@ const handleEditImageUpload = async (e) => {
                                   setMediaUploadStatus(prev => ({ ...prev, [slot.key]: null }));
                                 }
                               }}
+                              onBlur={() => handleDirectUrlSave(mediaList[slot.key], slot.key)}
                               onUpload={(file) => handleSectionImageUpload(file, slot.key)}
                               uploading={isUploading}
                               placeholder={slot.default || "https://... or /assets/..."}
@@ -7672,6 +7691,7 @@ const handleEditImageUpload = async (e) => {
                         setMediaUploadStatus(prev => ({ ...prev, [slotKey]: null }));
                       }
                     }}
+                    onBlur={() => handleDirectUrlSave(mediaList[slotKey], slotKey)}
                     onUpload={(file) => handleSectionImageUpload(file, slotKey)}
                     uploading={isUploading}
                     placeholder={slot.default || defaultHomeImages[slotKey] || "https://... or /assets/..."}

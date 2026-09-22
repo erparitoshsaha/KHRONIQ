@@ -22,7 +22,7 @@ const getRazorpayInstance = () => {
 };
 
 // Helper: Calculate authoritative prices, validate stock, and apply coupon server-side
-async function calculateAuthoritativeCart(items, couponCode) {
+async function calculateAuthoritativeCart(items, couponCode, packagingCost = 0) {
   if (!Array.isArray(items) || items.length === 0) {
     throw { statusCode: 400, message: 'Cart items cannot be empty.' };
   }
@@ -85,12 +85,13 @@ async function calculateAuthoritativeCart(items, couponCode) {
     }
   }
 
+  const validPackagingCost = Number(packagingCost) > 0 ? Number(packagingCost) : 0;
   const finalSellingPrice = Math.max(0, subtotal - discount);
   // GST is 18% INCLUDED in the Selling Price: GST = SP * 18 / 118
   const gst = Math.round(((finalSellingPrice * 18) / 118) * 100) / 100;
   const basePrice = Math.round(((finalSellingPrice * 100) / 118) * 100) / 100;
-  // Total customer payment is the final Selling Price (do NOT add GST again)
-  const total = finalSellingPrice;
+  // Total customer payment includes final Selling Price + packaging cost
+  const total = finalSellingPrice + validPackagingCost;
 
   return {
     mrpTotal,
@@ -98,6 +99,7 @@ async function calculateAuthoritativeCart(items, couponCode) {
     discount,
     gst,
     basePrice,
+    packagingCost: validPackagingCost,
     total,
     validatedItems,
     appliedCoupon: appliedCouponDoc
@@ -108,13 +110,13 @@ async function calculateAuthoritativeCart(items, couponCode) {
 // @desc    Calculate authoritative price and initiate Razorpay order
 // @access  Private
 router.post('/create-order', protect, paymentLimiter, async (req, res, next) => {
-  const { items, couponCode } = req.body;
+  const { items, couponCode, packagingCost } = req.body;
 
   try {
     const razorpay = getRazorpayInstance();
 
     // 1. Authoritative price calculation directly from DB
-    const { subtotal, discount, gst, total, validatedItems } = await calculateAuthoritativeCart(items, couponCode);
+    const { subtotal, discount, gst, total, validatedItems } = await calculateAuthoritativeCart(items, couponCode, packagingCost);
 
     if (total <= 0) {
       return res.status(400).json({ success: false, message: 'Total order amount must be greater than zero.' });
@@ -143,6 +145,7 @@ router.post('/create-order', protect, paymentLimiter, async (req, res, next) => 
         subtotal,
         discount,
         gst,
+        packagingCost: Number(packagingCost) || 0,
         total
       }
     });
@@ -212,7 +215,17 @@ router.post('/verify', protect, paymentLimiter, async (req, res, next) => {
     }
 
     // 3. Authoritative server-side price calculation
-    const { subtotal, discount, total, validatedItems } = await calculateAuthoritativeCart(items, couponCode);
+    let totalGiftingCost = 0;
+    if (giftingOptions && giftingOptions.isGifting) {
+      if (giftingOptions.packaging === 'couple') totalGiftingCost += 900;
+      else if (giftingOptions.packaging === 'single') totalGiftingCost += 450;
+      else if (giftingOptions.packaging === 'gift_card') totalGiftingCost += 100;
+
+      if (giftingOptions.includeGiftCard && giftingOptions.packaging !== 'gift_card') {
+        totalGiftingCost += 100;
+      }
+    }
+    const { subtotal, discount, total, validatedItems } = await calculateAuthoritativeCart(items, couponCode, totalGiftingCost);
 
     // 4. Atomic stock deduction
     const deductedProducts = [];

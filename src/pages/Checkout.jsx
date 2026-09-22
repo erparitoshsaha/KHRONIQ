@@ -62,7 +62,8 @@ export default function Checkout({ params, onPageChange }) {
   const [giftPackage, setGiftPackage] = useState('standard'); // standard | gift-box | luxury
   const [giftNote, setGiftNote] = useState('');
   const [giftOccasion, setGiftOccasion] = useState('birthday'); // anniversary | birthday | retirement | other
-  const [packagingType, setPackagingType] = useState('single'); // single | couple
+  const [packagingType, setPackagingType] = useState('single'); // single | couple | none
+  const [includeGiftCard, setIncludeGiftCard] = useState(true);
   const [cardForm, setCardForm] = useState({
     cardNumber: '',
     expiry: '',
@@ -137,12 +138,20 @@ export default function Checkout({ params, onPageChange }) {
     return { ...item, product, itemMrp, itemPrice };
   }).filter(item => item.product !== undefined);
 
+  const getPackagingCost = (type) => {
+    if (type === 'couple') return 900;
+    if (type === 'single') return 450;
+    return 0;
+  };
+  const packagingCost = isGiftingJourney ? getPackagingCost(packagingType) : 0;
+  const giftCardCost = isGiftingJourney && includeGiftCard ? 100 : 0;
+  const totalGiftingCost = packagingCost + giftCardCost;
   const mrpTotal = cartItemsWithDetails.reduce((sum, item) => sum + (item.itemMrp * item.quantity), 0);
   const subtotal = cartItemsWithDetails.reduce((sum, item) => sum + (item.itemPrice * item.quantity), 0);
   const discount = appliedCoupon ? Math.round(subtotal * (appliedCoupon.discountPercent / 100)) : 0;
   const finalSellingPrice = Math.max(0, subtotal - discount);
   const gst = Math.round(((finalSellingPrice * 18) / 118) * 100) / 100;
-  const total = finalSellingPrice;
+  const total = finalSellingPrice + totalGiftingCost;
 
   const handleShippingSubmit = (e) => {
     if (e) e.preventDefault();
@@ -214,7 +223,8 @@ export default function Checkout({ params, onPageChange }) {
     // 1. Create Razorpay order via backend with full items payload
     const orderRes = await dispatch(createRazorpayOrder({
       items,
-      couponCode: appliedCoupon?.code || null
+      couponCode: appliedCoupon?.code || null,
+      packagingCost: isGiftingJourney ? totalGiftingCost : 0
     }));
 
     if (!orderRes.success) {
@@ -229,8 +239,11 @@ export default function Checkout({ params, onPageChange }) {
       isGifting: true,
       occasion: giftOccasion,
       relation: giftRelation,
-      note: giftNote,
-      packaging: packagingType
+      note: includeGiftCard ? giftNote : '',
+      packaging: packagingType,
+      packagingCost: packagingCost,
+      includeGiftCard: includeGiftCard,
+      giftCardCost: giftCardCost
     } : { isGifting: false };
 
     // 2. Open Razorpay's official checkout popup
@@ -592,55 +605,105 @@ export default function Checkout({ params, onPageChange }) {
               </div>
             </div>
 
-            {/* Standard Gift Packaging (Single vs Couple options only) */}
-            <div className="bg-luxury-gray border border-white/5 p-5 rounded-md space-y-4">
+            {/* Standard Gift Packaging & Card Options */}
+            <div className="bg-luxury-gray border border-white/5 p-5 rounded-md space-y-5">
               <div className="flex items-center gap-2 border-b border-white/5 pb-3">
                 <Gift size={13} className="text-luxury-gold" />
-                <h3 className="text-xs font-bold tracking-widest text-white uppercase">Standard Gift Packaging</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { id: 'single', label: 'Single Packaging', desc: 'Includes 1 watch, a custom gift card, and single packaging.' },
-                  { id: 'couple', label: 'Couple Packaging', desc: 'Includes 2 watches, a custom gift card, and couple packaging.' },
-                ].map((pkg) => (
-                  <button
-                    key={pkg.id}
-                    type="button"
-                    onClick={() => setPackagingType(pkg.id)}
-                    className={`relative p-4 rounded border text-left transition-all duration-200 cursor-pointer ${packagingType === pkg.id
-                      ? 'border-black bg-gray-50 shadow-md'
-                      : 'border-gray-200 bg-white hover:border-gray-400'
-                      }`}
-                  >
-                    {packagingType === pkg.id && (
-                      <Check size={12} className="absolute top-2 right-2 text-black" strokeWidth={3} />
-                    )}
-                    <p className={`text-xs font-bold tracking-wide uppercase ${packagingType === pkg.id ? 'text-black' : 'text-gray-600'
-                      }`}>{pkg.label}</p>
-                    <p className={`text-[10px] mt-1 leading-normal ${packagingType === pkg.id ? 'text-gray-700' : 'text-gray-400'
-                      }`}>{pkg.desc}</p>
-                  </button>
-                ))}
+                <h3 className="text-xs font-bold tracking-widest text-white uppercase">Gift Packaging & Card Options</h3>
               </div>
 
-              {/* Gift Note Input field */}
-              <div className="space-y-2 mt-4 pt-4 border-t border-white/5">
-                <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Write a Gift Note (Optional)</label>
-                <textarea
-                  value={giftNote}
-                  onChange={(e) => setGiftNote(e.target.value.slice(0, 260))}
-                  placeholder={`Dear [Name],\n\nEvery moment you wear this watch, know it carries our love and pride...`}
-                  rows={3}
-                  className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold resize-none"
-                  style={{
-                    fontFamily: 'Georgia, serif',
-                    color: 'rgba(255,255,255,0.9)',
-                  }}
-                />
-                <div className="flex justify-between text-[9px] text-gray-500">
-                  <span>{giftNote.length} / 260 characters</span>
-                  <span>Placed inside the watch box on premium cream card stock</span>
+              {/* 1. Packaging Box selection */}
+              <div className="space-y-2">
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">1. Select Packaging Box</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { id: 'single', label: 'Single Packaging', price: '₹450', desc: 'Luxury single watch box & presentation wrapping.' },
+                    { id: 'couple', label: 'Couple Packaging', price: '₹900', desc: 'Luxury couple watch box & presentation wrapping.' },
+                  ].map((pkg) => (
+                    <button
+                      key={pkg.id}
+                      type="button"
+                      onClick={() => setPackagingType(pkg.id)}
+                      className={`relative p-4 rounded border text-left transition-all duration-200 cursor-pointer ${
+                        packagingType === pkg.id
+                          ? 'border-black bg-gray-50 shadow-md'
+                          : 'border-gray-200 bg-white hover:border-gray-400'
+                      }`}
+                    >
+                      {packagingType === pkg.id && (
+                        <Check size={12} className="absolute top-2 right-2 text-black" strokeWidth={3} />
+                      )}
+                      <div className="flex items-center justify-between gap-1 pr-4">
+                        <p className={`text-xs font-bold tracking-wide uppercase ${
+                          packagingType === pkg.id ? 'text-black' : 'text-gray-600'
+                        }`}>{pkg.label}</p>
+                        <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${
+                          pkg.price === 'FREE'
+                            ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                            : 'text-neutral-900 bg-neutral-100 border-neutral-200'
+                        }`}>
+                          {pkg.price}
+                        </span>
+                      </div>
+                      <p className={`text-[10px] mt-1.5 leading-normal ${
+                        packagingType === pkg.id ? 'text-gray-700' : 'text-gray-400'
+                      }`}>{pkg.desc}</p>
+                    </button>
+                  ))}
                 </div>
+              </div>
+
+              {/* 2. Custom Gift Card Option */}
+              <div className="space-y-3 pt-4 border-t border-white/5">
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">2. Personalized Gift Card</p>
+                <div
+                  onClick={() => setIncludeGiftCard(!includeGiftCard)}
+                  className={`p-4 rounded border flex items-center justify-between cursor-pointer transition-all duration-200 ${
+                    includeGiftCard
+                      ? 'border-black bg-gray-50 shadow-md'
+                      : 'border-gray-200 bg-white hover:border-gray-400'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
+                      includeGiftCard ? 'bg-black border-black text-white' : 'border-gray-400 bg-white'
+                    }`}>
+                      {includeGiftCard && <Check size={11} strokeWidth={3} />}
+                    </div>
+                    <div>
+                      <p className={`text-xs font-bold tracking-wide uppercase ${includeGiftCard ? 'text-black' : 'text-gray-700'}`}>
+                        Add Custom Gift Card
+                      </p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">
+                        Printed personalized greeting card on premium cream card stock
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-bold text-neutral-900 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200">
+                    ₹100
+                  </span>
+                </div>
+
+                {includeGiftCard && (
+                  <div className="space-y-2 pt-2">
+                    <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Write a Gift Note (Optional)</label>
+                    <textarea
+                      value={giftNote}
+                      onChange={(e) => setGiftNote(e.target.value.slice(0, 260))}
+                      placeholder={`Dear [Name],\n\nEvery moment you wear this watch, know it carries our love and pride...`}
+                      rows={3}
+                      className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold resize-none"
+                      style={{
+                        fontFamily: 'Georgia, serif',
+                        color: 'rgba(255,255,255,0.9)',
+                      }}
+                    />
+                    <div className="flex justify-between text-[9px] text-gray-500">
+                      <span>{giftNote.length} / 260 characters</span>
+                      <span>Placed inside the watch box on premium cream card stock</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -659,7 +722,19 @@ export default function Checkout({ params, onPageChange }) {
 
           {/* Right Summary */}
           <div className="lg:col-span-5 space-y-6">
-            <CheckoutSummary cartItems={cartItemsWithDetails} subtotal={subtotal} discount={discount} gst={gst} total={total} appliedGst={appliedGst} isShippingStep={false} />
+            <CheckoutSummary
+              cartItems={cartItemsWithDetails}
+              subtotal={subtotal}
+              discount={discount}
+              gst={gst}
+              packagingCost={packagingCost}
+              packagingType={packagingType}
+              includeGiftCard={includeGiftCard}
+              giftCardCost={giftCardCost}
+              total={total}
+              appliedGst={appliedGst}
+              isShippingStep={false}
+            />
           </div>
         </div>
       )}
@@ -950,6 +1025,10 @@ export default function Checkout({ params, onPageChange }) {
                 subtotal={subtotal}
                 discount={discount}
                 gst={gst}
+                packagingCost={packagingCost}
+                packagingType={packagingType}
+                includeGiftCard={includeGiftCard}
+                giftCardCost={giftCardCost}
                 total={total}
                 appliedGst={appliedGst}
                 isShippingStep={true}
@@ -1051,6 +1130,10 @@ export default function Checkout({ params, onPageChange }) {
               subtotal={subtotal}
               discount={discount}
               gst={gst}
+              packagingCost={packagingCost}
+              packagingType={packagingType}
+              includeGiftCard={includeGiftCard}
+              giftCardCost={giftCardCost}
               total={total}
               appliedGst={appliedGst}
               isShippingStep={false}
@@ -1138,6 +1221,10 @@ export default function Checkout({ params, onPageChange }) {
     subtotal,
     discount,
     gst,
+    packagingCost = 0,
+    packagingType = 'single',
+    includeGiftCard = false,
+    giftCardCost = 0,
     total,
     appliedGst,
     isShippingStep = false,
@@ -1204,6 +1291,30 @@ export default function Checkout({ params, onPageChange }) {
             <div className="flex justify-between text-emerald-600">
               <span>Coupon Discount</span>
               <span className="font-medium">-{formatPrice(discount, currentCurrency)}</span>
+            </div>
+          )}
+
+          {packagingCost > 0 && (
+            <div className="flex justify-between text-neutral-600 items-center">
+              <span className="flex items-center gap-1.5">
+                <span>Gift Packaging</span>
+                <span className="text-[10px] uppercase font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded">
+                  {packagingType === 'couple' ? 'Couple' : 'Single'}
+                </span>
+              </span>
+              <span className="font-medium text-neutral-900">{formatPrice(packagingCost, currentCurrency)}</span>
+            </div>
+          )}
+
+          {includeGiftCard && giftCardCost > 0 && (
+            <div className="flex justify-between text-neutral-600 items-center">
+              <span className="flex items-center gap-1.5">
+                <span>Custom Gift Card</span>
+                <span className="text-[10px] uppercase font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded">
+                  Personalized
+                </span>
+              </span>
+              <span className="font-medium text-neutral-900">{formatPrice(giftCardCost, currentCurrency)}</span>
             </div>
           )}
 

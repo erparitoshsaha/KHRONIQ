@@ -11,7 +11,7 @@ const reviewSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-reviewSchema.virtual('id').get(function() {
+reviewSchema.virtual('id').get(function () {
   return this._id.toHexString();
 });
 
@@ -66,7 +66,7 @@ const productSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-productSchema.virtual('id').get(function() {
+productSchema.virtual('id').get(function () {
   return this._id.toHexString();
 });
 

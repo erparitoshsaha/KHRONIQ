@@ -13,7 +13,18 @@ router.post('/', protect, requirePermission('homepage_media'), (req, res, next) 
 
     try {
       if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ success: false, message: 'No files uploaded' });
+        if (req.body && req.body.url && req.body.section) {
+          const isVideo = req.body.type === 'video' || /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(req.body.url);
+          const media = await Media.create({
+            url: req.body.url,
+            publicId: req.body.publicId || '',
+            type: isVideo ? 'video' : 'image',
+            section: req.body.section,
+            uploadedBy: req.user?._id
+          });
+          return res.json({ success: true, media: [media] });
+        }
+        return res.status(400).json({ success: false, message: 'No files uploaded or url provided' });
       }
       const section = req.body.section || 'homepage';
       const created = [];

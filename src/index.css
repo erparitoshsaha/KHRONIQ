@@ -37,8 +37,8 @@
   color-scheme: light;
 }
 
-body {
-  background-color: #ffffff;
+html, body {
+  background-color: #1c1a17;
   color: var(--color-luxury-text);
   margin: 0;
   overflow-x: hidden;

@@ -56,7 +56,10 @@ const orderSchema = new mongoose.Schema({
     isGifting: { type: Boolean, default: false },
     occasion: { type: String },
     note: { type: String },
-    packaging: { type: String }
+    packaging: { type: String },
+    packagingCost: { type: Number, default: 0 },
+    includeGiftCard: { type: Boolean, default: false },
+    giftCardCost: { type: Number, default: 0 }
   }
 }, {
   timestamps: true,

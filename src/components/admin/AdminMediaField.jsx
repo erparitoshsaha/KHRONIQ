@@ -15,7 +15,8 @@ export default function AdminMediaField({
   allowVideo = true,
   placeholder = 'https://... or /assets/...',
   helperText,
-  required = false
+  required = false,
+  onBlur
 }) {
   const [hasError, setHasError] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -133,6 +134,7 @@ export default function AdminMediaField({
               type="text"
               value={cleanVal}
               onChange={(e) => onChange && onChange(e.target.value)}
+              onBlur={onBlur}
               placeholder={placeholder}
               className="w-full bg-black/60 border border-white/10 rounded px-2.5 py-1.5 text-white text-xs font-mono focus:outline-none focus:border-white"
             />

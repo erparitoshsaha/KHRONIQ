@@ -1080,6 +1080,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     };
   }, []);
 
+
   useEffect(() => {
     const fetchUpdates = async () => {
       try {
