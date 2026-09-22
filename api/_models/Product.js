@@ -5,7 +5,7 @@ const reviewSchema = new mongoose.Schema({
   rating: { type: Number, required: true, min: 1, max: 5 },
   comment: { type: String, required: true },
   date: { type: String, default: () => new Date().toISOString().split('T')[0] },
-  status: { type: String, enum: ['approved', 'pending', 'rejected'], default: 'pending' }
+  status: { type: String, enum: ['approved', 'pending', 'rejected', 'hidden'], default: 'pending' }
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true }

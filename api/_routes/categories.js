@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Category from '../_models/Category.js';
 import { protect, adminOnly } from '../_middleware/auth.js';
 
@@ -53,6 +54,10 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
   const { name, image, description } = req.body;
 
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+
     const category = await Category.findById(req.params.id);
 
     if (!category) {
@@ -79,6 +84,10 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
 // @access  Private/Admin
 router.delete('/:id', protect, adminOnly, async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+
     const category = await Category.findById(req.params.id);
 
     if (!category) {

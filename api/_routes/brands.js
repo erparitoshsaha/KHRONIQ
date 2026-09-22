@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Brand from '../_models/Brand.js';
 import { protect, adminOnly } from '../_middleware/auth.js';
 
@@ -53,6 +54,10 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
   const { name, logo, description } = req.body;
 
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Brand not found' });
+    }
+
     const brand = await Brand.findById(req.params.id);
 
     if (!brand) {
@@ -79,6 +84,10 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
 // @access  Private/Admin
 router.delete('/:id', protect, adminOnly, async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Brand not found' });
+    }
+
     const brand = await Brand.findById(req.params.id);
 
     if (!brand) {

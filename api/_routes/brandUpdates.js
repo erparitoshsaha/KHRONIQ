@@ -1,47 +1,23 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import BrandUpdate from '../_models/BrandUpdate.js';
 import { protect, adminOnly, requirePermission } from '../_middleware/auth.js';
 
 const router = express.Router();
 
-const DEFAULT_BRAND_UPDATES = [
-  {
-    title: 'WEB HOSTING SOON',
-    detail: 'khroniq is launching its timepieces: wait is over.',
-    approved: true,
-    createdAt: new Date('2026-07-17T00:00:00.000Z')
-  }
-];
-
-const LEGACY_DEFAULT_TITLES = [
-  'SWISS CRAFTSMANSHIP',
-  'LIMITED EDITION RELEASE',
-  'HERITAGE COLLECTION',
-  'EXCLUSIVITY REDEFINED'
-];
-
 // @route   GET /api/brand-updates
-// @desc    Get all approved brand updates for public homepage
+// @desc    Get all active, approved brand updates for public display (not expired)
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    // Purge legacy multi-updates if present in DB
-    await BrandUpdate.deleteMany({
-      $or: [
-        { title: { $in: LEGACY_DEFAULT_TITLES } },
-        { detail: { $regex: /anti-reflective sapphire crystal/i } }
-      ]
+    const allApproved = await BrandUpdate.find({ approved: true }).sort({ createdAt: -1 });
+    const now = Date.now();
+    const validUpdates = allApproved.filter(u => {
+      const durationMs = (u.durationHours || 24) * 3600 * 1000;
+      return (now - new Date(u.createdAt).getTime()) < durationMs;
     });
 
-    let updates = await BrandUpdate.find({ approved: true }).sort({ createdAt: -1 });
-    if (!updates || updates.length === 0) {
-      const count = await BrandUpdate.countDocuments({});
-      if (count === 0) {
-        await BrandUpdate.insertMany(DEFAULT_BRAND_UPDATES);
-        updates = await BrandUpdate.find({ approved: true }).sort({ createdAt: -1 });
-      }
-    }
-    res.json({ success: true, updates });
+    res.json({ success: true, updates: validUpdates });
   } catch (error) {
     console.error('Fetch brand updates error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -49,25 +25,11 @@ router.get('/', async (req, res) => {
 });
 
 // @route   GET /api/brand-updates/admin
-// @desc    Get all brand updates (approved and unapproved)
+// @desc    Get all brand updates (approved and unapproved, expired and active)
 // @access  Private/Admin
 router.get('/admin', protect, requirePermission('brand_updates'), async (req, res) => {
   try {
-    await BrandUpdate.deleteMany({
-      $or: [
-        { title: { $in: LEGACY_DEFAULT_TITLES } },
-        { detail: { $regex: /anti-reflective sapphire crystal/i } }
-      ]
-    });
-
-    let updates = await BrandUpdate.find({}).sort({ createdAt: -1 });
-    if (!updates || updates.length === 0) {
-      const count = await BrandUpdate.countDocuments({});
-      if (count === 0) {
-        await BrandUpdate.insertMany(DEFAULT_BRAND_UPDATES);
-        updates = await BrandUpdate.find({}).sort({ createdAt: -1 });
-      }
-    }
+    const updates = await BrandUpdate.find({}).sort({ createdAt: -1 });
     res.json({ success: true, updates });
   } catch (error) {
     console.error('Fetch admin brand updates error:', error);
@@ -79,7 +41,7 @@ router.get('/admin', protect, requirePermission('brand_updates'), async (req, re
 // @desc    Add a brand update
 // @access  Private/Admin
 router.post('/', protect, requirePermission('brand_updates'), async (req, res) => {
-  const { title, detail, approved } = req.body;
+  const { title, detail, approved, durationHours, image } = req.body;
 
   try {
     if (!title || !detail) {
@@ -89,7 +51,9 @@ router.post('/', protect, requirePermission('brand_updates'), async (req, res) =
     const update = new BrandUpdate({
       title: title.trim(),
       detail: detail.trim(),
-      approved: approved !== undefined ? approved : true
+      approved: approved !== undefined ? Boolean(approved) : true,
+      durationHours: Number(durationHours) || 24,
+      image: typeof image === 'string' ? image.trim() : ''
     });
 
     const createdUpdate = await update.save();
@@ -104,9 +68,13 @@ router.post('/', protect, requirePermission('brand_updates'), async (req, res) =
 // @desc    Update a brand update
 // @access  Private/Admin
 router.put('/:id', protect, requirePermission('brand_updates'), async (req, res) => {
-  const { title, detail, approved } = req.body;
+  const { title, detail, approved, durationHours, image } = req.body;
 
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Brand update not found' });
+    }
+
     const update = await BrandUpdate.findById(req.params.id);
 
     if (!update) {
@@ -115,7 +83,9 @@ router.put('/:id', protect, requirePermission('brand_updates'), async (req, res)
 
     if (title !== undefined) update.title = title.trim();
     if (detail !== undefined) update.detail = detail.trim();
-    if (approved !== undefined) update.approved = approved;
+    if (approved !== undefined) update.approved = Boolean(approved);
+    if (durationHours !== undefined) update.durationHours = Number(durationHours) || 24;
+    if (image !== undefined) update.image = typeof image === 'string' ? image.trim() : '';
 
     const updatedUpdate = await update.save();
     res.json({ success: true, update: updatedUpdate });
@@ -130,13 +100,17 @@ router.put('/:id', protect, requirePermission('brand_updates'), async (req, res)
 // @access  Private/Admin
 router.delete('/:id', protect, requirePermission('brand_updates'), async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Brand update not found' });
+    }
+
     const update = await BrandUpdate.findById(req.params.id);
 
     if (!update) {
       return res.status(404).json({ success: false, message: 'Brand update not found' });
     }
 
-    await BrandUpdate.deleteOne({ _id: req.params.id });
+    await BrandUpdate.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Brand update removed' });
   } catch (error) {
     console.error('Delete brand update error:', error);

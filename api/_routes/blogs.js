@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Blog from '../_models/Blog.js';
 import { protect, adminOnly, requirePermission } from '../_middleware/auth.js';
 
@@ -49,6 +50,10 @@ router.post('/', protect, requirePermission('blogs'), async (req, res) => {
 // @access  Private/Admin
 router.delete('/:id', protect, requirePermission('blogs'), async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Blog not found' });
+    }
+
     const blog = await Blog.findById(req.params.id);
 
     if (!blog) {
@@ -70,6 +75,10 @@ router.put('/:id', protect, requirePermission('blogs'), async (req, res) => {
   const { title, content, author, image, category } = req.body;
 
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Blog not found' });
+    }
+
     const blog = await Blog.findById(req.params.id);
 
     if (!blog) {

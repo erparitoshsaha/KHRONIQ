@@ -39,7 +39,7 @@ const orderSchema = new mongoose.Schema({
     method: { type: String, required: true },
     last4: { type: String, required: true }
   },
-  status: { type: String, enum: ['Paid', 'Pending', 'Processing', 'Cancelled', 'Shipped', 'Exchange/Refund Requested'], default: 'Paid' },
+  status: { type: String, enum: ['Paid', 'Pending', 'Processing', 'Cancelled', 'Shipped', 'Delivered', 'Exchange/Refund Requested'], default: 'Paid' },
   razorpayOrderId: { type: String, index: true, sparse: true, unique: true },
   razorpayPaymentId: { type: String, index: true, sparse: true, unique: true },
   razorpaySignature: { type: String },

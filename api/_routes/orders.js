@@ -1,9 +1,21 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Order from '../_models/Order.js';
 import Product from '../_models/Product.js';
 import { protect, adminOnly, requirePermission } from '../_middleware/auth.js';
 
 const router = express.Router();
+
+// Helper to find order by custom id or MongoDB _id
+const findOrderByIdOrCustomId = async (idParam) => {
+  if (!idParam) return null;
+  return await Order.findOne({
+    $or: [
+      { id: idParam },
+      ...(mongoose.isValidObjectId(idParam) ? [{ _id: idParam }] : [])
+    ]
+  });
+};
 
 // @route   GET /api/orders
 // @desc    Get logged in user orders or all orders (if admin)
@@ -29,7 +41,7 @@ router.get('/', protect, async (req, res, next) => {
 // @access  Private
 router.get('/:id', protect, async (req, res, next) => {
   try {
-    const order = await Order.findOne({ id: req.params.id });
+    const order = await findOrderByIdOrCustomId(req.params.id);
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
@@ -60,7 +72,7 @@ router.put('/:id/status', protect, requirePermission('orders'), async (req, res,
   }
 
   try {
-    const order = await Order.findOne({ id: req.params.id });
+    const order = await findOrderByIdOrCustomId(req.params.id);
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
@@ -80,7 +92,7 @@ router.put('/:id/status', protect, requirePermission('orders'), async (req, res,
 // @access  Private
 router.put('/:id/cancel', protect, async (req, res, next) => {
   try {
-    const order = await Order.findOne({ id: req.params.id });
+    const order = await findOrderByIdOrCustomId(req.params.id);
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
@@ -125,7 +137,7 @@ router.put('/:id/cancel', protect, async (req, res, next) => {
 // @access  Private
 router.put('/:id/exchange-refund', protect, async (req, res, next) => {
   try {
-    const order = await Order.findOne({ id: req.params.id });
+    const order = await findOrderByIdOrCustomId(req.params.id);
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });

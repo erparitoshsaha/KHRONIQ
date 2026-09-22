@@ -9,7 +9,7 @@ import {
   deleteProduct,
   addCoupon,
   deleteCoupon,
-  moderateReview,
+  deleteReview,
   fetchAnalytics,
   selectCurrentCurrency,
   formatPrice,
@@ -1165,21 +1165,31 @@ const handleEditBlogImageUpload = async (e) => {
   };
 
   const handleEditUpdateInit = (update) => {
-    setEditingUpdateId(update.id || update._id);
-    setEditUpdateForm({ ...update });
+    setEditingUpdateId(update._id || update.id);
+    setEditUpdateForm({
+      title: update.title || '',
+      detail: update.detail || '',
+      durationHours: update.durationHours || 24,
+      approved: update.approved !== undefined ? update.approved : true
+    });
   };
 
   const handleUpdateUpdate = async (e) => {
     e.preventDefault();
+    if (!editingUpdateId) return;
     try {
-      const token = localStorage.getItem('khroniq_token');
       const res = await fetch(`/api/brand-updates/${editingUpdateId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           ...getAuthHeaders()
         },
-        body: JSON.stringify(editUpdateForm)
+        body: JSON.stringify({
+          title: editUpdateForm.title,
+          detail: editUpdateForm.detail,
+          durationHours: editUpdateForm.durationHours,
+          approved: editUpdateForm.approved
+        })
       });
       const data = await res.json();
       if (data.success) {
@@ -1192,13 +1202,14 @@ const handleEditBlogImageUpload = async (e) => {
       }
     } catch (err) {
       console.error('Edit update error:', err);
+      alert('Error updating brand update.');
     }
   };
 
   const handleDeleteUpdate = async (id) => {
+    if (!id) return;
     if (!window.confirm('Delete this brand update permanently?')) return;
     try {
-      const token = localStorage.getItem('khroniq_token');
       const res = await fetch(`/api/brand-updates/${id}`, {
         method: 'DELETE',
         headers: {
@@ -1215,6 +1226,7 @@ const handleEditBlogImageUpload = async (e) => {
       }
     } catch (err) {
       console.error('Delete update error:', err);
+      alert('Error removing brand update.');
     }
   };
 
@@ -1279,12 +1291,14 @@ const handleEditBlogImageUpload = async (e) => {
   // Compile all active (approved) reviews for management
   const activeReviews = [];
   products.forEach(p => {
+    const pId = p._id || p.id;
     p.reviews?.forEach(r => {
       if (r.status === 'approved') {
         activeReviews.push({
-          productId: p.id,
+          productId: pId,
           productName: p.name,
-          review: r
+          review: r,
+          reviewId: r._id || r.id
         });
       }
     });
@@ -1569,8 +1583,14 @@ const handleEditImageUpload = async (e) => {
     }
   };
 
-  const handleReviewStatus = (productId, reviewId, status) => {
-    dispatch(moderateReview(productId, reviewId, status));
+  const handleDeleteReview = async (productId, reviewId) => {
+    if (!window.confirm('Permanently delete this customer review from store records?')) return;
+    const res = await dispatch(deleteReview(productId, reviewId));
+    if (res && res.success) {
+      alert('Review permanently deleted.');
+    } else {
+      alert(res?.message || 'Failed to delete review.');
+    }
   };
 
   return (
@@ -7325,7 +7345,7 @@ const handleEditImageUpload = async (e) => {
 
                   <div className="flex space-x-2 flex-shrink-0">
                     <button
-                      onClick={() => handleReviewStatus(item.productId, item.review.id, 'hidden')}
+                      onClick={() => handleDeleteReview(item.productId, item.reviewId || item.review._id || item.review.id)}
                       className="px-3 py-1.5 bg-transparent border border-white/10 hover:border-luxury-red hover:text-luxury-red text-[10px] font-bold uppercase tracking-wider rounded flex items-center space-x-1.5 transition cursor-pointer"
                     >
                       <Trash2 size={12} />

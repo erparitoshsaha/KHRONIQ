@@ -356,6 +356,10 @@ router.put('/:id', protect, requirePermission('products'), async (req, res) => {
 // @access  Private/Admin
 router.delete('/:id', protect, requirePermission('products'), async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
     const product = await Product.findById(req.params.id);
 
     if (!product) {
@@ -431,6 +435,35 @@ router.put('/:id/reviews/:reviewId', protect, requirePermission('reviews'), asyn
     res.json({ success: true, message: `Review status updated to ${status}`, reviews: product.reviews });
   } catch (error) {
     console.error('Moderate review error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @route   DELETE /api/products/:id/reviews/:reviewId
+// @desc    Permanently delete a customer review from a product
+// @access  Private/Admin
+router.delete('/:id/reviews/:reviewId', protect, requirePermission('reviews'), async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    const review = product.reviews.id(req.params.reviewId);
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+
+    product.reviews.pull({ _id: req.params.reviewId });
+    await product.save();
+
+    res.json({ success: true, message: 'Review removed successfully', reviews: product.reviews });
+  } catch (error) {
+    console.error('Delete review error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });

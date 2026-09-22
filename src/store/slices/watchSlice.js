@@ -1455,6 +1455,24 @@ export const moderateReview = (productId, reviewId, status) => async (dispatch) 
   }
 };
 
+export const deleteReview = (productId, reviewId) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/products/${productId}/reviews/${reviewId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    const data = await res.json();
+    if (data.success) {
+      dispatch(fetchProducts());
+      return { success: true, message: data.message };
+    }
+    return { success: false, message: data.message || 'Failed to delete review.' };
+  } catch (error) {
+    console.error('Failed to delete review:', error);
+    return { success: false, message: 'Failed to delete review.' };
+  }
+};
+
 export const fetchFeaturedReviews = () => async (dispatch) => {
   try {
     const res = await fetch('/api/products/reviews/featured');
