@@ -853,52 +853,52 @@ export const HOMEPAGE_MEDIA_SECTIONS = [
   },
   {
     key: 'hero_slide1_lifestyle',
-    title: 'Hero Slide 1 — Crimson Red (Lifestyle)',
+    title: 'Hero Slide 1 (Lifestyle)',
     slots: [{ key: 'hero_slide1_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_red.jpg' }]
   },
   {
     key: 'hero_slide1_product',
-    title: 'Hero Slide 1 — Crimson Red (Watch)',
+    title: 'Hero Slide 1 (Watch)',
     slots: [{ key: 'hero_slide1_product', label: 'Watch Image', default: '/assets/watch_red.jpg' }]
   },
   {
     key: 'hero_slide2_lifestyle',
-    title: 'Hero Slide 2 — Emerald Green (Lifestyle)',
+    title: 'Hero Slide 2 (Lifestyle)',
     slots: [{ key: 'hero_slide2_lifestyle', label: 'Lifestyle Image', default: '/assets/slide_green_lifestyle.jpg' }]
   },
   {
     key: 'hero_slide2_product',
-    title: 'Hero Slide 2 — Emerald Green (Watch)',
+    title: 'Hero Slide 2 (Watch)',
     slots: [{ key: 'hero_slide2_product', label: 'Watch Image', default: '/assets/watch_green.jpg' }]
   },
   {
     key: 'hero_slide3_lifestyle',
-    title: 'Hero Slide 3 — Midnight Black (Lifestyle)',
+    title: 'Hero Slide 3 (Lifestyle)',
     slots: [{ key: 'hero_slide3_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_black_cafe.jpg' }]
   },
   {
     key: 'hero_slide3_product',
-    title: 'Hero Slide 3 — Midnight Black (Watch)',
+    title: 'Hero Slide 3 (Watch)',
     slots: [{ key: 'hero_slide3_product', label: 'Watch Image', default: '/assets/watch_black_steel.png' }]
   },
   {
     key: 'hero_slide4_lifestyle',
-    title: 'Hero Slide 4 — Cobalt Blue (Lifestyle)',
+    title: 'Hero Slide 4 (Lifestyle)',
     slots: [{ key: 'hero_slide4_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_blue_window.jpg' }]
   },
   {
     key: 'hero_slide4_product',
-    title: 'Hero Slide 4 — Cobalt Blue (Watch)',
+    title: 'Hero Slide 4 (Watch)',
     slots: [{ key: 'hero_slide4_product', label: 'Watch Image', default: '/assets/watch_blue_brown.png' }]
   },
   {
     key: 'hero_slide5_lifestyle',
-    title: 'Hero Slide 5 — Sterling Silver (Lifestyle)',
+    title: 'Hero Slide 5 (Lifestyle)',
     slots: [{ key: 'hero_slide5_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_pink_cafe.jpg' }]
   },
   {
     key: 'hero_slide5_product',
-    title: 'Hero Slide 5 — Sterling Silver (Watch)',
+    title: 'Hero Slide 5 (Watch)',
     slots: [{ key: 'hero_slide5_product', label: 'Watch Image', default: '/assets/slide_white_product.png' }]
   },
   {
@@ -1038,16 +1038,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visibleCards, setVisibleCards] = useState(4);
   const [showUpdates, setShowUpdates] = useState(true);
-  const DEFAULT_BRAND_UPDATES = [
-    {
-      _id: 'default-1',
-      title: 'WEB HOSTING SOON',
-      detail: 'khroniq is launching its timepieces: wait is over.',
-      createdAt: '2026-07-17T00:00:00.000Z'
-    }
-  ];
-
-  const [brandUpdates, setBrandUpdates] = useState(DEFAULT_BRAND_UPDATES);
+  const [brandUpdates, setBrandUpdates] = useState([]);
   const [hoveredProduct, setHoveredProduct] = useState(null);
   const updatesRef = useRef(null);
   const updatesInView = useInView(updatesRef, { once: false, margin: '-40%' });
@@ -1066,10 +1057,6 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
-    hoverTimeoutRef.current = setTimeout(() => {
-      setHoveredProduct(null);
-      hoverTimeoutRef.current = null;
-    }, 150);
   };
 
   useEffect(() => {
@@ -1086,7 +1073,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
       try {
         const res = await fetch('/api/brand-updates');
         const data = await res.json();
-        if (data && data.success && Array.isArray(data.updates) && data.updates.length > 0) {
+        if (data && data.success && Array.isArray(data.updates)) {
           setBrandUpdates(data.updates);
         }
       } catch (err) {
@@ -1098,9 +1085,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
 
   // Auto-opening updates drawer disabled as requested
 
-  const displayedUpdates = (brandUpdates && brandUpdates.length > 0)
-    ? brandUpdates
-    : DEFAULT_BRAND_UPDATES;
+  const displayedUpdates = brandUpdates || [];
   const [currentUpdateIndex, setCurrentUpdateIndex] = useState(0);
 
   useEffect(() => {
@@ -1878,6 +1863,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
 
       {/* ══════════ FULL SCREEN IMAGE BACKGROUND UPDATES SECTION ══════════ */}
       {/* ══════════ KHRONIQ UPDATE PARALLAX BANNER SECTION ══════════ */}
+      {displayedUpdates.length > 0 && (
       <div
         ref={updatesRef}
         className="relative w-full h-[100vh] flex items-center justify-center overflow-hidden bg-black text-white"
@@ -1945,12 +1931,12 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
               <div className="flex items-center justify-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#34d399] animate-pulse shadow-[0_0_10px_#34d399]" />
                 <h3 className="font-serif text-lg sm:text-2xl font-black uppercase tracking-wider text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
-                  {displayedUpdates[currentUpdateIndex]?.title || 'WEB HOSTING SOON'}
+                  {displayedUpdates[currentUpdateIndex]?.title || ''}
                 </h3>
               </div>
 
               <p className="text-xs sm:text-sm text-emerald-50/90 font-medium leading-relaxed max-w-md drop-shadow">
-                {displayedUpdates[currentUpdateIndex]?.detail || 'khroniq is launching its timepieces :wait is over'}
+                {displayedUpdates[currentUpdateIndex]?.detail || ''}
               </p>
 
               <div className="w-full max-w-xs border-b border-emerald-500/25 my-1" />
@@ -1960,7 +1946,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                 <span>
                   {displayedUpdates[currentUpdateIndex]?.createdAt
                     ? new Date(displayedUpdates[currentUpdateIndex].createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
-                    : '17 JUL 2026'}
+                    : ''}
                 </span>
               </div>
             </div>
@@ -2027,6 +2013,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
         </button>
         */}
       </div>
+      )}
     </>
   );
 }
