@@ -14,7 +14,7 @@ import { apiLimiter } from './_middleware/rateLimiter.js';
 import authRoutes from './_routes/auth.js';
 import productRoutes from './_routes/products.js';
 import orderRoutes from './_routes/orders.js';
-import couponRoutes from './_routes/coupons.js';
+import couponRoutes, { seedDefaultCouponsSafe } from './_routes/coupons.js';
 import cartRoutes from './_routes/cart.js';
 import wishlistRoutes from './_routes/wishlist.js';
 import brandRoutes from './_routes/brands.js';
@@ -221,6 +221,7 @@ if (!process.env.VERCEL) {
         await seedDefaultFiltersSafe();
         await seedDefaultFooterSafe();
         await seedDefaultContentSafe();
+        await seedDefaultCouponsSafe();
       } catch (err) {
         console.error('Initial check error:', err.message);
       }

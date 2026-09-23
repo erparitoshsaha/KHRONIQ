@@ -281,7 +281,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                           {activeSubMenu === 'price' && (
                             <div className="space-y-6">
                               <h4 className="text-[10px] font-black tracking-[0.25em] text-black uppercase">Shop By Price</h4>
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="grid grid-cols-[max-content_max-content] gap-x-12 gap-y-3.5 w-fit">
                                 {priceTiers.map((p) => (
                                   <button
                                     key={p.label}
@@ -293,7 +293,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                                         : { minPrice: p.minPrice, maxPrice: p.maxPrice };
                                       onPageChange('shop', shopFilter);
                                     }}
-                                    className="text-left text-xs text-black hover:text-black/60 transition duration-150 font-bold uppercase tracking-wider py-1.5 cursor-pointer block border-b border-transparent hover:border-black/40 w-fit"
+                                    className="text-left text-xs text-black hover:text-black/60 transition duration-150 font-bold uppercase tracking-wider py-1.5 cursor-pointer block border-b border-transparent hover:border-black/40 w-fit whitespace-nowrap"
                                   >
                                     {p.label}
                                   </button>
@@ -305,7 +305,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                           {activeSubMenu === 'collections' && link.gender && (
                             <div className="space-y-6">
                               <h4 className="text-[10px] font-black tracking-[0.25em] text-black uppercase">Collections</h4>
-                              <div className="grid grid-cols-2 gap-x-8 gap-y-3.5">
+                              <div className="grid grid-cols-[max-content_max-content] gap-x-12 gap-y-3.5 w-fit">
                                 {(link.gender === 'men' ? [
                                   { label: 'Classic', filter: { gender: 'men', category: 'classic' } },
                                   { label: 'Ravellor', filter: { gender: 'men', category: 'ravellor' } },
@@ -322,7 +322,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                                       setMegaMenuForceClosed(true);
                                       onPageChange('shop', col.filter);
                                     }}
-                                    className="text-left text-xs text-black hover:text-black/60 transition duration-150 font-bold uppercase tracking-wider py-1.5 cursor-pointer block border-b border-transparent hover:border-black/40 w-fit"
+                                    className="text-left text-xs text-black hover:text-black/60 transition duration-150 font-bold uppercase tracking-wider py-1.5 cursor-pointer block border-b border-transparent hover:border-black/40 w-fit whitespace-nowrap"
                                   >
                                     {col.label}
                                   </button>

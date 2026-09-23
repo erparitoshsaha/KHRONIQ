@@ -106,6 +106,43 @@ async function calculateAuthoritativeCart(items, couponCode, packagingCost = 0) 
   };
 }
 
+// @route   POST /api/payments/validate-coupon
+// @desc    Validate coupon code and return discount details
+// @access  Public
+router.post('/validate-coupon', async (req, res, next) => {
+  const { code, subtotal } = req.body;
+
+  if (!code || typeof code !== 'string' || !code.trim()) {
+    return res.status(400).json({ success: false, message: 'Please enter a coupon code.' });
+  }
+
+  try {
+    const cleanCode = code.toUpperCase().trim();
+    const coupon = await Coupon.findOne({ code: cleanCode });
+
+    if (!coupon) {
+      return res.status(404).json({ success: false, message: 'Invalid coupon code.' });
+    }
+
+    const numSubtotal = Number(subtotal) || 0;
+    const discountAmount = Math.round((numSubtotal * (coupon.discountPercent || 0)) / 100);
+
+    return res.json({
+      success: true,
+      message: 'Coupon applied successfully!',
+      coupon: {
+        code: coupon.code,
+        discountPercent: coupon.discountPercent,
+        discountAmount,
+        description: coupon.description || `${coupon.discountPercent}% discount`
+      }
+    });
+  } catch (error) {
+    console.error('Validate coupon error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to validate coupon.' });
+  }
+});
+
 // @route   POST /api/payments/create-order
 // @desc    Calculate authoritative price and initiate Razorpay order
 // @access  Private

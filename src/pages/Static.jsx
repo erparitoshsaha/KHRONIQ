@@ -49,6 +49,7 @@ export default function Static({ params, onPageChange }) {
       privacy: 'Privacy Policy | KHRONIQ',
       shipping: 'Shipping & Delivery | KHRONIQ',
       returns: 'Returns & Exchanges | KHRONIQ',
+      cancellation: 'Cancellation Policy | KHRONIQ',
       blogs: 'Horology Journal & Articles | KHRONIQ'
     };
     document.title = titles[activeTab] || 'Atelier Information | KHRONIQ';
@@ -1249,6 +1250,228 @@ export default function Static({ params, onPageChange }) {
     }
   ];
 
+  const cancellationData = [
+    {
+      title: "1. Company Information",
+      content: (
+        <div className="space-y-2">
+          <p><span className="font-semibold text-luxury-text">Brand:</span> KHRONIQ</p>
+          <p><span className="font-semibold text-luxury-text">Owned & Marketed By:</span> True Knock Industries Private Limited</p>
+          <p className="font-semibold text-luxury-text mt-1">Registered Office:</p>
+          <p className="pl-3 border-l border-luxury-gold-dark/30 italic text-[11px] text-luxury-muted">
+            OFFICE NO. - 2, CHAMBER - 4,<br />
+            UDAIGIRI TOWER, KAUSHAMBI,<br />
+            GHAZIABAD, UTTAR PRADESH – 201010,<br />
+            India
+          </p>
+          <p><span className="font-semibold text-luxury-text">Website:</span> <a href="https://www.khroniq.com/" target="_blank" rel="noopener noreferrer" className="text-luxury-gold-dark hover:underline">https://www.khroniq.com/</a></p>
+          <p><span className="font-semibold text-luxury-text">Email:</span> support@khroniq.com</p>
+        </div>
+      )
+    },
+    {
+      title: "2. Order Cancellation by Customer",
+      content: (
+        <div className="space-y-2">
+          <p>Customers may request cancellation of an order only before the order has been dispatched from our warehouse.</p>
+          <p>Cancellation requests should be submitted as soon as possible by contacting KHRONIQ Customer Support with the following details:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Order Number</li>
+            <li>Customer Name</li>
+            <li>Registered Email Address</li>
+            <li>Registered Mobile Number</li>
+            <li>Reason for Cancellation</li>
+          </ul>
+          <p className="text-[11px] text-luxury-muted">Cancellation requests received after dispatch cannot be accepted and will be governed by the applicable Return & Refund Policy.</p>
+        </div>
+      )
+    },
+    {
+      title: "3. Cancellation of Prepaid Orders",
+      content: (
+        <div className="space-y-2">
+          <p>If a prepaid order is successfully cancelled before dispatch:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>The full product amount paid by the customer will be refunded to the original payment method.</li>
+            <li>Refund processing shall generally be initiated within 7–10 Business Days after cancellation approval.</li>
+            <li>The actual credit timeline may vary depending on the customer's bank, card issuer, UPI provider, or payment gateway.</li>
+          </ul>
+        </div>
+      )
+    },
+    {
+      title: "4. Cancellation of Cash on Delivery (COD) Orders",
+      content: (
+        <div className="space-y-2">
+          <p>Where Cash on Delivery (COD) is available:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>COD orders may be cancelled before dispatch without any cancellation charges.</li>
+            <li>Repeated cancellation of COD orders may result in temporary or permanent restriction of COD services for the customer.</li>
+            <li>KHRONIQ reserves the right to require prepaid payment for future orders from customers with excessive cancellations.</li>
+          </ul>
+        </div>
+      )
+    },
+    {
+      title: "5. Orders that Cannot be Cancelled",
+      content: (
+        <div className="space-y-2">
+          <p>The following orders cannot be cancelled once confirmed or dispatched:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Orders already shipped.</li>
+            <li>Customized or engraved watches.</li>
+            <li>Personalized products.</li>
+            <li>Special-order or made-to-order products.</li>
+            <li>Limited Edition products specifically manufactured against customer orders.</li>
+            <li>Orders already delivered.</li>
+          </ul>
+          <p className="text-[11px] text-luxury-muted">Such orders shall be governed by the applicable Return, Refund, Replacement, or Warranty Policies, where eligible.</p>
+        </div>
+      )
+    },
+    {
+      title: "6. Cancellation by KHRONIQ",
+      content: (
+        <div className="space-y-2">
+          <p>KHRONIQ reserves the right to cancel any order, in whole or in part, at its sole discretion, including but not limited to the following circumstances:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Product becomes unavailable.</li>
+            <li>Pricing error.</li>
+            <li>Technical error on the Website.</li>
+            <li>Payment verification failure.</li>
+            <li>Fraudulent or suspicious transactions.</li>
+            <li>Violation of our Terms & Conditions.</li>
+            <li>Incomplete or incorrect customer information.</li>
+            <li>Delivery to restricted or non-serviceable locations.</li>
+            <li>Regulatory or legal restrictions.</li>
+            <li>Events beyond our reasonable control.</li>
+          </ul>
+          <p className="text-[11px] text-luxury-muted">Where payment has already been received for a cancelled order, an eligible refund shall be processed in accordance with this Policy.</p>
+        </div>
+      )
+    },
+    {
+      title: "7. Price or Typographical Errors",
+      content: (
+        <div className="space-y-2">
+          <p>Despite our best efforts, pricing inaccuracies, typographical errors, incorrect product descriptions, or system errors may occasionally occur.</p>
+          <p>KHRONIQ reserves the right to cancel affected orders even after order confirmation. In such cases, customers shall receive a full refund of the amount paid.</p>
+        </div>
+      )
+    },
+    {
+      title: "8. Fraud Prevention",
+      content: (
+        <div className="space-y-2">
+          <p>KHRONIQ actively monitors transactions to prevent fraud.</p>
+          <p>Orders may be cancelled where:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Identity verification fails.</li>
+            <li>Payment appears unauthorized.</li>
+            <li>Multiple suspicious transactions are detected.</li>
+            <li>False customer information is provided.</li>
+            <li>Chargeback abuse is suspected.</li>
+            <li>The order violates applicable laws or our policies.</li>
+          </ul>
+          <p className="text-[11px] text-luxury-muted">KHRONIQ may request additional verification before processing certain orders.</p>
+        </div>
+      )
+    },
+    {
+      title: "9. Refund after Cancellation",
+      content: (
+        <div className="space-y-2">
+          <p>Approved refunds shall be processed through the original payment method used during purchase.</p>
+          <p>Refund timelines may vary depending on:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Bank processing</li>
+            <li>Card issuer processing</li>
+            <li>UPI settlement</li>
+            <li>Payment gateway processing</li>
+          </ul>
+          <p className="text-[11px] text-luxury-muted">KHRONIQ shall not be responsible for delays caused by financial institutions or payment service providers.</p>
+        </div>
+      )
+    },
+    {
+      title: "10. Promotional Orders",
+      content: (
+        <div className="space-y-2">
+          <p>If an order placed under a promotional offer, discount campaign, coupon, cashback program, or bundle offer is cancelled, the refund amount shall be calculated based on the actual amount paid after applying the relevant discounts or promotional benefits.</p>
+        </div>
+      )
+    },
+    {
+      title: "11. Force Majeure",
+      content: (
+        <div className="space-y-2">
+          <p>KHRONIQ shall not be liable for delays in cancellation processing or refunds resulting from circumstances beyond its reasonable control, including but not limited to:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Pandemics</li>
+              <li>Floods</li>
+              <li>Earthquakes</li>
+              <li>Fires</li>
+              <li>Natural disasters</li>
+              <li>Government restrictions</li>
+              <li>Curfews</li>
+              <li>Wars</li>
+            </ul>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Civil unrest</li>
+              <li>Labour strikes</li>
+              <li>Transport disruptions</li>
+              <li>Customs delays</li>
+              <li>Internet outages</li>
+              <li>Cyber incidents</li>
+              <li>Payment gateway failures</li>
+              <li>Any other Force Majeure event.</li>
+            </ul>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "12. Policy Modifications",
+      content: (
+        <div className="space-y-2">
+          <p>KHRONIQ reserves the right to amend, modify, or update this Cancellation Policy at any time without prior notice.</p>
+          <p>The latest version shall always be available on <a href="https://www.khroniq.com/" target="_blank" rel="noopener noreferrer" className="text-luxury-gold-dark hover:underline">https://www.khroniq.com/</a>.</p>
+          <p>Continued use of the Website after such modifications constitutes acceptance of the revised Policy.</p>
+        </div>
+      )
+    },
+    {
+      title: "13. Governing Law & Jurisdiction",
+      content: (
+        <div className="space-y-2">
+          <p>This Cancellation Policy shall be governed by and interpreted in accordance with the laws of India.</p>
+          <p>Any dispute arising out of or relating to this Policy shall be subject to the exclusive jurisdiction of the competent courts at Lucknow, Uttar Pradesh, unless otherwise required by applicable law.</p>
+        </div>
+      )
+    },
+    {
+      title: "14. Contact Us",
+      content: (
+        <div className="space-y-2">
+          <p className="font-semibold text-luxury-text">KHRONIQ</p>
+          <p className="text-luxury-muted italic">A Premium Watch Brand by True Knock Industries Private Limited</p>
+          <p className="font-semibold text-luxury-text mt-1">Registered Office:</p>
+          <p className="pl-3 border-l border-luxury-gold-dark/30 italic text-[11px] text-luxury-muted">
+            OFFICE NO. - 2, CHAMBER - 4,<br />
+            UDAIGIRI TOWER, KAUSHAMBI,<br />
+            GHAZIABAD, UTTAR PRADESH – 201010,<br />
+            India
+          </p>
+          <p><span className="font-semibold text-luxury-text">Website:</span> <a href="https://www.khroniq.com/" target="_blank" rel="noopener noreferrer" className="text-luxury-gold-dark hover:underline">https://www.khroniq.com/</a></p>
+          <p><span className="font-semibold text-luxury-text">Email:</span> support@khroniq.com</p>
+          <p className="text-[11px] text-luxury-muted pt-2">If you wish to cancel an order or have any questions regarding this Cancellation Policy, please contact our Customer Support team before your order is dispatched.</p>
+          <p className="text-[11px] text-luxury-muted font-medium pt-1">By placing an order through <a href="https://www.khroniq.com/" target="_blank" rel="noopener noreferrer" className="text-luxury-gold-dark hover:underline">https://www.khroniq.com/</a>, you acknowledge that you have read, understood, and agreed to this Cancellation Policy.</p>
+        </div>
+      )
+    }
+  ];
+
   const repairServiceData = [
     {
       title: "1. Company Information",
@@ -1821,6 +2044,7 @@ export default function Static({ params, onPageChange }) {
           { key: 'shipping', label: 'Shipping Policy' },
          { key: 'exchange', label: 'Replacement Policy' },
           { key: 'refund', label: 'Refund Policy' },
+          { key: 'cancellation', label: 'Cancellation Policy' },
           { key: 'warranty', label: 'Warranty Policy' },
           { key: 'privacy', label: 'Privacy Policy' },
           { key: 'cod', label: 'COD Policy' },
@@ -2119,6 +2343,48 @@ export default function Static({ params, onPageChange }) {
             <div className="text-[11px] font-light text-luxury-muted leading-relaxed">{item.content}</div>
           </section>
         ))}
+      </div>
+    </div>
+  </div>
+)}
+
+{/* CANCELLATION POLICY TAB */}
+{activeTab === 'cancellation' && (
+  <div className="space-y-6 text-xs text-luxury-muted leading-relaxed font-light">
+    <h3 className="text-lg font-bold text-luxury-text font-serif uppercase tracking-wide">Cancellation Policy</h3>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pt-4">
+      <div className="md:col-span-4 space-y-2 max-h-[500px] overflow-y-auto pr-2 border-r border-luxury-text/10 sticky top-24 hidden md:block">
+        <p className="text-[10px] font-bold text-luxury-text uppercase tracking-widest mb-3">Table of Contents</p>
+        {cancellationData.map((item, idx) => (
+          <button
+            key={idx}
+            onClick={() => {
+              const element = document.getElementById(`cancellation-section-${idx}`);
+              if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }}
+            className="block text-left w-full text-[10px] py-1.5 px-2 hover:bg-luxury-gold-dark/5 hover:text-luxury-gold-dark transition rounded font-medium truncate cursor-pointer"
+          >
+            {item.title}
+          </button>
+        ))}
+      </div>
+      <div className="md:col-span-8 space-y-6 max-h-[600px] overflow-y-auto pr-2">
+        <p className="text-[11px] text-luxury-muted italic mb-4">Effective Date: 1st July 2026</p>
+        <p className="text-[11px] text-luxury-muted mb-4">
+          Welcome to KHRONIQ, a premium watch brand owned and marketed by True Knock Industries Private Limited ("KHRONIQ", "Company", "we", "our", or "us"). This Cancellation Policy explains the terms and conditions under which an order placed through <a href="https://www.khroniq.com/" target="_blank" rel="noopener noreferrer" className="text-luxury-gold-dark hover:underline">https://www.khroniq.com/</a> may be cancelled.
+        </p>
+        <p className="text-[11px] text-luxury-muted mb-4 font-medium">
+          By placing an order on our Website, you agree to this Cancellation Policy.
+        </p>
+        {cancellationData.map((item, idx) => (
+          <section key={idx} id={`cancellation-section-${idx}`} className="space-y-2 scroll-mt-24 pb-4 border-b border-luxury-text/5 last:border-b-0">
+            <h4 className="font-bold text-luxury-text uppercase text-[10px] tracking-wider">{item.title}</h4>
+            <div className="text-[11px] font-light text-luxury-muted leading-relaxed">{item.content}</div>
+          </section>
+        ))}
+        <p className="text-[11px] text-luxury-muted font-medium pt-4 border-t border-luxury-text/10">
+          By placing an order through <a href="https://www.khroniq.com/" target="_blank" rel="noopener noreferrer" className="text-luxury-gold-dark hover:underline">https://www.khroniq.com/</a>, you acknowledge that you have read, understood, and agreed to this Cancellation Policy.
+        </p>
       </div>
     </div>
   </div>
