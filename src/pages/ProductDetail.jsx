@@ -644,7 +644,7 @@ export default function ProductDetail({ params, onPageChange }) {
                 <div key={rev.id} className="bg-white border border-luxury-text/10 p-5 rounded shadow-sm">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
-                      <p className="text-gray-800 text-xs font-semibold">{rev.userName}</p>
+                      <p className="text-gray-900 text-xs font-bold" style={{ color: '#111111' }}>{rev.userName}</p>
                       {/* Star icons */}
                       <div className="flex text-luxury-gold-dark">
                         {[...Array(5)].map((_, i) => (
@@ -678,6 +678,11 @@ export default function ProductDetail({ params, onPageChange }) {
 
           {currentUser ? (
             <form onSubmit={handleReviewSubmit} className="space-y-4">
+              <div className="flex items-center space-x-2 text-xs text-gray-700 bg-gray-50 border border-gray-100 p-2.5 rounded">
+                <span>Posting as:</span>
+                <span className="font-bold text-gray-900" style={{ color: '#111111' }}>{currentUser.name || currentUser.email}</span>
+              </div>
+
               {/* Rating selection */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { loginUser, registerUser, checkAdminEmail, requestAdminCode, verifyAdminCode, forgotPassword } from '../store/slices/watchSlice';
-import { Star, CheckCircle2, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Star, CheckCircle2, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react';
 import { isAdminRole } from '../constants/permissions';
 
 const SUPER_ADMIN_EMAILS = ['er.paritoshsaha@gmail.com', 'khroniqofficial@gmail.com'];
@@ -514,15 +514,19 @@ export default function Login({ params, onPageChange }) {
           <button
             type="submit"
             disabled={loading || lockoutCountdown > 0}
-            className={`w-full py-3.5 font-bold text-xs tracking-widest uppercase transition flex items-center justify-center space-x-1.5 ${
+            className={`w-full py-3.5 font-bold text-xs tracking-widest uppercase transition flex items-center justify-center space-x-2 ${
               loading || lockoutCountdown > 0
-                ? 'bg-gray-700 text-gray-400 cursor-not-allowed border border-white/5'
+                ? 'cursor-not-allowed border border-white/20 text-white shadow-md'
                 : 'bg-white text-luxury-dark hover:bg-luxury-gold hover:text-luxury-dark cursor-pointer'
             }`}
+            style={loading ? { backgroundColor: '#182030', color: '#ffffff', borderColor: 'rgba(255,255,255,0.25)' } : undefined}
           >
-            {loading
-              ? 'Processing...'
-              : authMode === 'register'
+            {loading ? (
+              <span className="flex items-center justify-center space-x-2 text-white font-extrabold" style={{ color: '#ffffff' }}>
+                <Loader2 className="animate-spin text-[#dfb76c]" size={15} />
+                <span className="text-white tracking-widest" style={{ color: '#ffffff' }}>PROCESSING...</span>
+              </span>
+            ) : authMode === 'register'
               ? 'Create Account'
               : authMode === 'forgot'
               ? 'Request Reset Link'

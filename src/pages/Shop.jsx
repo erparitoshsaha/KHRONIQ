@@ -27,8 +27,10 @@ const DEFAULT_FALLBACK_CATEGORIES = [
     slug: 'collection',
     name: 'Collection',
     options: [
-      { name: 'Deevaaz', slug: 'deevaaz', value: 'deevaaz' },
-      { name: 'Classic', slug: 'classic', value: 'classic' }
+      { name: 'Classic', slug: 'classic', value: 'classic' },
+      { name: 'Ravellor', slug: 'ravellor', value: 'ravellor' },
+      { name: 'Femina', slug: 'femina', value: 'femina' },
+      { name: 'Deevaz', slug: 'deevaaz', value: 'deevaaz' }
     ]
   },
   {
@@ -220,14 +222,18 @@ export default function Shop({ onPageChange, filterParams }) {
       setPriceRange(null);
       setMinPriceFilter(null);
       setSortOption('featured');
-    } else if (filterParams?.category) {
-      const cat = filterParams.category === 'Khronomaster' ? 'classic' : filterParams.category.toLowerCase();
-      setSelectedFilters({ collection: [cat] });
-      setSearchQuery('');
-      setPriceRange(null);
-      setMinPriceFilter(null);
-    } else if (filterParams?.gender) {
-      setSelectedFilters({ gender: [filterParams.gender.toLowerCase()] });
+    } else if (filterParams?.category || filterParams?.gender) {
+      const nextFilters = {};
+      if (filterParams?.category) {
+        let cat = filterParams.category.toLowerCase();
+        if (cat === 'khronomaster') cat = 'classic';
+        if (cat === 'deevaz') cat = 'deevaaz';
+        nextFilters.collection = [cat];
+      }
+      if (filterParams?.gender) {
+        nextFilters.gender = [filterParams.gender.toLowerCase()];
+      }
+      setSelectedFilters(nextFilters);
       setSearchQuery('');
       setPriceRange(null);
       setMinPriceFilter(null);
@@ -265,7 +271,13 @@ export default function Shop({ onPageChange, filterParams }) {
 
   const isOptionSelected = (catSlug, optSlug) => {
     const current = selectedFilters[catSlug];
-    return Array.isArray(current) && current.includes(optSlug);
+    if (!Array.isArray(current)) return false;
+    if (current.includes(optSlug)) return true;
+    if (catSlug === 'collection') {
+      if ((optSlug === 'deevaaz' || optSlug === 'deevaz') && (current.includes('deevaaz') || current.includes('deevaz'))) return true;
+      if ((optSlug === 'classic' || optSlug === 'khronomaster') && (current.includes('classic') || current.includes('khronomaster'))) return true;
+    }
+    return false;
   };
 
   const handleSelectAll = (catSlug) => {

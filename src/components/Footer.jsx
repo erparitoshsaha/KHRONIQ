@@ -94,11 +94,14 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
 
   const collectionCat = filters.find(c => c.slug === 'collection');
   const collectionLinks = (collectionCat?.options && collectionCat.options.length > 0)
-    ? collectionCat.options.filter(opt => opt.isActive).map(opt => ({
-        label: opt.name,
-        page: 'shop',
-        args: { category: opt.value || opt.slug || opt.name }
-      }))
+    ? [...collectionCat.options]
+        .filter(opt => opt.isActive)
+        .reverse()
+        .map(opt => ({
+          label: opt.name,
+          page: 'shop',
+          args: { category: opt.value || opt.slug || opt.name }
+        }))
     : [
         { label: 'Deevaaz', page: 'shop', args: { category: 'deevaaz' } },
         { label: 'Classic', page: 'shop', args: { category: 'classic' } }

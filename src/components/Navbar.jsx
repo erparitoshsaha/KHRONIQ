@@ -33,7 +33,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
   const lastScrollYRef = useRef(typeof window !== 'undefined' ? window.scrollY : 0);
   const currentCurrency = useSelector(selectCurrentCurrency);
   const [currencyOpen, setCurrencyOpen] = useState(false);
-  const [activeSubMenu, setActiveSubMenu] = useState('recipient');
+  const [activeSubMenu, setActiveSubMenu] = useState('collections');
   const [megaMenuForceClosed, setMegaMenuForceClosed] = useState(false);
 
   const currencyMap = {
@@ -212,7 +212,22 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
 
               if (link.megaMenu) {
                 return (
-                  <div key={idx} className="relative group h-20 flex items-center" onMouseEnter={() => setMegaMenuForceClosed(false)}>
+                  <div
+                    key={idx}
+                    className="relative group h-20 flex items-center"
+                    onMouseEnter={() => {
+                      setMegaMenuForceClosed(false);
+                      if (link.gender) {
+                        if (activeSubMenu !== 'price' && activeSubMenu !== 'collections') {
+                          setActiveSubMenu('collections');
+                        }
+                      } else if (link.type === 'gifting') {
+                        if (activeSubMenu !== 'price' && activeSubMenu !== 'recipient') {
+                          setActiveSubMenu('recipient');
+                        }
+                      }
+                    }}
+                  >
                     <button
                       onClick={() => handleNavLinkClick(link)}
                       className={`whitespace-nowrap transition duration-200 cursor-pointer uppercase font-black tracking-wider ${textColorClass} ${currentPage === link.page ? 'text-luxury-gold' : ''
@@ -228,6 +243,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                         <div className="col-span-3 border-r border-neutral-200/40 pr-6 flex flex-col space-y-3">
                           <button
                             type="button"
+                            onClick={() => setActiveSubMenu('price')}
                             onMouseEnter={() => setActiveSubMenu('price')}
                             className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'price' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
                               }`}
@@ -238,6 +254,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                           {link.type === 'gifting' ? (
                             <button
                               type="button"
+                              onClick={() => setActiveSubMenu('recipient')}
                               onMouseEnter={() => setActiveSubMenu('recipient')}
                               className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'recipient' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
                                 }`}
@@ -248,6 +265,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                           ) : (
                             <button
                               type="button"
+                              onClick={() => setActiveSubMenu('collections')}
                               onMouseEnter={() => setActiveSubMenu('collections')}
                               className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'collections' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
                                 }`}
@@ -259,7 +277,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                         </div>
 
                         {/* Middle Column: Sub-menu items */}
-                        <div className="col-span-5 px-6">
+                        <div className={`${link.type === 'gifting' ? 'col-span-5' : 'col-span-9'} px-6`}>
                           {activeSubMenu === 'price' && (
                             <div className="space-y-6">
                               <h4 className="text-[10px] font-black tracking-[0.25em] text-black uppercase">Shop By Price</h4>
@@ -289,14 +307,12 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                               <h4 className="text-[10px] font-black tracking-[0.25em] text-black uppercase">Collections</h4>
                               <div className="grid grid-cols-2 gap-x-8 gap-y-3.5">
                                 {(link.gender === 'men' ? [
-                                  { label: 'Classic Khronomaster', filter: { gender: 'men', category: 'classic' } },
-                                  { label: 'Automatic Movement', filter: { gender: 'men', category: 'automatic' } },
-                                  { label: 'Sport & Chrono Series', filter: { gender: 'men', category: 'sport' } },
+                                  { label: 'Classic', filter: { gender: 'men', category: 'classic' } },
+                                  { label: 'Ravellor', filter: { gender: 'men', category: 'ravellor' } },
                                   { label: 'All Men\'s Timepieces', filter: { gender: 'men' } }
                                 ] : [
-                                  { label: 'Classic Elegance', filter: { gender: 'women', category: 'classic' } },
-                                  { label: 'Automatic Luxury', filter: { gender: 'women', category: 'automatic' } },
-                                  { label: 'Sport & Casual', filter: { gender: 'women', category: 'sport' } },
+                                  { label: 'Femina', filter: { gender: 'women', category: 'femina' } },
+                                  { label: 'Deevaz', filter: { gender: 'women', category: 'deevaz' } },
                                   { label: 'All Women\'s Timepieces', filter: { gender: 'women' } }
                                 ]).map((col) => (
                                   <button
@@ -363,8 +379,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                           )}
                         </div>
 
-                        {/* Right Column: Featured Banner Card */}
-                        {link.type === 'gifting' ? (
+                        {/* Right Column: Featured Banner Card (Only for Gifting) */}
+                        {link.type === 'gifting' && (
                           <div className="col-span-4 relative overflow-hidden rounded-xl bg-neutral-950 text-white flex flex-col justify-between p-6 min-h-[220px] shadow-lg group/gift">
                             <div className="absolute inset-0 bg-cover bg-center opacity-60 scale-100 group-hover/gift:scale-105 transition duration-700" style={{ backgroundImage: "url('/assets/gift_partner.jpg')" }} />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
@@ -380,25 +396,6 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                               className="relative z-10 w-full py-3 bg-white text-neutral-950 font-black text-xs uppercase tracking-widest rounded-lg hover:bg-neutral-800 hover:text-white transition duration-300 shadow-md cursor-pointer"
                             >
                               Shop Gifting Solutions
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="col-span-4 relative overflow-hidden rounded-xl bg-neutral-950 text-white flex flex-col justify-between p-6 min-h-[220px] shadow-lg group/featured">
-                            <div className="absolute inset-0 bg-cover bg-center opacity-60 scale-100 group-hover/featured:scale-105 transition duration-700" style={{ backgroundImage: `url('${link.bannerBg}')` }} />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                            <div className="relative z-10 space-y-1">
-                              <span className="text-[9px] font-bold tracking-[0.3em] uppercase text-luxury-gold">Curated Collection</span>
-                              <h4 className="font-serif text-2xl font-black tracking-wider leading-tight text-white mt-1">{link.bannerTitle}</h4>
-                              <p className="text-xs text-gray-300 font-light mt-1">{link.bannerSubtitle}</p>
-                            </div>
-                            <button
-                              onClick={() => {
-                                localStorage.setItem('khroniq_is_gifting_journey', 'false');
-                                onPageChange('shop', link.filter);
-                              }}
-                              className="relative z-10 w-full py-3 bg-white text-neutral-950 font-black text-xs uppercase tracking-widest rounded-lg hover:bg-neutral-800 hover:text-white transition duration-300 shadow-md cursor-pointer mt-4"
-                            >
-                              Explore Collection
                             </button>
                           </div>
                         )}

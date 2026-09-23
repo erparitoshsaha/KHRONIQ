@@ -1157,12 +1157,14 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
 
   // --- Global Collection Synchronization (Single Source of Truth: Catalog Filters) ---
   const collectionCat = filters.find(c => c.slug === 'collection');
-  const activeCollectionOptions = (collectionCat?.options && collectionCat.options.length > 0)
+  const rawCollectionOptions = (collectionCat?.options && collectionCat.options.length > 0)
     ? collectionCat.options.filter(opt => opt.isActive)
     : [
       { name: 'Deevaaz', slug: 'deevaaz', value: 'deevaaz' },
       { name: 'Classic', slug: 'classic', value: 'classic' }
     ];
+  // Newest collections on top
+  const activeCollectionOptions = [...rawCollectionOptions].reverse();
 
   const defaultCollectionArt = {
     deevaaz: {
@@ -1191,7 +1193,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     };
 
     return {
-      num: customItem?.metadata?.num || String(idx + 1).padStart(2, '0'),
+      num: String(idx + 1).padStart(2, '0'),
       name: opt.name.toUpperCase(),
       tagline: customItem?.subtitle || art.tagline,
       desc: customItem?.description || art.desc,
@@ -1843,10 +1845,10 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-white text-xs font-semibold tracking-wide truncate">
+                      <p className="text-xs font-bold tracking-wide truncate" style={{ color: '#ffffff' }}>
                         {review.userName}
                       </p>
-                      <p className="text-[10px] text-[#34d399]/70 font-medium tracking-wider uppercase truncate">
+                      <p className="text-[10px] font-medium tracking-wider uppercase truncate" style={{ color: '#34d399' }}>
                         on {review.productName}
                       </p>
                     </div>

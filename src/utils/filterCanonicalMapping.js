@@ -192,12 +192,18 @@ export function productMatchesFilterOption(product, categorySlug, optionValue, o
       if (!pCol) return false;
       const pColSlug = toCleanSlug(pCol);
       if (normVal === 'classic' || normVal === 'khronomaster' || normName === 'classic' || normName === 'khronomaster') {
-        return pCol === 'classic' || pCol === 'khronomaster' || pColSlug === 'classic' || pColSlug === 'khronomaster';
+        return pCol === 'classic' || pCol === 'khronomaster' || pColSlug === 'classic' || pColSlug === 'khronomaster' || pCol.includes('classic') || pCol.includes('khronomaster');
       }
-      if (normVal === 'deevaaz' || normName === 'deevaaz') {
-        return pCol === 'deevaaz' || pColSlug === 'deevaaz';
+      if (normVal === 'deevaaz' || normName === 'deevaaz' || normVal === 'deevaz' || normName === 'deevaz') {
+        return pCol === 'deevaaz' || pColSlug === 'deevaaz' || pCol === 'deevaz' || pColSlug === 'deevaz' || pCol.includes('deevaz') || pCol.includes('deevaaz');
       }
-      return pColSlug === cleanValSlug || pColSlug === cleanNameSlug || pCol === normVal || pCol === normName;
+      if (normVal === 'ravellor' || normName === 'ravellor') {
+        return pCol === 'ravellor' || pColSlug === 'ravellor' || pCol.includes('ravellor');
+      }
+      if (normVal === 'femina' || normName === 'femina') {
+        return pCol === 'femina' || pColSlug === 'femina' || pCol.includes('femina');
+      }
+      return pColSlug === cleanValSlug || pColSlug === cleanNameSlug || pCol === normVal || pCol === normName || pCol.includes(normVal);
     }
 
     case 'movement': {

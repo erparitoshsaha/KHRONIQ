@@ -376,8 +376,10 @@ export default function Admin({ onPageChange }) {
       return colCat.options.filter(o => o.isActive).map(o => ({ label: o.name, value: o.name }));
     }
     return [
-      { label: 'Deevaaz', value: 'Deevaaz' },
-      { label: 'Classic', value: 'Classic' }
+      { label: 'Classic', value: 'Classic' },
+      { label: 'Ravellor', value: 'Ravellor' },
+      { label: 'Femina', value: 'Femina' },
+      { label: 'Deevaz', value: 'Deevaz' }
     ];
   })();
 
