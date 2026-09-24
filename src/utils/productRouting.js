@@ -83,16 +83,82 @@ export function findProductInList(products, rawParam) {
 }
 
 /**
- * Parses route information from a URL pathname
- * @param {string} pathname
+ * Parses route information from a URL pathname and search query string
+ * @param {string} [pathname]
+ * @param {string} [search]
  * @returns {{ page: string, params: Object|null }}
  */
-export function parseRouteFromPath(pathname = window.location.pathname) {
-  if (!pathname || pathname === '/') {
+export function parseRouteFromPath(pathname, search) {
+  let rawPath = pathname;
+  let rawSearch = search;
+
+  if (rawPath === undefined && typeof window !== 'undefined') {
+    rawPath = window.location.pathname;
+  }
+  if (rawSearch === undefined && typeof window !== 'undefined') {
+    rawSearch = window.location.search;
+  }
+
+  rawPath = rawPath || '/';
+  rawSearch = rawSearch || '';
+
+  // Extract query string if embedded in pathname
+  if (rawPath.includes('?')) {
+    const parts = rawPath.split('?');
+    rawPath = parts[0];
+    if (!rawSearch && parts[1]) {
+      rawSearch = '?' + parts[1];
+    }
+  }
+
+  const cleanPath = (rawPath.length > 1 && rawPath.endsWith('/'))
+    ? rawPath.slice(0, -1)
+    : rawPath;
+  const lowerPath = cleanPath.toLowerCase();
+
+  // Helper to extract query parameters
+  const parseQueryParams = (searchStr) => {
+    if (!searchStr) return null;
+    try {
+      const q = new URLSearchParams(searchStr.startsWith('?') ? searchStr.slice(1) : searchStr);
+      const res = {};
+      if (q.get('gender')) {
+        const g = q.get('gender').toLowerCase().trim();
+        res.gender = (g === 'male') ? 'men' : (g === 'female' ? 'women' : g);
+      }
+      if (q.get('category')) {
+        res.category = q.get('category');
+      }
+      if (q.get('collection')) {
+        res.category = q.get('collection');
+      }
+      if (q.get('search')) {
+        res.search = q.get('search');
+      }
+      if (q.get('shopAll') === 'true' || q.has('shopAll')) {
+        res.shopAll = true;
+      }
+      if (q.get('minPrice')) {
+        const minP = Number(q.get('minPrice'));
+        if (!isNaN(minP)) res.minPrice = minP;
+      }
+      if (q.get('maxPrice')) {
+        const maxP = Number(q.get('maxPrice'));
+        if (!isNaN(maxP)) res.maxPrice = maxP;
+      }
+      return Object.keys(res).length > 0 ? res : null;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const queryParams = parseQueryParams(rawSearch);
+
+  if (!cleanPath || cleanPath === '/') {
     return { page: 'home', params: null };
   }
 
-  const productMatch = pathname.match(/^\/product\/(.+)$/);
+  const productMatch = cleanPath.match(/^\/product\/(.+)$/i);
   if (productMatch) {
     const rawIdentifier = productMatch[1];
     const decoded = decodeURIComponent(rawIdentifier);
@@ -102,7 +168,7 @@ export function parseRouteFromPath(pathname = window.location.pathname) {
     };
   }
 
-  const resetMatch = pathname.match(/^\/reset-password\/(.+)$/);
+  const resetMatch = cleanPath.match(/^\/reset-password\/(.+)$/i);
   if (resetMatch) {
     return {
       page: 'reset-password',
@@ -110,29 +176,64 @@ export function parseRouteFromPath(pathname = window.location.pathname) {
     };
   }
 
-  if (pathname === '/shop' || pathname.startsWith('/shop/')) {
-    return { page: 'shop', params: null };
+  // Men's catalogue routes (/men, /shop/men)
+  if (lowerPath === '/men' || lowerPath === '/shop/men') {
+    return {
+      page: 'shop',
+      params: { gender: 'men', ...(queryParams || {}) }
+    };
   }
-  if (pathname === '/cart') {
-    return { page: 'cart', params: null };
+
+  // Women's catalogue routes (/women, /shop/women)
+  if (lowerPath === '/women' || lowerPath === '/shop/women') {
+    return {
+      page: 'shop',
+      params: { gender: 'women', ...(queryParams || {}) }
+    };
   }
-  if (pathname === '/checkout') {
-    return { page: 'checkout', params: null };
+
+  // Shop All catalogue routes (/shop-all, /shop/all, /shop/shop-all)
+  if (lowerPath === '/shop-all' || lowerPath === '/shop/all' || lowerPath === '/shop/shop-all') {
+    return {
+      page: 'shop',
+      params: { shopAll: true, ...(queryParams || {}) }
+    };
   }
-  if (pathname === '/profile') {
-    return { page: 'profile', params: null };
+
+  // General Shop routes (/shop, /shop/...)
+  if (lowerPath === '/shop' || lowerPath.startsWith('/shop/')) {
+    if (queryParams) {
+      return {
+        page: 'shop',
+        params: queryParams
+      };
+    }
+    return {
+      page: 'shop',
+      params: { shopAll: true }
+    };
   }
-  if (pathname === '/login') {
-    return { page: 'login', params: null };
+
+  if (lowerPath === '/cart') {
+    return { page: 'cart', params: queryParams };
   }
-  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-    return { page: 'admin', params: null };
+  if (lowerPath === '/checkout') {
+    return { page: 'checkout', params: queryParams };
   }
-  if (pathname === '/customization') {
-    return { page: 'customization', params: null };
+  if (lowerPath === '/profile') {
+    return { page: 'profile', params: queryParams };
   }
-  if (pathname === '/gifting') {
-    return { page: 'gifting', params: null };
+  if (lowerPath === '/login') {
+    return { page: 'login', params: queryParams };
+  }
+  if (lowerPath === '/admin' || lowerPath.startsWith('/admin/')) {
+    return { page: 'admin', params: queryParams };
+  }
+  if (lowerPath === '/customization') {
+    return { page: 'customization', params: queryParams };
+  }
+  if (lowerPath === '/gifting') {
+    return { page: 'gifting', params: queryParams };
   }
 
   return { page: 'home', params: null };

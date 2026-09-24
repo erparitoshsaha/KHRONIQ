@@ -89,7 +89,10 @@ class ErrorBoundary extends React.Component {
 
 
 function AppContent() {
-  const initialRoute = parseRouteFromPath(typeof window !== 'undefined' ? window.location.pathname : '/');
+  const initialRoute = parseRouteFromPath(
+    typeof window !== 'undefined' ? window.location.pathname : '/',
+    typeof window !== 'undefined' ? window.location.search : ''
+  );
   const [currentPage, setCurrentPage] = useState(initialRoute.page);
   const [pageParams, setPageParams] = useState(initialRoute.params);
   const [updatesOpen, setUpdatesOpen] = useState(false);
@@ -124,12 +127,15 @@ function AppContent() {
   // Listen to browser Back / Forward buttons (popstate)
   useEffect(() => {
     const handlePopState = (event) => {
+      const route = parseRouteFromPath(
+        window.location.pathname,
+        window.location.search
+      );
       if (event.state && event.state.page) {
         setCurrentPage(event.state.page);
-        setPageParams(event.state.params || null);
+        setPageParams(event.state.params !== undefined ? event.state.params : route.params);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        const route = parseRouteFromPath(window.location.pathname);
         setCurrentPage(route.page);
         setPageParams(route.params);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -144,8 +150,22 @@ function AppContent() {
     if (page === 'home') {
       localStorage.setItem('khroniq_is_gifting_journey', 'false');
     }
-    setCurrentPage(page);
-    setPageParams(params);
+
+    let effectivePage = page;
+    let effectiveParams = params;
+    if (page === 'men') {
+      effectivePage = 'shop';
+      effectiveParams = { gender: 'men', ...(params || {}) };
+    } else if (page === 'women') {
+      effectivePage = 'shop';
+      effectiveParams = { gender: 'women', ...(params || {}) };
+    } else if (page === 'shop-all') {
+      effectivePage = 'shop';
+      effectiveParams = { shopAll: true, ...(params || {}) };
+    }
+
+    setCurrentPage(effectivePage);
+    setPageParams(effectiveParams);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (!options.skipHistory && typeof window !== 'undefined') {
@@ -154,11 +174,11 @@ function AppContent() {
       const nextNavIdx = currentNavIdx + 1;
 
       let targetPath = '/';
-      if (page === 'product-detail') {
-        let identifier = params?.id || params?.slug || '';
+      if (effectivePage === 'product-detail') {
+        let identifier = effectiveParams?.id || effectiveParams?.slug || '';
         // If product object was passed or found in store, generate canonical identifier
-        if (params?.product) {
-          identifier = getProductIdentifier(params.product, products);
+        if (effectiveParams?.product) {
+          identifier = getProductIdentifier(effectiveParams.product, products);
         } else if (identifier) {
           const found = findProductInList(products, identifier);
           if (found) {
@@ -166,32 +186,62 @@ function AppContent() {
           }
         }
         targetPath = identifier ? `/product/${identifier}` : '/shop';
-      } else if (page === 'shop') {
-        targetPath = '/shop';
-      } else if (page === 'cart') {
+      } else if (effectivePage === 'shop') {
+        if (page === 'men') {
+          targetPath = '/men';
+        } else if (page === 'women') {
+          targetPath = '/women';
+        } else if (page === 'shop-all') {
+          targetPath = '/shop-all';
+        } else if (effectiveParams?.shopAll) {
+          targetPath = '/shop';
+        } else if (effectiveParams) {
+          const queryParams = new URLSearchParams();
+          if (effectiveParams.gender) {
+            queryParams.set('gender', effectiveParams.gender);
+          }
+          if (effectiveParams.category) {
+            queryParams.set('category', effectiveParams.category);
+          }
+          if (effectiveParams.search) {
+            queryParams.set('search', effectiveParams.search);
+          }
+          if (effectiveParams.minPrice !== undefined && effectiveParams.minPrice !== null) {
+            queryParams.set('minPrice', effectiveParams.minPrice);
+          }
+          if (effectiveParams.maxPrice !== undefined && effectiveParams.maxPrice !== null) {
+            queryParams.set('maxPrice', effectiveParams.maxPrice);
+          }
+          const qs = queryParams.toString();
+          targetPath = qs ? `/shop?${qs}` : '/shop';
+        } else {
+          targetPath = '/shop';
+        }
+      } else if (effectivePage === 'cart') {
         targetPath = '/cart';
-      } else if (page === 'checkout') {
+      } else if (effectivePage === 'checkout') {
         targetPath = '/checkout';
-      } else if (page === 'profile') {
+      } else if (effectivePage === 'profile') {
         targetPath = '/profile';
-      } else if (page === 'login') {
+      } else if (effectivePage === 'login') {
         targetPath = '/login';
-      } else if (page === 'admin') {
+      } else if (effectivePage === 'admin') {
         targetPath = '/admin';
-      } else if (page === 'customization') {
+      } else if (effectivePage === 'customization') {
         targetPath = '/customization';
-      } else if (page === 'gifting') {
+      } else if (effectivePage === 'gifting') {
         targetPath = '/gifting';
-      } else if (page === 'reset-password') {
-        targetPath = `/reset-password/${params?.token || ''}`;
-      } else if (page === 'static') {
+      } else if (effectivePage === 'reset-password') {
+        targetPath = `/reset-password/${effectiveParams?.token || ''}`;
+      } else if (effectivePage === 'static') {
         targetPath = '/';
       }
 
-      if (window.location.pathname !== targetPath) {
-        window.history.pushState({ page, params, navIdx: nextNavIdx }, '', targetPath);
+      const currentFullUrl = window.location.pathname + window.location.search;
+      if (currentFullUrl !== targetPath) {
+        window.history.pushState({ page: effectivePage, params: effectiveParams, navIdx: nextNavIdx }, '', targetPath);
       } else {
-        window.history.replaceState({ page, params, navIdx: currentNavIdx }, '', targetPath);
+        window.history.replaceState({ page: effectivePage, params: effectiveParams, navIdx: currentNavIdx }, '', targetPath);
       }
     }
   };

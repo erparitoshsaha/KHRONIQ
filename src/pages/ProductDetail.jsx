@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { addToCart, toggleWishlist, addReview, selectCurrentCurrency, formatPrice, getDiscountedPrice, fetchSingleProduct, getProductMrp, getSellingPrice, getDiscountPercent } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
-import { findProductInList } from '../utils/productRouting';
+import { findProductInList, getProductUrl } from '../utils/productRouting';
 import ProductCard from '../components/ProductCard';
 import BackButton from '../components/BackButton';
-import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2, Zap } from 'lucide-react';
+import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2, Zap, Share2 } from 'lucide-react';
 import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 
 export default function ProductDetail({ params, onPageChange }) {
@@ -69,6 +69,16 @@ export default function ProductDetail({ params, onPageChange }) {
   const [hoverRating, setHoverRating] = useState(0);
   const [commentInput, setCommentInput] = useState('');
   const [reviewMessage, setReviewMessage] = useState('');
+  const [shareFeedback, setShareFeedback] = useState({ show: false, message: '', isError: false });
+  const feedbackTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimerRef.current) {
+        clearTimeout(feedbackTimerRef.current);
+      }
+    };
+  }, []);
 
   // Pincode Checker States
   const [pincode, setPincode] = useState('');
@@ -286,6 +296,69 @@ export default function ProductDetail({ params, onPageChange }) {
     relatedProducts.push(...fillProducts);
   }
 
+  const showFeedback = (message, isError = false) => {
+    if (feedbackTimerRef.current) {
+      clearTimeout(feedbackTimerRef.current);
+    }
+    setShareFeedback({ show: true, message, isError });
+    feedbackTimerRef.current = setTimeout(() => {
+      setShareFeedback({ show: false, message: '', isError: false });
+    }, 2500);
+  };
+
+  const getShareUrl = () => {
+    if (typeof window === 'undefined') return '';
+    const canonicalPath = getProductUrl(product, products);
+    if (canonicalPath && canonicalPath.startsWith('/product/')) {
+      return `${window.location.origin}${canonicalPath}`;
+    }
+    const fallbackId = product?.slug || product?.id || product?._id || rawParamId;
+    return `${window.location.origin}/product/${encodeURIComponent(fallbackId)}`;
+  };
+
+  const handleShare = async () => {
+    if (!product) return;
+    const shareUrl = getShareUrl();
+    const shareData = {
+      title: product.name || 'KHRONIQ Timepiece',
+      text: 'Check out this watch from KHRONIQ',
+      url: shareUrl,
+    };
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') {
+          return;
+        }
+      }
+    }
+
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else if (typeof document !== 'undefined') {
+        const textarea = document.createElement('textarea');
+        textarea.value = shareUrl;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (!successful) throw new Error('execCommand copy failed');
+      } else {
+        throw new Error('Clipboard unavailable');
+      }
+      showFeedback('Product link copied!');
+    } catch (copyErr) {
+      showFeedback('Unable to copy link', true);
+    }
+  };
+
   return (
     <div className="space-y-16 pb-12">
       
@@ -405,8 +478,25 @@ export default function ProductDetail({ params, onPageChange }) {
         {/* Right Column: Order Details */}
         <div className="lg:col-span-6 space-y-6">
           <div className="space-y-2">
-            <span className="text-luxury-gold-dark text-xs font-bold tracking-widest uppercase">{(product.category === 'Khronomaster' ? 'Classic' : product.category)} COLLECTION</span>
-            <h1 className="text-3xl sm:text-4xl font-bold text-luxury-text uppercase tracking-wider" style={{ fontFamily: 'Arial, sans-serif' }}>{product.name}</h1>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <span className="text-luxury-gold-dark text-xs font-bold tracking-widest uppercase">{(product.category === 'Khronomaster' ? 'Classic' : product.category)} COLLECTION</span>
+                <h1 className="text-3xl sm:text-4xl font-bold text-luxury-text uppercase tracking-wider" style={{ fontFamily: 'Arial, sans-serif' }}>{product.name}</h1>
+              </div>
+              <button
+                type="button"
+                onClick={handleShare}
+                title="Share product"
+                aria-label="Share product"
+                className="action-btn p-2.5 rounded-full border border-neutral-300 hover:border-black text-neutral-700 hover:text-black hover:bg-neutral-100 transition-colors duration-200 cursor-pointer flex items-center justify-center shrink-0 mt-1 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+              >
+                {shareFeedback.show && !shareFeedback.isError ? (
+                  <CheckCircle2 size={18} className="text-emerald-600" />
+                ) : (
+                  <Share2 size={18} />
+                )}
+              </button>
+            </div>
             
             {/* Review Badge */}
             <div className="flex items-center space-x-2">
@@ -777,6 +867,22 @@ export default function ProductDetail({ params, onPageChange }) {
           ))}
         </div>
       </section>
+
+      {/* Share Toast Notification */}
+      {shareFeedback.show && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded shadow-lg text-xs font-medium tracking-wide transition-all duration-300 ${
+            shareFeedback.isError
+              ? 'bg-neutral-900 text-red-400 border border-red-500/30'
+              : 'bg-neutral-900 text-white border border-neutral-700'
+          }`}
+        >
+          {!shareFeedback.isError && <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />}
+          <span>{shareFeedback.message}</span>
+        </div>
+      )}
 
     </div>
   );
