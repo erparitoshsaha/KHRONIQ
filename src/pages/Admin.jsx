@@ -7177,7 +7177,8 @@ const handleEditImageUpload = async (e) => {
                       </td>
                       <td className="p-4 max-w-[180px] text-[11px] text-gray-300 leading-relaxed">
                         <p className="font-semibold text-white">{o.shippingDetails?.fullName}</p>
-                        <p>{o.shippingDetails?.streetAddress}</p>
+                        <p>{[o.shippingDetails?.houseNumber, o.shippingDetails?.streetAddress].filter(Boolean).join(', ')}</p>
+                        {o.shippingDetails?.landmark && <p className="text-gray-400">Landmark: {o.shippingDetails.landmark}</p>}
                         <p>{o.shippingDetails?.city}, {o.shippingDetails?.zipCode}</p>
                         <p className="text-gray-500">{o.shippingDetails?.country}</p>
                       </td>

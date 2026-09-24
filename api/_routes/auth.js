@@ -843,12 +843,14 @@ router.put('/profile', protect, async (req, res) => {
 
     if (shippingAddress) {
       user.shippingAddress = {
-        streetAddress: shippingAddress.streetAddress !== undefined ? shippingAddress.streetAddress : user.shippingAddress.streetAddress,
-        city: shippingAddress.city !== undefined ? shippingAddress.city : user.shippingAddress.city,
-        state: shippingAddress.state !== undefined ? shippingAddress.state : user.shippingAddress.state,
-        postalCode: shippingAddress.postalCode !== undefined ? shippingAddress.postalCode : user.shippingAddress.postalCode,
-        country: shippingAddress.country !== undefined ? shippingAddress.country : user.shippingAddress.country,
-        phone: shippingAddress.phone !== undefined ? shippingAddress.phone : user.shippingAddress.phone
+        houseNumber: shippingAddress.houseNumber !== undefined ? shippingAddress.houseNumber : (user.shippingAddress?.houseNumber || ''),
+        streetAddress: shippingAddress.streetAddress !== undefined ? shippingAddress.streetAddress : (user.shippingAddress?.streetAddress || ''),
+        landmark: shippingAddress.landmark !== undefined ? shippingAddress.landmark : (user.shippingAddress?.landmark || ''),
+        city: shippingAddress.city !== undefined ? shippingAddress.city : (user.shippingAddress?.city || ''),
+        state: shippingAddress.state !== undefined ? shippingAddress.state : (user.shippingAddress?.state || ''),
+        postalCode: shippingAddress.postalCode !== undefined ? shippingAddress.postalCode : (user.shippingAddress?.postalCode || ''),
+        country: shippingAddress.country !== undefined ? shippingAddress.country : (user.shippingAddress?.country || ''),
+        phone: shippingAddress.phone !== undefined ? shippingAddress.phone : (user.shippingAddress?.phone || '')
       };
     }
 

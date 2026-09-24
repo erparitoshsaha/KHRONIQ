@@ -336,7 +336,9 @@ router.post('/verify', protect, paymentLimiter, async (req, res, next) => {
       total,
       shippingDetails: {
         fullName: shippingDetails.fullName.trim(),
+        houseNumber: shippingDetails.houseNumber ? shippingDetails.houseNumber.trim() : '',
         streetAddress: shippingDetails.streetAddress.trim(),
+        landmark: shippingDetails.landmark ? shippingDetails.landmark.trim() : '',
         city: shippingDetails.city.trim(),
         zipCode: shippingDetails.zipCode.trim(),
         country: shippingDetails.country || 'India',

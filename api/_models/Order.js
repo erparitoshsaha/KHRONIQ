@@ -28,7 +28,9 @@ const orderSchema = new mongoose.Schema({
   total: { type: Number, required: true },
   shippingDetails: {
     fullName: { type: String, required: true },
+    houseNumber: { type: String, default: '' },
     streetAddress: { type: String, required: true },
+    landmark: { type: String, default: '' },
     city: { type: String, required: true },
     zipCode: { type: String, required: true },
     country: { type: String, default: 'India' },

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { createRazorpayOrder, verifyRazorpayPayment, validateCoupon, selectCurrentCurrency, formatPrice, getDiscountedPrice, getProductMrp, getSellingPrice } from '../store/slices/watchSlice';
+import { createRazorpayOrder, verifyRazorpayPayment, validateCoupon, selectCurrentCurrency, formatPrice, getDiscountedPrice, getProductMrp, getSellingPrice, updateUserProfile } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 
@@ -33,7 +33,9 @@ export default function Checkout({ params, onPageChange }) {
     return {
       fullName: currentUser?.name || saved?.fullName || '',
       phone: currentUser?.phone || currentUser?.shippingAddress?.phone || saved?.phone || '',
+      houseNumber: currentUser?.shippingAddress?.houseNumber || saved?.houseNumber || '',
       streetAddress: currentUser?.shippingAddress?.streetAddress || saved?.streetAddress || '',
+      landmark: currentUser?.shippingAddress?.landmark || saved?.landmark || '',
       city: currentUser?.shippingAddress?.city || saved?.city || '',
       state: currentUser?.shippingAddress?.state || saved?.state || 'Uttar Pradesh',
       zipCode: currentUser?.shippingAddress?.postalCode || saved?.zipCode || '',
@@ -88,7 +90,9 @@ export default function Checkout({ params, onPageChange }) {
         ...prev,
         fullName: prev.fullName || currentUser.name || '',
         phone: prev.phone || currentUser.phone || currentUser.shippingAddress?.phone || '',
+        houseNumber: prev.houseNumber || currentUser.shippingAddress?.houseNumber || '',
         streetAddress: prev.streetAddress || currentUser.shippingAddress?.streetAddress || '',
+        landmark: prev.landmark || currentUser.shippingAddress?.landmark || '',
         city: prev.city || currentUser.shippingAddress?.city || '',
         state: prev.state || currentUser.shippingAddress?.state || 'Uttar Pradesh',
         zipCode: prev.zipCode || currentUser.shippingAddress?.postalCode || '',
@@ -180,6 +184,20 @@ export default function Checkout({ params, onPageChange }) {
         }));
       } catch (err) {
         console.warn('Could not save address to localStorage', err);
+      }
+
+      if (currentUser?.email) {
+        dispatch(updateUserProfile(currentUser.name || shippingForm.fullName, currentUser.email, {
+          ...(currentUser.shippingAddress || {}),
+          houseNumber: shippingForm.houseNumber,
+          streetAddress: shippingForm.streetAddress,
+          landmark: shippingForm.landmark,
+          city: shippingForm.city,
+          state: shippingForm.state,
+          postalCode: shippingForm.zipCode,
+          country: shippingForm.country,
+          phone: shippingForm.phone
+        })).catch(() => { });
       }
     }
 
@@ -357,9 +375,14 @@ export default function Checkout({ params, onPageChange }) {
     doc.text(shipping.fullName || '-', marginX, y);
     doc.text(`Date: ${new Date(orderReceipt.createdAt || Date.now()).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}`, pageWidth / 2 + 5, y);
     y += 5;
-    doc.text(shipping.streetAddress || shipping.localAddress || '-', marginX, y);
+    const fullStreet = [shipping.houseNumber, shipping.streetAddress || shipping.localAddress].filter(Boolean).join(', ');
+    doc.text(fullStreet || '-', marginX, y);
     doc.text(`Payment: Razorpay`, pageWidth / 2 + 5, y);
     y += 5;
+    if (shipping.landmark) {
+      doc.text(`Landmark: ${shipping.landmark}`, marginX, y);
+      y += 5;
+    }
     doc.text(`${shipping.city || ''}${shipping.city ? ', ' : ''}${shipping.zipCode || ''}`, marginX, y);
     if (orderReceipt.paymentDetails?.last4) {
       doc.text(`Ref: •••• ${orderReceipt.paymentDetails.last4}`, pageWidth / 2 + 5, y);
@@ -624,30 +647,26 @@ export default function Checkout({ params, onPageChange }) {
                       key={pkg.id}
                       type="button"
                       onClick={() => setPackagingType(pkg.id)}
-                      className={`relative p-4 rounded border text-left transition-all duration-200 cursor-pointer ${
-                        packagingType === pkg.id
-                          ? 'border-black bg-gray-50 shadow-md'
-                          : 'border-gray-200 bg-white hover:border-gray-400'
-                      }`}
+                      className={`relative p-4 rounded border text-left transition-all duration-200 cursor-pointer ${packagingType === pkg.id
+                        ? 'border-black bg-gray-50 shadow-md'
+                        : 'border-gray-200 bg-white hover:border-gray-400'
+                        }`}
                     >
                       {packagingType === pkg.id && (
                         <Check size={12} className="absolute top-2 right-2 text-black" strokeWidth={3} />
                       )}
                       <div className="flex items-center justify-between gap-1 pr-4">
-                        <p className={`text-xs font-bold tracking-wide uppercase ${
-                          packagingType === pkg.id ? 'text-black' : 'text-gray-600'
-                        }`}>{pkg.label}</p>
-                        <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${
-                          pkg.price === 'FREE'
-                            ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                            : 'text-neutral-900 bg-neutral-100 border-neutral-200'
-                        }`}>
+                        <p className={`text-xs font-bold tracking-wide uppercase ${packagingType === pkg.id ? 'text-black' : 'text-gray-600'
+                          }`}>{pkg.label}</p>
+                        <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${pkg.price === 'FREE'
+                          ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                          : 'text-neutral-900 bg-neutral-100 border-neutral-200'
+                          }`}>
                           {pkg.price}
                         </span>
                       </div>
-                      <p className={`text-[10px] mt-1.5 leading-normal ${
-                        packagingType === pkg.id ? 'text-gray-700' : 'text-gray-400'
-                      }`}>{pkg.desc}</p>
+                      <p className={`text-[10px] mt-1.5 leading-normal ${packagingType === pkg.id ? 'text-gray-700' : 'text-gray-400'
+                        }`}>{pkg.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -658,16 +677,14 @@ export default function Checkout({ params, onPageChange }) {
                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">2. Personalized Gift Card</p>
                 <div
                   onClick={() => setIncludeGiftCard(!includeGiftCard)}
-                  className={`p-4 rounded border flex items-center justify-between cursor-pointer transition-all duration-200 ${
-                    includeGiftCard
-                      ? 'border-black bg-gray-50 shadow-md'
-                      : 'border-gray-200 bg-white hover:border-gray-400'
-                  }`}
+                  className={`p-4 rounded border flex items-center justify-between cursor-pointer transition-all duration-200 ${includeGiftCard
+                    ? 'border-black bg-gray-50 shadow-md'
+                    : 'border-gray-200 bg-white hover:border-gray-400'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
-                      includeGiftCard ? 'bg-black border-black text-white' : 'border-gray-400 bg-white'
-                    }`}>
+                    <div className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${includeGiftCard ? 'bg-black border-black text-white' : 'border-gray-400 bg-white'
+                      }`}>
                       {includeGiftCard && <Check size={11} strokeWidth={3} />}
                     </div>
                     <div>
@@ -754,11 +771,46 @@ export default function Checkout({ params, onPageChange }) {
                 </p>
               </div>
 
+              <style>{`
+                .shipping-input {
+                  border: 1px solid #d4d4d4 !important;
+                  background-color: #ffffff !important;
+                  color: #171717 !important;
+                }
+                .shipping-input::placeholder {
+                  color: #737373 !important;
+                  opacity: 1 !important;
+                }
+                .shipping-input:focus {
+                  border-color: #000000 !important;
+                }
+              `}</style>
+
               <form id="shipping-form" onSubmit={handleShippingSubmit} className="space-y-4">
-                {/* Recipient Name */}
+                {/* Country / Region */}
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
-                    RECIPIENT NAME
+                    COUNTRY / REGION
+                  </label>
+                  <select
+                    value={shippingForm.country}
+                    onChange={(e) => setShippingForm({ ...shippingForm, country: e.target.value })}
+                    className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 focus:outline-none focus:border-black transition cursor-pointer shipping-input"
+                  >
+                    <option value="India">India</option>
+                    <option value="United Kingdom">United Kingdom</option>
+                    <option value="Switzerland">Switzerland</option>
+                    <option value="Japan">Japan</option>
+                    <option value="United Arab Emirates">United Arab Emirates</option>
+                    <option value="Germany">Germany</option>
+                    <option value="Singapore">Singapore</option>
+                  </select>
+                </div>
+
+                {/* Full Name (First and Last Name) */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
+                    FULL NAME (FIRST AND LAST NAME)
                   </label>
                   <input
                     type="text"
@@ -766,14 +818,14 @@ export default function Checkout({ params, onPageChange }) {
                     value={shippingForm.fullName}
                     onChange={(e) => setShippingForm({ ...shippingForm, fullName: e.target.value })}
                     placeholder="Paritosh"
-                    className="w-full bg-white border border-neutral-200 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-black transition"
+                    className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
                   />
                 </div>
 
-                {/* Phone Number */}
+                {/* Mobile Number */}
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
-                    PHONE NUMBER
+                    MOBILE NUMBER
                   </label>
                   <input
                     type="tel"
@@ -781,30 +833,73 @@ export default function Checkout({ params, onPageChange }) {
                     value={shippingForm.phone}
                     onChange={(e) => setShippingForm({ ...shippingForm, phone: e.target.value })}
                     placeholder="+91 9876543210"
-                    className="w-full bg-white border border-neutral-200 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-black transition"
+                    className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
                   />
                 </div>
 
-                {/* Local Address */}
+                {/* Pincode */}
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
-                    LOCAL ADDRESS
+                    PINCODE
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={shippingForm.zipCode}
+                    onChange={(e) => setShippingForm({ ...shippingForm, zipCode: e.target.value })}
+                    placeholder="6 digits [0-9] PIN code"
+                    className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
+                  />
+                </div>
+
+                {/* Flat / House / Building / Company / Apartment */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
+                    FLAT / HOUSE / BUILDING / COMPANY / APARTMENT
+                  </label>
+                  <input
+                    type="text"
+                    value={shippingForm.houseNumber}
+                    onChange={(e) => setShippingForm({ ...shippingForm, houseNumber: e.target.value })}
+                    placeholder="Enter flat, house, company, or apartment details"
+                    className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
+                  />
+                </div>
+
+                {/* Area / Street / Sector / Village */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
+                    AREA / STREET / SECTOR / VILLAGE
                   </label>
                   <input
                     type="text"
                     required
                     value={shippingForm.streetAddress}
                     onChange={(e) => setShippingForm({ ...shippingForm, streetAddress: e.target.value })}
-                    placeholder="Mohaddipur"
-                    className="w-full bg-white border border-neutral-200 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-black transition"
+                    placeholder="Area, street, sector, village"
+                    className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
                   />
                 </div>
 
-                {/* City and Postal Code */}
+                {/* Landmark */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
+                    LANDMARK
+                  </label>
+                  <input
+                    type="text"
+                    value={shippingForm.landmark}
+                    onChange={(e) => setShippingForm({ ...shippingForm, landmark: e.target.value })}
+                    placeholder="E.g. near Apollo Hospital"
+                    className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
+                  />
+                </div>
+
+                {/* Town / City and State */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
-                      CITY
+                      TOWN / CITY
                     </label>
                     <input
                       type="text"
@@ -812,27 +907,10 @@ export default function Checkout({ params, onPageChange }) {
                       value={shippingForm.city}
                       onChange={(e) => setShippingForm({ ...shippingForm, city: e.target.value })}
                       placeholder="Gorakhpur"
-                      className="w-full bg-white border border-neutral-200 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-black transition"
+                      className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
-                      POSTAL CODE
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={shippingForm.zipCode}
-                      onChange={(e) => setShippingForm({ ...shippingForm, zipCode: e.target.value })}
-                      placeholder="273008"
-                      className="w-full bg-white border border-neutral-200 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-black transition"
-                    />
-                  </div>
-                </div>
-
-                {/* State and Country */}
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
                       STATE
@@ -840,7 +918,7 @@ export default function Checkout({ params, onPageChange }) {
                     <select
                       value={shippingForm.state}
                       onChange={(e) => setShippingForm({ ...shippingForm, state: e.target.value })}
-                      className="w-full bg-white border border-neutral-200 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 focus:outline-none focus:border-black transition cursor-pointer"
+                      className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 focus:outline-none focus:border-black transition cursor-pointer shipping-input"
                     >
                       <option value="Uttar Pradesh">Uttar Pradesh</option>
                       <option value="Maharashtra">Maharashtra</option>
@@ -865,25 +943,6 @@ export default function Checkout({ params, onPageChange }) {
                       <option value="Himachal Pradesh">Himachal Pradesh</option>
                       <option value="Jammu & Kashmir">Jammu & Kashmir</option>
                       <option value="Chandigarh">Chandigarh</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
-                      COUNTRY
-                    </label>
-                    <select
-                      value={shippingForm.country}
-                      onChange={(e) => setShippingForm({ ...shippingForm, country: e.target.value })}
-                      className="w-full bg-white border border-neutral-200 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 focus:outline-none focus:border-black transition cursor-pointer"
-                    >
-                      <option value="India">India</option>
-                      <option value="United Kingdom">United Kingdom</option>
-                      <option value="Switzerland">Switzerland</option>
-                      <option value="Japan">Japan</option>
-                      <option value="United Arab Emirates">United Arab Emirates</option>
-                      <option value="Germany">Germany</option>
-                      <option value="Singapore">Singapore</option>
                     </select>
                   </div>
                 </div>
@@ -943,7 +1002,7 @@ export default function Checkout({ params, onPageChange }) {
                           setGstError('');
                         }}
                         placeholder="Enter GSTIN (e.g. 27ABCDE1234F1Z5)"
-                        className="flex-1 bg-white border border-neutral-200 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-black uppercase transition"
+                        className="flex-1 bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black uppercase transition shipping-input"
                       />
                       <button
                         type="button"
@@ -999,7 +1058,7 @@ export default function Checkout({ params, onPageChange }) {
                         value={couponInput}
                         onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError(''); }}
                         placeholder="Enter coupon code"
-                        className="flex-1 bg-white border border-neutral-200 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-black uppercase transition"
+                        className="flex-1 bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black uppercase transition shipping-input"
                       />
                       <button
                         type="button"
@@ -1183,8 +1242,8 @@ export default function Checkout({ params, onPageChange }) {
             </div>
 
             <div className="border-t border-white/5 pt-3 space-y-1 font-light text-gray-400">
-              <p><span className="font-semibold text-white">Deliver to:</span> {orderReceipt.shippingDetails.fullName}</p>
-              <p><span className="font-semibold text-white">Address:</span> {orderReceipt.shippingDetails.streetAddress}, {orderReceipt.shippingDetails.city}, {orderReceipt.shippingDetails.zipCode}</p>
+              <p><span className="font-semibold text-white">Deliver to:</span> {orderReceipt.shippingDetails?.fullName}</p>
+              <p><span className="font-semibold text-white">Address:</span> {[orderReceipt.shippingDetails?.houseNumber, orderReceipt.shippingDetails?.streetAddress, orderReceipt.shippingDetails?.landmark ? `Landmark: ${orderReceipt.shippingDetails.landmark}` : ''].filter(Boolean).join(', ')}, {orderReceipt.shippingDetails?.city}, {orderReceipt.shippingDetails?.zipCode}</p>
               <p><span className="font-semibold text-white">Expected Delivery:</span> {getExpectedDeliveryDate(orderReceipt.shippingDetails.zipCode)}</p>
             </div>
           </div>
