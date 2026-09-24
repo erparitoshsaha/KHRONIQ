@@ -5,6 +5,7 @@ import { handleImageError } from '../utils/imageUtils';
 import ProductCard from '../components/ProductCard';
 import { Heart, User, Package, LogOut } from 'lucide-react';
 import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
+import PhoneInput from '../components/PhoneInput';
 
 
 const getStatusStepIndex = (status) => {
@@ -546,12 +547,12 @@ export default function Profile({ params, onPageChange }) {
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Phone Number</label>
-                  <input
-                    type="text"
+                  <PhoneInput
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-3 focus:outline-none focus:border-luxury-gold"
+                    onChange={(val) => setPhone(val)}
+                    country={country}
+                    placeholder="98765 43210"
+                    theme="dark"
                   />
                 </div>
 

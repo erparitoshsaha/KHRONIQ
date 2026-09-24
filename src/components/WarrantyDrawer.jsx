@@ -16,6 +16,7 @@ const getAuthHeaders = () => {
 };
 
 import { ALL_COUNTRIES, INDIAN_STATES } from '../constants/countries';
+import PhoneInput from './PhoneInput';
 
 export default function WarrantyDrawer({ isOpen, onClose }) {
   const currentUser = useSelector(state => state.watch.currentUser);
@@ -382,19 +383,14 @@ export default function WarrantyDrawer({ isOpen, onClose }) {
               {/* Phone Number */}
               <div className="space-y-1.5">
                 <label className="text-[8px] warranty-portal-label !font-bold uppercase tracking-widest block">Phone Number</label>
-                <div className="flex space-x-2">
-                  <div className="bg-neutral-900 border border-white/15 text-gray-100 font-mono text-xs px-3 py-2.5 rounded flex items-center justify-center min-w-[55px]">
-                    {ALL_COUNTRIES.find(c => c.name === country)?.code || '+91'}
-                  </div>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="Enter phone number..."
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                    className="flex-1 bg-neutral-900 border border-white/15 rounded text-white placeholder-gray-400 p-2.5 focus:outline-none focus:border-luxury-gold transition"
-                  />
-                </div>
+                <PhoneInput
+                  required
+                  value={phoneNumber}
+                  onChange={(val) => setPhoneNumber(val)}
+                  country={country}
+                  placeholder="Enter phone number..."
+                  theme="dark"
+                />
               </div>
 
               <button

@@ -69,6 +69,14 @@ export const ALL_COUNTRIES = [
 
 export const ALL_COUNTRY_NAMES = ALL_COUNTRIES.map(c => c.name);
 
+export const getCountryDialCode = (countryName, fallback = '+91') => {
+  if (!countryName || typeof countryName !== 'string') return fallback;
+  const match = ALL_COUNTRIES.find(
+    c => c.name.toLowerCase() === countryName.trim().toLowerCase()
+  );
+  return match?.code || fallback;
+};
+
 export const INDIAN_STATES = [
   'Andhra Pradesh',
   'Arunachal Pradesh',

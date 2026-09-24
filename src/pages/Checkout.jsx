@@ -8,6 +8,7 @@ import confetti from 'canvas-confetti';
 import { CheckCircle2, CreditCard, Landmark, ArrowRight, ArrowLeft, ShieldCheck, Gift, Check, Tag, X, Loader2, Info, Lock, Truck, RotateCcw, Headphones } from 'lucide-react';
 import BackButton from '../components/BackButton';
 import CountrySelect from '../components/CountrySelect';
+import PhoneInput from '../components/PhoneInput';
 import { INDIAN_STATES } from '../constants/countries';
 
 export default function Checkout({ params, onPageChange }) {
@@ -843,16 +844,18 @@ export default function Checkout({ params, onPageChange }) {
 
                 {/* Mobile Number */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
+                  <label htmlFor="shipping-phone" className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
                     MOBILE NUMBER
                   </label>
-                  <input
-                    type="tel"
+                  <PhoneInput
+                    id="shipping-phone"
+                    name="phone"
                     required
+                    country={shippingForm.country}
                     value={shippingForm.phone}
-                    onChange={(e) => setShippingForm({ ...shippingForm, phone: e.target.value })}
-                    placeholder="+91 9876543210"
-                    className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
+                    onChange={(phone) => setShippingForm({ ...shippingForm, phone })}
+                    placeholder="98765 43210"
+                    theme="light"
                   />
                 </div>
 
