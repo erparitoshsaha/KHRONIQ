@@ -858,12 +858,17 @@ const [tempCaseColor, setTempCaseColor] = useState('#ffffff');
       const formData = new FormData();
       formData.append('url', url);
       formData.append('section', sectionKey);
-      await fetch('/api/admin/media', {
+      const res = await fetch('/api/admin/media', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData
       });
-      setMediaList(prev => ({ ...prev, [sectionKey]: url }));
+      const data = await res.json();
+      if (data.success && data.media?.[0]?.url) {
+        setMediaList(prev => ({ ...prev, [sectionKey]: data.media[0].url }));
+      } else {
+        setMediaList(prev => ({ ...prev, [sectionKey]: url }));
+      }
     } catch (e) {
       console.error('Failed to save media URL:', e);
     }

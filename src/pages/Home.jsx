@@ -706,17 +706,31 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages }) {
         {/* Left Column: Lifestyle Image Showcase */}
         <div className="relative overflow-hidden h-[450px] lg:h-full bg-neutral-900">
           <AnimatePresence mode="wait">
-            <motion.div
+            <motion.img
               key={`lifestyle-${activeIndex}`}
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url('${currentSlide.lifestyleImg}')`, ...currentSlide.lifestyleStyle }}
+              src={currentSlide.lifestyleImg}
+              alt={`${currentSlide.name} Lifestyle`}
+              onError={(e) => {
+                const fallbacks = [
+                  '/assets/lifestyle_red.jpg',
+                  '/assets/slide_green_lifestyle.jpg',
+                  '/assets/lifestyle_black_cafe.jpg',
+                  '/assets/lifestyle_blue_window.jpg',
+                  '/assets/lifestyle_pink_cafe.jpg'
+                ];
+                if (e.target.src !== fallbacks[activeIndex]) {
+                  e.target.src = fallbacks[activeIndex];
+                }
+              }}
+              className="absolute inset-0 w-full h-full object-cover"
+              style={currentSlide.lifestyleStyle}
               initial={{ opacity: 0, scale: 1.04 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
             />
           </AnimatePresence>
-          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent z-[1]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent z-[1] pointer-events-none" />
         </div>
 
         {/* Right Column: Split Product Showcase & Controls */}
@@ -738,6 +752,18 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages }) {
                 <motion.img
                   src={currentSlide.productImg}
                   alt={currentSlide.name}
+                  onError={(e) => {
+                    const fallbacks = [
+                      '/assets/watch_red.jpg',
+                      '/assets/watch_green.jpg',
+                      '/assets/watch_black_steel.png',
+                      '/assets/watch_blue_brown.png',
+                      '/assets/slide_white_product.png'
+                    ];
+                    if (e.target.src !== fallbacks[activeIndex]) {
+                      e.target.src = fallbacks[activeIndex];
+                    }
+                  }}
                   animate={isPlaying ? {
                     y: [0, -6, 0],
                     rotate: [0, 1.2, -1.2, 0]

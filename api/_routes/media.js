@@ -15,9 +15,26 @@ router.post('/', protect, requirePermission('homepage_media'), (req, res, next) 
       if (!req.files || req.files.length === 0) {
         if (req.body && req.body.url && req.body.section) {
           const isVideo = req.body.type === 'video' || /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(req.body.url);
+          let mediaUrl = req.body.url;
+          let publicId = req.body.publicId || '';
+
+          // If base64 data URI is provided, upload it to Cloudinary automatically
+          if (typeof mediaUrl === 'string' && mediaUrl.startsWith('data:')) {
+            try {
+              const uploadRes = await cloudinary.uploader.upload(mediaUrl, {
+                folder: 'zenith-watches/homepage',
+                resource_type: isVideo ? 'video' : 'image'
+              });
+              mediaUrl = uploadRes.secure_url;
+              publicId = uploadRes.public_id;
+            } catch (cloudErr) {
+              console.error('Failed to upload base64 to Cloudinary:', cloudErr);
+            }
+          }
+
           const media = await Media.create({
-            url: req.body.url,
-            publicId: req.body.publicId || '',
+            url: mediaUrl,
+            publicId,
             type: isVideo ? 'video' : 'image',
             section: req.body.section,
             uploadedBy: req.user?._id
@@ -87,8 +104,7 @@ router.delete('/:id', protect, requirePermission('homepage_media'), async (req, 
 router.get('/public', async (req, res) => {
   try {
     const list = await Media.find({
-      type: 'image',
-      url: { $not: { $regex: '^data:' } }
+      type: 'image'
     })
       .sort({ createdAt: -1 })
       .select('section url')

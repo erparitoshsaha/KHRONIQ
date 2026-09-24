@@ -29,6 +29,17 @@ export default function Static({ params, onPageChange }) {
   useEffect(() => {
     dispatch(fetchBlogs());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (!selectedBlog) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setSelectedBlog(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedBlog]);
   
   // Form state for Contact Us
   const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
@@ -2650,7 +2661,19 @@ export default function Static({ params, onPageChange }) {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {blogs.map((blog) => (
-                  <div key={blog.id || blog._id} className="group border border-luxury-text/10 hover:border-luxury-gold-dark/40 rounded overflow-hidden flex flex-col bg-luxury-bg/5 transition duration-300">
+                  <div 
+                    key={blog.id || blog._id} 
+                    onClick={() => setSelectedBlog(blog)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedBlog(blog);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    className="group border border-luxury-text/10 hover:border-luxury-gold-dark/50 rounded overflow-hidden flex flex-col bg-luxury-bg/5 transition-all duration-300 cursor-pointer hover:shadow-md text-left"
+                  >
                     <div className="h-44 overflow-hidden relative bg-black">
                       <img 
                         src={blog.image || '/assets/lifestyle_black_cafe.jpg'} 
@@ -2667,12 +2690,11 @@ export default function Static({ params, onPageChange }) {
                         <h4 className="text-luxury-text font-serif font-bold text-base leading-snug group-hover:text-luxury-gold-dark transition">{blog.title}</h4>
                         <p className="text-luxury-muted text-[11px] font-light leading-relaxed line-clamp-3">{blog.content}</p>
                       </div>
-                      <button
-                        onClick={() => setSelectedBlog(blog)}
-                        className="text-[10px] font-bold text-luxury-gold-dark hover:text-luxury-text transition tracking-widest uppercase flex items-center gap-1 cursor-pointer self-start"
+                      <div
+                        className="text-[10px] font-bold text-luxury-gold-dark group-hover:text-luxury-text transition tracking-widest uppercase flex items-center gap-1 self-start pt-1"
                       >
-                        Read Article <ArrowRight size={10} />
-                      </button>
+                        Read Article <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -2681,8 +2703,14 @@ export default function Static({ params, onPageChange }) {
 
             {/* Read Blog Overlay Modal */}
             {selectedBlog && (
-              <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                <div className="bg-white border border-luxury-text/10 p-6 sm:p-8 rounded-md w-full max-w-2xl space-y-4 max-h-[90vh] overflow-y-auto relative">
+              <div 
+                className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+                onClick={() => setSelectedBlog(null)}
+              >
+                <div 
+                  className="bg-white border border-luxury-text/10 p-6 sm:p-8 rounded-md w-full max-w-2xl space-y-4 max-h-[90vh] overflow-y-auto relative shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <div className="flex items-center justify-between pb-2 border-b border-luxury-text/10">
                     <BackButton
                       customAction={() => setSelectedBlog(null)}
@@ -2691,6 +2719,7 @@ export default function Static({ params, onPageChange }) {
                     <button 
                       onClick={() => setSelectedBlog(null)} 
                       className="text-luxury-muted hover:text-luxury-text p-1 cursor-pointer transition"
+                      aria-label="Close article"
                     >
                       <X size={20} />
                     </button>
