@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { addToCart, toggleWishlist, addReview, selectCurrentCurrency, formatPrice, getDiscountedPrice, fetchSingleProduct, getProductMrp, getSellingPrice, getDiscountPercent } from '../store/slices/watchSlice';
+import { addToCart, toggleWishlist, addReview, updateReview, deleteReview, selectCurrentCurrency, formatPrice, getDiscountedPrice, fetchSingleProduct, getProductMrp, getSellingPrice, getDiscountPercent } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import { findProductInList, getProductUrl } from '../utils/productRouting';
 import ProductCard from '../components/ProductCard';
 import BackButton from '../components/BackButton';
-import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2, Zap, Share2 } from 'lucide-react';
+import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2, Zap, Share2, Edit2, Trash2, X } from 'lucide-react';
 import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 
 export default function ProductDetail({ params, onPageChange }) {
@@ -69,6 +69,13 @@ export default function ProductDetail({ params, onPageChange }) {
   const [hoverRating, setHoverRating] = useState(0);
   const [commentInput, setCommentInput] = useState('');
   const [reviewMessage, setReviewMessage] = useState('');
+  const [editingReviewId, setEditingReviewId] = useState(null);
+  const [editRating, setEditRating] = useState(0);
+  const [editHoverRating, setEditHoverRating] = useState(0);
+  const [editComment, setEditComment] = useState('');
+  const [isUpdatingReview, setIsUpdatingReview] = useState(false);
+  const [deletingReviewId, setDeletingReviewId] = useState(null);
+  const reviewFormRef = useRef(null);
   const [shareFeedback, setShareFeedback] = useState({ show: false, message: '', isError: false });
   const feedbackTimerRef = useRef(null);
 
@@ -255,6 +262,111 @@ export default function ProductDetail({ params, onPageChange }) {
     }
   };
 
+  const isMyReview = (rev) => {
+    if (!currentUser) return false;
+    const currentUserId = String(currentUser._id || currentUser.id || '');
+    const revUserId = rev.user ? String(rev.user) : (rev.userId ? String(rev.userId) : '');
+    if (currentUserId && revUserId && currentUserId === revUserId) return true;
+
+    const currentEmail = (currentUser.email || '').toLowerCase().trim();
+    const revEmail = (rev.userEmail || rev.email || '').toLowerCase().trim();
+    if (currentEmail && revEmail && currentEmail === revEmail) return true;
+
+    const currentName = (currentUser.name || '').toLowerCase().trim();
+    const revName = (rev.userName || '').toLowerCase().trim();
+    if (currentName && revName && currentName === revName) return true;
+    if (currentEmail && revName && currentEmail === revName) return true;
+
+    if (currentUser.role === 'admin' || currentUser.role === 'super_admin') return true;
+
+    return false;
+  };
+
+  const handleStartEdit = (rev) => {
+    const revId = rev.id || rev._id;
+    setEditingReviewId(revId);
+    setEditRating(rev.rating || 5);
+    setEditHoverRating(0);
+    setEditComment(rev.comment || '');
+    setRatingInput(rev.rating || 5);
+    setCommentInput(rev.comment || '');
+
+    if (window.innerWidth < 1024 && reviewFormRef.current) {
+      reviewFormRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReviewId(null);
+    setEditRating(0);
+    setEditHoverRating(0);
+    setEditComment('');
+    setRatingInput(0);
+    setHoverRating(0);
+    setCommentInput('');
+  };
+
+  const handleDeleteReview = async (revId) => {
+    if (!window.confirm('Are you sure you want to delete your review?')) {
+      return;
+    }
+    setDeletingReviewId(revId);
+    const targetId = product?.id || product?._id;
+    try {
+      const res = await dispatch(deleteReview(targetId, revId));
+      if (res && res.success) {
+        if (res.reviews) {
+          setApiProduct(prev => prev ? { ...prev, reviews: res.reviews } : prev);
+        }
+        if (editingReviewId === revId) {
+          handleCancelEdit();
+        }
+        setReviewMessage(res.message || 'Review removed successfully.');
+        setTimeout(() => setReviewMessage(''), 5000);
+      } else {
+        alert(res?.message || 'Failed to delete review.');
+      }
+    } catch (err) {
+      console.error('Delete review error:', err);
+      alert('An error occurred while deleting the review.');
+    } finally {
+      setDeletingReviewId(null);
+    }
+  };
+
+  const handleSaveInlineEdit = async (e, revId) => {
+    e.preventDefault();
+    if (!editRating || editRating < 1) {
+      alert('Please select a star rating (1 to 5 stars).');
+      return;
+    }
+    if (!editComment.trim()) {
+      alert('Please enter your review comment.');
+      return;
+    }
+
+    setIsUpdatingReview(true);
+    const targetId = product?.id || product?._id;
+    try {
+      const res = await dispatch(updateReview(targetId, revId, editRating, editComment));
+      if (res && res.success) {
+        if (res.reviews) {
+          setApiProduct(prev => prev ? { ...prev, reviews: res.reviews } : prev);
+        }
+        setReviewMessage(res.message || 'Review updated successfully!');
+        handleCancelEdit();
+        setTimeout(() => setReviewMessage(''), 5000);
+      } else {
+        alert(res?.message || 'Failed to update review.');
+      }
+    } catch (err) {
+      console.error('Update review error:', err);
+      alert('An error occurred while updating the review.');
+    } finally {
+      setIsUpdatingReview(false);
+    }
+  };
+
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (!currentUser) {
@@ -273,8 +385,35 @@ export default function ProductDetail({ params, onPageChange }) {
     }
 
     const targetId = product?.id || product?._id;
+
+    if (editingReviewId) {
+      setIsUpdatingReview(true);
+      try {
+        const res = await dispatch(updateReview(targetId, editingReviewId, ratingInput, commentInput));
+        if (res && res.success) {
+          if (res.reviews) {
+            setApiProduct(prev => prev ? { ...prev, reviews: res.reviews } : prev);
+          }
+          setReviewMessage(res.message || 'Review updated successfully!');
+          handleCancelEdit();
+          setTimeout(() => setReviewMessage(''), 6000);
+        } else {
+          alert(res?.message || 'Failed to update review.');
+        }
+      } catch (err) {
+        console.error('Update review error:', err);
+        alert('An error occurred while updating the review.');
+      } finally {
+        setIsUpdatingReview(false);
+      }
+      return;
+    }
+
     const res = await dispatch(addReview(targetId, ratingInput, commentInput));
     if (res && res.success) {
+      if (res.reviews) {
+        setApiProduct(prev => prev ? { ...prev, reviews: res.reviews } : prev);
+      }
       setReviewMessage(res.message || 'Review submitted successfully!');
       setCommentInput('');
       setRatingInput(0);
@@ -724,41 +863,183 @@ export default function ProductDetail({ params, onPageChange }) {
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-12">
         {/* Left: View Reviews */}
         <div className="lg:col-span-7 space-y-6">
-          <h3 className="text-lg font-bold font-serif uppercase tracking-widest text-luxury-text">Client Reviews</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold font-serif uppercase tracking-widest text-luxury-text">Client Reviews</h3>
+            {approvedReviews.length > 0 && (
+              <span className="text-xs text-gray-500 font-medium">
+                {approvedReviews.length} {approvedReviews.length === 1 ? 'Review' : 'Reviews'}
+              </span>
+            )}
+          </div>
           
           {approvedReviews.length === 0 ? (
             <p className="text-gray-500 text-xs italic">No reviews found for this timepiece yet.</p>
           ) : (
             <div className="space-y-4">
-              {approvedReviews.map((rev) => (
-                <div key={rev.id} className="bg-white border border-luxury-text/10 p-5 rounded shadow-sm">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <p className="text-gray-900 text-xs font-bold" style={{ color: '#111111' }}>{rev.userName}</p>
-                      {/* Star icons */}
-                      <div className="flex text-luxury-gold-dark">
-                        {[...Array(5)].map((_, i) => (
-                          <Star 
-                            key={i} 
-                            size={10} 
-                            fill={i < rev.rating ? "var(--color-luxury-gold-dark)" : "none"} 
-                            className="stroke-1"
-                          />
-                        ))}
+              {approvedReviews.map((rev) => {
+                const revId = rev.id || rev._id;
+                const canManage = isMyReview(rev);
+                const isEditing = editingReviewId === revId;
+
+                return (
+                  <div 
+                    key={revId} 
+                    className={`bg-white border p-5 rounded shadow-sm transition-all duration-200 ${
+                      isEditing ? 'border-luxury-gold-dark ring-1 ring-luxury-gold-dark/40 shadow-md' : 'border-luxury-text/10'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-gray-900 text-xs font-bold" style={{ color: '#111111' }}>{rev.userName}</p>
+                          {canManage && (
+                            <span className="text-[9px] uppercase tracking-wider bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-semibold border border-gray-200">
+                              You
+                            </span>
+                          )}
+                        </div>
+                        {/* Star icons */}
+                        <div className="flex text-luxury-gold-dark">
+                          {[...Array(5)].map((_, i) => (
+                            <Star 
+                              key={i} 
+                              size={10} 
+                              fill={i < rev.rating ? "var(--color-luxury-gold-dark)" : "none"} 
+                              className="stroke-1"
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-gray-500 font-medium">{rev.date}</span>
+                        {canManage && (
+                          <div className="flex items-center gap-1.5 border-l border-gray-200 pl-3">
+                            <button
+                              type="button"
+                              onClick={() => handleStartEdit(rev)}
+                              className="text-gray-500 hover:text-luxury-text transition-colors p-1 rounded hover:bg-gray-100 cursor-pointer"
+                              title="Edit your review"
+                            >
+                              <Edit2 size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteReview(revId)}
+                              disabled={deletingReviewId === revId}
+                              className="text-red-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50 cursor-pointer disabled:opacity-50"
+                              title="Delete your review"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <span className="text-[10px] text-gray-500 font-medium">{rev.date}</span>
+
+                    {isEditing ? (
+                      /* Inline Edit Form in Review Card */
+                      <form onSubmit={(e) => handleSaveInlineEdit(e, revId)} className="mt-4 pt-3 border-t border-gray-100 space-y-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] text-gray-600 font-bold uppercase tracking-widest block">
+                              Edit Star Rating
+                            </label>
+                            <span className="text-[10px] text-luxury-gold-dark font-bold tracking-wider uppercase">
+                              {editHoverRating || editRating} / 5 Stars
+                            </span>
+                          </div>
+                          <div 
+                            className="flex space-x-2 py-0.5"
+                            onMouseLeave={() => setEditHoverRating(0)}
+                          >
+                            {[1, 2, 3, 4, 5].map((star) => {
+                              const activeScore = editHoverRating || editRating;
+                              const isFilled = star <= activeScore;
+                              return (
+                                <button
+                                  key={star}
+                                  type="button"
+                                  onClick={() => setEditRating(star)}
+                                  onMouseEnter={() => setEditHoverRating(star)}
+                                  className="text-luxury-gold-dark focus:outline-none hover:scale-125 transition-transform duration-150 cursor-pointer p-0.5"
+                                >
+                                  <Star 
+                                    size={18} 
+                                    fill={isFilled ? "var(--color-luxury-gold-dark, #b8860b)" : "none"} 
+                                    stroke={isFilled ? "var(--color-luxury-gold-dark, #b8860b)" : "#9ca3af"} 
+                                  />
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-gray-600 font-bold uppercase tracking-widest block">
+                            Edit Review Comment
+                          </label>
+                          <textarea
+                            rows="3"
+                            value={editComment}
+                            onChange={(e) => setEditComment(e.target.value)}
+                            className="w-full bg-luxury-bg border border-luxury-text/15 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-luxury-gold-dark"
+                            required
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="submit"
+                            disabled={isUpdatingReview}
+                            className="px-4 py-2 font-bold text-xs tracking-wider uppercase transition cursor-pointer shadow-sm text-white disabled:opacity-50"
+                            style={{ background: '#111111' }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#047857'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#111111'}
+                          >
+                            {isUpdatingReview ? 'Saving...' : 'Save Changes'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelEdit}
+                            className="px-4 py-2 bg-transparent border border-gray-300 text-gray-700 font-semibold text-xs tracking-wider uppercase hover:bg-gray-50 transition cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <p className="text-gray-600 text-xs mt-3 leading-relaxed font-normal">{rev.comment}</p>
+                    )}
                   </div>
-                  <p className="text-gray-600 text-xs mt-3 leading-relaxed font-normal">{rev.comment}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Right: Write Review Form */}
-        <div className="lg:col-span-5 bg-white border border-luxury-text/10 p-6 rounded-md space-y-4 h-fit shadow-sm">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-luxury-text">Write a Review</h3>
+        {/* Right: Write / Edit Review Form */}
+        <div ref={reviewFormRef} className="lg:col-span-5 bg-white border border-luxury-text/10 p-6 rounded-md space-y-4 h-fit shadow-sm">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-luxury-text">
+              {editingReviewId ? 'Edit Your Review' : 'Write a Review'}
+            </h3>
+            {editingReviewId && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="text-[10px] uppercase font-bold text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <X size={12} /> Cancel Edit
+              </button>
+            )}
+          </div>
+          
+          {editingReviewId && (
+            <div className="p-2.5 bg-luxury-gold-dark/10 border border-luxury-gold-dark/30 rounded text-luxury-gold-dark text-[11px] font-medium flex items-center justify-between">
+              <span>Editing your existing review. Update your score and comment below.</span>
+            </div>
+          )}
           
           {reviewMessage && (
             <div className="p-3 bg-luxury-gold-dark/10 border border-luxury-gold-dark/30 rounded text-luxury-gold-dark text-xs font-medium">
@@ -796,7 +1077,10 @@ export default function ProductDetail({ params, onPageChange }) {
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setRatingInput(star)}
+                        onClick={() => {
+                          setRatingInput(star);
+                          if (editingReviewId) setEditRating(star);
+                        }}
                         onMouseEnter={() => setHoverRating(star)}
                         className="text-luxury-gold-dark focus:outline-none hover:scale-125 transition-transform duration-150 cursor-pointer p-0.5"
                         title={`${star} Star${star > 1 ? 's' : ''}`}
@@ -819,22 +1103,37 @@ export default function ProductDetail({ params, onPageChange }) {
                 <textarea
                   rows="4"
                   value={commentInput}
-                  onChange={(e) => setCommentInput(e.target.value)}
+                  onChange={(e) => {
+                    setCommentInput(e.target.value);
+                    if (editingReviewId) setEditComment(e.target.value);
+                  }}
                   placeholder="Share your experience wearing this luxury timepiece..."
                   className="w-full bg-luxury-bg border border-luxury-text/10 rounded text-luxury-text text-xs p-3 focus:outline-none focus:border-luxury-gold-dark"
                   required
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-3 font-bold text-xs tracking-widest uppercase transition cursor-pointer shadow-sm"
-                style={{ background: '#111111', color: '#ffffff' }}
-                onMouseEnter={e => e.currentTarget.style.background = '#047857'}
-                onMouseLeave={e => e.currentTarget.style.background = '#111111'}
-              >
-                Submit Review
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="submit"
+                  disabled={isUpdatingReview}
+                  className="flex-1 py-3 font-bold text-xs tracking-widest uppercase transition cursor-pointer shadow-sm text-white disabled:opacity-50"
+                  style={{ background: '#111111' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#047857'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#111111'}
+                >
+                  {isUpdatingReview ? 'Saving...' : editingReviewId ? 'Update Review' : 'Submit Review'}
+                </button>
+                {editingReviewId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="px-4 py-3 bg-transparent border border-gray-300 text-gray-700 font-semibold text-xs tracking-widest uppercase hover:bg-gray-50 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
             </form>
           ) : (
             <div className="text-center py-4 space-y-3">

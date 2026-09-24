@@ -1429,7 +1429,7 @@ export const addReview = (productId, rating, comment) => async (dispatch) => {
     const data = await res.json();
     if (data.success) {
       dispatch(fetchProducts());
-      return { success: true, message: data.message };
+      return { success: true, message: data.message, reviews: data.reviews };
     } else {
       return { success: false, message: data.message };
     }
@@ -1437,6 +1437,28 @@ export const addReview = (productId, rating, comment) => async (dispatch) => {
     return { success: false, message: 'Failed to post review.' };
   }
 };
+
+export const updateReview = (productId, reviewId, rating, comment) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/products/${productId}/reviews/${reviewId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ rating, comment })
+    });
+    const data = await res.json();
+    if (data.success) {
+      dispatch(fetchProducts());
+      return { success: true, message: data.message, reviews: data.reviews };
+    } else {
+      return { success: false, message: data.message || 'Failed to update review.' };
+    }
+  } catch (error) {
+    console.error('Failed to update review:', error);
+    return { success: false, message: 'Failed to update review.' };
+  }
+};
+
+export const editReview = updateReview;
 
 export const moderateReview = (productId, reviewId, status) => async (dispatch) => {
   try {
@@ -1464,7 +1486,7 @@ export const deleteReview = (productId, reviewId) => async (dispatch) => {
     const data = await res.json();
     if (data.success) {
       dispatch(fetchProducts());
-      return { success: true, message: data.message };
+      return { success: true, message: data.message, reviews: data.reviews };
     }
     return { success: false, message: data.message || 'Failed to delete review.' };
   } catch (error) {

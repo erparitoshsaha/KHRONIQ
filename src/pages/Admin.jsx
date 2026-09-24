@@ -7329,39 +7329,58 @@ const handleEditImageUpload = async (e) => {
             <p className="text-gray-400 text-xs italic p-4 text-center border border-dashed border-white/10 rounded">No published reviews found.</p>
           ) : (
             <div className="space-y-4">
-              {activeReviews.map((item) => (
-                <div key={item.review.id} className="bg-luxury-gray border border-white/5 p-5 rounded flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-white text-xs font-semibold">{item.review.userName}</span>
-                      <span className="text-[10px] text-gray-500">on {item.productName}</span>
+              {activeReviews.map((item, index) => {
+                const ratingVal = Number(item.review?.rating || 0);
+                const reviewKey = item.reviewId || item.review?._id || item.review?.id || index;
+
+                return (
+                  <div key={reviewKey} className="bg-luxury-gray border border-white/5 p-5 rounded flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-gray-900 text-xs font-bold" style={{ color: '#111111' }}>{item.review.userName}</span>
+                        <span className="text-[10px] text-gray-500 font-medium">on {item.productName}</span>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <div className="flex text-luxury-gold-dark">
+                          {[...Array(5)].map((_, i) => {
+                            const isFilled = i < ratingVal;
+                            return (
+                              <Star
+                                key={i}
+                                size={12}
+                                fill={isFilled ? "var(--color-luxury-gold-dark, #b8860b)" : "none"}
+                                stroke={isFilled ? "var(--color-luxury-gold-dark, #b8860b)" : "#9ca3af"}
+                                className="stroke-1"
+                              />
+                            );
+                          })}
+                        </div>
+                        <span className="text-[11px] font-bold text-luxury-gold-dark">
+                          {ratingVal} / 5 Stars
+                        </span>
+                        {item.review?.date && (
+                          <span className="text-[10px] text-gray-400 font-medium">
+                            • {item.review.date}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-gray-700 text-xs font-normal leading-relaxed max-w-xl">"{item.review.comment}"</p>
                     </div>
 
-                    <div className="flex text-white">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          size={10}
-                          fill={i < item.review.rating ? "#ffffff" : "none"}
-                          className="stroke-1"
-                        />
-                      ))}
+                    <div className="flex space-x-2 flex-shrink-0">
+                      <button
+                        onClick={() => handleDeleteReview(item.productId, item.reviewId || item.review._id || item.review.id)}
+                        className="px-3 py-1.5 bg-transparent border border-gray-200 hover:border-red-500 hover:text-red-600 text-[10px] font-bold uppercase tracking-wider rounded flex items-center space-x-1.5 transition cursor-pointer"
+                      >
+                        <Trash2 size={12} />
+                        <span>Remove Review</span>
+                      </button>
                     </div>
-
-                    <p className="text-gray-300 text-xs font-light leading-relaxed max-w-xl">"{item.review.comment}"</p>
                   </div>
-
-                  <div className="flex space-x-2 flex-shrink-0">
-                    <button
-                      onClick={() => handleDeleteReview(item.productId, item.reviewId || item.review._id || item.review.id)}
-                      className="px-3 py-1.5 bg-transparent border border-white/10 hover:border-luxury-red hover:text-luxury-red text-[10px] font-bold uppercase tracking-wider rounded flex items-center space-x-1.5 transition cursor-pointer"
-                    >
-                      <Trash2 size={12} />
-                      <span>Remove Review</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

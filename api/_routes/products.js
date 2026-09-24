@@ -377,6 +377,30 @@ router.delete('/:id', protect, requirePermission('products'), async (req, res) =
 // @route   POST /api/products/:id/reviews
 // @desc    Create a review for a product
 // @access  Private
+const isReviewAuthorOrModerator = (reqUser, review) => {
+  if (!reqUser) return false;
+  if (reqUser.role === 'super_admin') return true;
+  if (reqUser.role === 'admin' && Array.isArray(reqUser.permissions) && reqUser.permissions.includes('reviews')) return true;
+
+  const reqUserId = String(reqUser._id || reqUser.id || '');
+  const revUserId = review.user ? String(review.user) : '';
+  if (reqUserId && revUserId && reqUserId === revUserId) return true;
+
+  const reqEmail = (reqUser.email || '').toLowerCase().trim();
+  const revEmail = (review.userEmail || '').toLowerCase().trim();
+  if (reqEmail && revEmail && reqEmail === revEmail) return true;
+
+  const reqName = (reqUser.name || '').toLowerCase().trim();
+  const revName = (review.userName || '').toLowerCase().trim();
+  if (reqEmail && revName && reqEmail === revName) return true;
+  if (reqName && revName && reqName === revName) return true;
+
+  return false;
+};
+
+// @route   POST /api/products/:id/reviews
+// @desc    Create a review for a product
+// @access  Private
 router.post('/:id/reviews', protect, async (req, res) => {
   const { rating, comment } = req.body;
 
@@ -390,6 +414,8 @@ router.post('/:id/reviews', protect, async (req, res) => {
     const status = 'approved';
 
     const review = {
+      user: req.user._id || req.user.id,
+      userEmail: req.user.email || '',
       userName: req.user.name || 'Anonymous User',
       rating: Number(rating),
       comment,
@@ -411,10 +437,10 @@ router.post('/:id/reviews', protect, async (req, res) => {
 });
 
 // @route   PUT /api/products/:id/reviews/:reviewId
-// @desc    Moderate (approve/reject/hide) a review
-// @access  Private/Admin
-router.put('/:id/reviews/:reviewId', protect, requirePermission('reviews'), async (req, res) => {
-  const { status } = req.body; // 'approved', 'rejected', or 'hidden'
+// @desc    Edit a review (by author) or moderate status (by admin)
+// @access  Private
+router.put('/:id/reviews/:reviewId', protect, async (req, res) => {
+  const { status, rating, comment } = req.body;
 
   try {
     const product = await Product.findById(req.params.id);
@@ -429,20 +455,56 @@ router.put('/:id/reviews/:reviewId', protect, requirePermission('reviews'), asyn
       return res.status(404).json({ success: false, message: 'Review not found' });
     }
 
-    review.status = status;
+    // Moderate review status (admin / super_admin with 'reviews' permission)
+    if (status !== undefined) {
+      const isModerator = req.user.role === 'super_admin' || (req.user.role === 'admin' && Array.isArray(req.user.permissions) && req.user.permissions.includes('reviews'));
+      if (!isModerator) {
+        return res.status(403).json({ success: false, message: 'Access denied: reviews moderation permission required' });
+      }
+      review.status = status;
+    }
+
+    // Edit review rating and comment (author or admin)
+    if (rating !== undefined || comment !== undefined) {
+      if (!isReviewAuthorOrModerator(req.user, review)) {
+        return res.status(403).json({ success: false, message: 'Not authorized to edit this review' });
+      }
+
+      if (rating !== undefined) {
+        const numRating = Number(rating);
+        if (isNaN(numRating) || numRating < 1 || numRating > 5) {
+          return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+        }
+        review.rating = numRating;
+      }
+
+      if (comment !== undefined) {
+        if (!comment.trim()) {
+          return res.status(400).json({ success: false, message: 'Review comment cannot be empty' });
+        }
+        review.comment = comment.trim();
+      }
+
+      review.date = new Date().toISOString().split('T')[0];
+    }
+
     await product.save();
 
-    res.json({ success: true, message: `Review status updated to ${status}`, reviews: product.reviews });
+    res.json({
+      success: true,
+      message: 'Review updated successfully',
+      reviews: product.reviews
+    });
   } catch (error) {
-    console.error('Moderate review error:', error);
+    console.error('Moderate/update review error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
 // @route   DELETE /api/products/:id/reviews/:reviewId
-// @desc    Permanently delete a customer review from a product
-// @access  Private/Admin
-router.delete('/:id/reviews/:reviewId', protect, requirePermission('reviews'), async (req, res) => {
+// @desc    Permanently delete a customer review from a product (by author or admin)
+// @access  Private
+router.delete('/:id/reviews/:reviewId', protect, async (req, res) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.status(404).json({ success: false, message: 'Product not found' });
@@ -456,6 +518,10 @@ router.delete('/:id/reviews/:reviewId', protect, requirePermission('reviews'), a
     const review = product.reviews.id(req.params.reviewId);
     if (!review) {
       return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+
+    if (!isReviewAuthorOrModerator(req.user, review)) {
+      return res.status(403).json({ success: false, message: 'Not authorized to delete this review' });
     }
 
     product.reviews.pull({ _id: req.params.reviewId });
