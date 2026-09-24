@@ -192,7 +192,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                         { label: 'Contact', view: 'contact' },
                         { label: 'Client FAQ', view: 'faq' },
                         { label: 'Blogs & Editorial', view: 'blogs' },
-                        { label: 'Legal Policies', view: 'policies' }
+                        { label: 'Terms and Conditions', view: 'policies' }
                       ].map((sub) => (
                         <button
                           key={sub.view}
@@ -613,7 +613,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                     { label: 'Contact', view: 'contact' },
                     { label: 'Client FAQ', view: 'faq' },
                     { label: 'Blogs & Editorial', view: 'blogs' },
-                    { label: 'Legal Policies', view: 'policies' }
+                    { label: 'Terms and Conditions', view: 'policies' }
                   ].map((sub) => (
                     <button
                       key={sub.view}

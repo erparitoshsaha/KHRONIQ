@@ -2064,7 +2064,7 @@ export default function Static({ params, onPageChange }) {
           { key: 'community', label: 'Community Guidelines' },
           { key: 'faq', label: 'Client FAQ' },
           { key: 'blogs', label: 'Blogs & Editorial' },
-          { key: 'policies', label: 'Legal Policies' },
+          { key: 'policies', label: 'Terms and Conditions' },
           { key: 'disclaimer', label: 'Disclaimer' },
           { key: 'cookie', label: 'Cookie Policy' }
         ].map((tab) => (
@@ -2760,7 +2760,7 @@ export default function Static({ params, onPageChange }) {
         {/* LEGAL POLICIES TAB */}
         {activeTab === 'policies' && (
           <div className="space-y-6 text-xs text-luxury-muted leading-relaxed font-light">
-            <h3 className="text-lg font-bold text-luxury-text font-serif uppercase tracking-wide">Terms, Privacy & Policies</h3>
+            <h3 className="text-lg font-bold text-luxury-text font-serif uppercase tracking-wide">Terms and Conditions</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pt-4">
               {/* Sticky Sidebar Table of Contents */}

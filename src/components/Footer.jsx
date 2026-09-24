@@ -400,9 +400,9 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
           {/* Right – legal links */}
           <div style={{ display: 'flex', gap: '1.5rem' }}>
             {[
-              { label: 'Terms of Use', page: 'static', args: { view: 'policies' } },
-              { label: 'Privacy Policy', page: 'static', args: { view: 'policies' } },
-              { label: 'Cookie Preferences', page: 'static', args: { view: 'policies' } },
+              { label: 'Terms and Conditions', page: 'static', args: { view: 'policies' } },
+              { label: 'Privacy Policy', page: 'static', args: { view: 'privacy' } },
+              { label: 'Cookie Preferences', page: 'static', args: { view: 'cookie' } },
             ].map(({ label, page, args }) => (
               <button
                 key={label}
