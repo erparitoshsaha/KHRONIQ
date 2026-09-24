@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { createRazorpayOrder, verifyRazorpayPayment, validateCoupon, selectCurrentCurrency, formatPrice, getDiscountedPrice, getProductMrp, getSellingPrice, updateUserProfile } from '../store/slices/watchSlice';
+import { createRazorpayOrder, verifyRazorpayPayment, validateCoupon, selectCurrentCurrency, formatPrice, getDiscountedPrice, getProductMrp, getSellingPrice, updateUserProfile, removeFromCart } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 
@@ -159,6 +159,10 @@ export default function Checkout({ params, onPageChange }) {
 
   const handleShippingSubmit = (e) => {
     if (e) e.preventDefault();
+    if (cartItemsWithDetails.length === 0) {
+      alert('Your cart is empty.');
+      return;
+    }
     if (!shippingForm.fullName?.trim() || !shippingForm.streetAddress?.trim() || !shippingForm.city?.trim() || !shippingForm.zipCode?.trim() || !shippingForm.phone?.trim()) {
       alert('Please fill out all required shipping details.');
       return;
@@ -228,6 +232,10 @@ export default function Checkout({ params, onPageChange }) {
   };
 
   const handleRazorpayPayment = async () => {
+    if (cartItemsWithDetails.length === 0) {
+      alert('Your cart is empty.');
+      return;
+    }
     setProcessingPayment(true);
 
     const items = cartItemsWithDetails.map(item => ({
@@ -1305,15 +1313,16 @@ export default function Checkout({ params, onPageChange }) {
         </div>
 
         {/* Items list */}
-        <div className="space-y-3.5 max-h-72 overflow-y-auto pr-1">
+        <div className="space-y-3.5 max-h-72 overflow-y-auto pr-1.5">
           {cartItems.map((item) => {
             const itemPrice = item.price !== undefined ? item.price : getSellingPrice(item.product);
+            const itemKey = `${item.productId}-${item.customization ? JSON.stringify(item.customization) : 'std'}`;
             return (
               <div
-                key={item.productId}
+                key={itemKey}
                 className="flex items-center justify-between gap-3 pb-3 border-b border-neutral-100 last:border-b-0 last:pb-0"
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div className="w-14 h-14 bg-neutral-50 rounded border border-neutral-200 flex-shrink-0 flex items-center justify-center overflow-hidden p-1">
                     <img
                       src={item.product.image}
@@ -1322,7 +1331,7 @@ export default function Checkout({ params, onPageChange }) {
                       className="w-full h-full object-contain"
                     />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <h4 className="text-xs font-bold text-neutral-900 uppercase tracking-wide truncate">
                       {item.product.name}
                     </h4>
@@ -1331,9 +1340,20 @@ export default function Checkout({ params, onPageChange }) {
                     </p>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-neutral-900 flex-shrink-0">
-                  {formatPrice(itemPrice * item.quantity, currentCurrency)}
-                </span>
+                <div className="flex items-center gap-2.5 flex-shrink-0">
+                  <span className="text-xs font-bold text-neutral-900">
+                    {formatPrice(itemPrice * item.quantity, currentCurrency)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => dispatch(removeFromCart(item.productId, item.customization))}
+                    className="w-6 h-6 flex items-center justify-center rounded text-neutral-500 hover:text-black hover:bg-neutral-100 transition cursor-pointer flex-shrink-0"
+                    title={`Remove ${item.product.name} from order`}
+                    aria-label={`Remove ${item.product.name} from order`}
+                  >
+                    <X size={14} className="stroke-[2.2]" />
+                  </button>
+                </div>
               </div>
             );
           })}
