@@ -8,6 +8,7 @@ import confetti from 'canvas-confetti';
 import { CheckCircle2, CreditCard, Landmark, ArrowRight, ArrowLeft, ShieldCheck, Gift, Check, Tag, X, Loader2, Info, Lock, Truck, RotateCcw, Headphones } from 'lucide-react';
 import BackButton from '../components/BackButton';
 import CountrySelect from '../components/CountrySelect';
+import { INDIAN_STATES } from '../constants/countries';
 
 export default function Checkout({ params, onPageChange }) {
   const dispatch = useDispatch();
@@ -44,6 +45,7 @@ export default function Checkout({ params, onPageChange }) {
       gstNumber: saved?.gstNumber || ''
     };
   });
+  const isIndia = (shippingForm.country || '').trim().toLowerCase() === 'india';
   const [saveAddress, setSaveAddress] = useState(true);
   const [gstInput, setGstInput] = useState('');
   const [gstError, setGstError] = useState('');
@@ -164,7 +166,7 @@ export default function Checkout({ params, onPageChange }) {
       alert('Your cart is empty.');
       return;
     }
-    if (!shippingForm.fullName?.trim() || !shippingForm.streetAddress?.trim() || !shippingForm.city?.trim() || !shippingForm.zipCode?.trim() || !shippingForm.phone?.trim()) {
+    if (!shippingForm.fullName?.trim() || !shippingForm.streetAddress?.trim() || !shippingForm.city?.trim() || !shippingForm.zipCode?.trim() || !shippingForm.phone?.trim() || !shippingForm.state?.trim()) {
       alert('Please fill out all required shipping details.');
       return;
     }
@@ -805,7 +807,21 @@ export default function Checkout({ params, onPageChange }) {
                     id="shipping-country"
                     name="country"
                     value={shippingForm.country}
-                    onChange={(country) => setShippingForm({ ...shippingForm, country })}
+                    onChange={(country) => {
+                      const isNewIndia = (country || '').trim().toLowerCase() === 'india';
+                      const wasIndia = (shippingForm.country || '').trim().toLowerCase() === 'india';
+                      let newState = shippingForm.state;
+                      if (isNewIndia && !wasIndia) {
+                        if (!INDIAN_STATES.includes(shippingForm.state)) {
+                          newState = 'Uttar Pradesh';
+                        }
+                      } else if (!isNewIndia && wasIndia) {
+                        if (INDIAN_STATES.includes(shippingForm.state)) {
+                          newState = '';
+                        }
+                      }
+                      setShippingForm(prev => ({ ...prev, country, state: newState }));
+                    }}
                     className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 focus:outline-none focus:border-black transition shipping-input"
                   />
                 </div>
@@ -840,17 +856,18 @@ export default function Checkout({ params, onPageChange }) {
                   />
                 </div>
 
-                {/* Pincode */}
+                {/* Pincode / Postal Code */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
-                    PINCODE
+                  <label htmlFor="shipping-zip" className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
+                    {isIndia ? 'PINCODE' : 'POSTAL / ZIP CODE'}
                   </label>
                   <input
+                    id="shipping-zip"
                     type="text"
                     required
                     value={shippingForm.zipCode}
                     onChange={(e) => setShippingForm({ ...shippingForm, zipCode: e.target.value })}
-                    placeholder="6 digits [0-9] PIN code"
+                    placeholder={isIndia ? '6 digits [0-9] PIN code' : 'Enter postal or ZIP code'}
                     className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
                   />
                 </div>
@@ -915,38 +932,33 @@ export default function Checkout({ params, onPageChange }) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
-                      STATE
+                    <label htmlFor="shipping-state" className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
+                      {isIndia ? 'STATE' : 'STATE / PROVINCE / REGION'}
                     </label>
-                    <select
-                      value={shippingForm.state}
-                      onChange={(e) => setShippingForm({ ...shippingForm, state: e.target.value })}
-                      className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 focus:outline-none focus:border-black transition cursor-pointer shipping-input"
-                    >
-                      <option value="Uttar Pradesh">Uttar Pradesh</option>
-                      <option value="Maharashtra">Maharashtra</option>
-                      <option value="Delhi">Delhi</option>
-                      <option value="Karnataka">Karnataka</option>
-                      <option value="Tamil Nadu">Tamil Nadu</option>
-                      <option value="Gujarat">Gujarat</option>
-                      <option value="West Bengal">West Bengal</option>
-                      <option value="Telangana">Telangana</option>
-                      <option value="Rajasthan">Rajasthan</option>
-                      <option value="Kerala">Kerala</option>
-                      <option value="Andhra Pradesh">Andhra Pradesh</option>
-                      <option value="Madhya Pradesh">Madhya Pradesh</option>
-                      <option value="Punjab">Punjab</option>
-                      <option value="Haryana">Haryana</option>
-                      <option value="Bihar">Bihar</option>
-                      <option value="Odisha">Odisha</option>
-                      <option value="Assam">Assam</option>
-                      <option value="Goa">Goa</option>
-                      <option value="Jharkhand">Jharkhand</option>
-                      <option value="Uttarakhand">Uttarakhand</option>
-                      <option value="Himachal Pradesh">Himachal Pradesh</option>
-                      <option value="Jammu & Kashmir">Jammu & Kashmir</option>
-                      <option value="Chandigarh">Chandigarh</option>
-                    </select>
+                    {isIndia ? (
+                      <select
+                        id="shipping-state"
+                        required
+                        value={shippingForm.state}
+                        onChange={(e) => setShippingForm({ ...shippingForm, state: e.target.value })}
+                        className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 focus:outline-none focus:border-black transition cursor-pointer shipping-input"
+                      >
+                        <option value="">Select State / UT</option>
+                        {INDIAN_STATES.map((st) => (
+                          <option key={st} value={st}>{st}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        id="shipping-state"
+                        type="text"
+                        required
+                        value={shippingForm.state}
+                        onChange={(e) => setShippingForm({ ...shippingForm, state: e.target.value })}
+                        placeholder="Enter state, province or region"
+                        className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
+                      />
+                    )}
                   </div>
                 </div>
 
