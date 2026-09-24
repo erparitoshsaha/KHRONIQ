@@ -7,6 +7,7 @@ import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 import confetti from 'canvas-confetti';
 import { CheckCircle2, CreditCard, Landmark, ArrowRight, ArrowLeft, ShieldCheck, Gift, Check, Tag, X, Loader2, Info, Lock, Truck, RotateCcw, Headphones } from 'lucide-react';
 import BackButton from '../components/BackButton';
+import CountrySelect from '../components/CountrySelect';
 
 export default function Checkout({ params, onPageChange }) {
   const dispatch = useDispatch();
@@ -797,22 +798,16 @@ export default function Checkout({ params, onPageChange }) {
               <form id="shipping-form" onSubmit={handleShippingSubmit} className="space-y-4">
                 {/* Country / Region */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
+                  <label htmlFor="shipping-country" className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
                     COUNTRY / REGION
                   </label>
-                  <select
+                  <CountrySelect
+                    id="shipping-country"
+                    name="country"
                     value={shippingForm.country}
-                    onChange={(e) => setShippingForm({ ...shippingForm, country: e.target.value })}
-                    className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 focus:outline-none focus:border-black transition cursor-pointer shipping-input"
-                  >
-                    <option value="India">India</option>
-                    <option value="United Kingdom">United Kingdom</option>
-                    <option value="Switzerland">Switzerland</option>
-                    <option value="Japan">Japan</option>
-                    <option value="United Arab Emirates">United Arab Emirates</option>
-                    <option value="Germany">Germany</option>
-                    <option value="Singapore">Singapore</option>
-                  </select>
+                    onChange={(country) => setShippingForm({ ...shippingForm, country })}
+                    className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 focus:outline-none focus:border-black transition shipping-input"
+                  />
                 </div>
 
                 {/* Full Name (First and Last Name) */}
