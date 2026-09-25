@@ -668,7 +668,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
                             </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-gray-400 mt-0.5">
+                        <p className="text-[10px] text-white mt-0.5">
                           Latest watch arrivals, collections & announcements
                         </p>
                       </div>
@@ -700,8 +700,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
                         type="button"
                         onClick={() => setNotificationTab('all')}
                         className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition ${notificationTab === 'all'
-                            ? 'bg-white text-black'
-                            : 'text-gray-400 hover:text-white bg-neutral-800/60'
+                          ? 'bg-white text-black'
+                          : 'text-white hover:text-white bg-neutral-800/60'
                           }`}
                       >
                         All ({brandUpdates.length + latestWatches.length})
@@ -710,8 +710,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
                         type="button"
                         onClick={() => setNotificationTab('watches')}
                         className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition flex items-center gap-1 ${notificationTab === 'watches'
-                            ? 'bg-luxury-gold text-black'
-                            : 'text-gray-400 hover:text-white bg-neutral-800/60'
+                          ? 'bg-luxury-gold text-black'
+                          : 'text-white hover:text-white bg-neutral-800/60'
                           }`}
                       >
                         <Sparkles size={11} />
@@ -721,8 +721,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
                         type="button"
                         onClick={() => setNotificationTab('updates')}
                         className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition ${notificationTab === 'updates'
-                            ? 'bg-white text-black'
-                            : 'text-gray-400 hover:text-white bg-neutral-800/60'
+                          ? 'bg-white text-black'
+                          : 'text-white hover:text-white bg-neutral-800/60'
                           }`}
                       >
                         Announcements ({brandUpdates.length})
@@ -856,8 +856,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
                                     <div className="flex items-center gap-2">
                                       <span
                                         className={`w-2 h-2 rounded-full shrink-0 ${isUnread
-                                            ? 'bg-emerald-500 shadow-[0_0_6px_#10b981] animate-pulse'
-                                            : 'bg-gray-300'
+                                          ? 'bg-emerald-500 shadow-[0_0_6px_#10b981] animate-pulse'
+                                          : 'bg-gray-300'
                                           }`}
                                       />
                                       <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider line-clamp-1">
