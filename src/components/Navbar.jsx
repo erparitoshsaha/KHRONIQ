@@ -58,9 +58,17 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
   // --- BRAND UPDATES & NOTIFICATIONS STATE ---
   const [brandUpdates, setBrandUpdates] = useState([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationTab, setNotificationTab] = useState('all'); // 'all' | 'watches' | 'updates'
   const [readUpdateIds, setReadUpdateIds] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('khroniq_read_update_ids') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [readWatchIds, setReadWatchIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('khroniq_read_watch_ids') || '[]');
     } catch {
       return [];
     }
@@ -100,16 +108,29 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
     };
   }, [notificationsOpen]);
 
+  // Latest added watches for notifications
+  const latestWatches = useMemo(() => {
+    if (!products || !Array.isArray(products) || products.length === 0) return [];
+    return [...products]
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 5);
+  }, [products]);
+
   const unreadCount = useMemo(() => {
-    return brandUpdates.filter(u => !readUpdateIds.includes(u._id)).length;
-  }, [brandUpdates, readUpdateIds]);
+    const unreadUpdates = brandUpdates.filter(u => !readUpdateIds.includes(u._id)).length;
+    const unreadWatches = latestWatches.filter(w => !readWatchIds.includes(w._id || w.id)).length;
+    return unreadUpdates + unreadWatches;
+  }, [brandUpdates, readUpdateIds, latestWatches, readWatchIds]);
 
   const handleMarkAllRead = () => {
-    const allIds = brandUpdates.map(u => u._id);
-    setReadUpdateIds(allIds);
+    const allUpdateIds = brandUpdates.map(u => u._id);
+    const allWatchIds = latestWatches.map(w => w._id || w.id);
+    setReadUpdateIds(allUpdateIds);
+    setReadWatchIds(allWatchIds);
     try {
-      localStorage.setItem('khroniq_read_update_ids', JSON.stringify(allIds));
-    } catch (e) {}
+      localStorage.setItem('khroniq_read_update_ids', JSON.stringify(allUpdateIds));
+      localStorage.setItem('khroniq_read_watch_ids', JSON.stringify(allWatchIds));
+    } catch (e) { }
   };
 
   const currencyMap = {
@@ -632,113 +653,257 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
 
               {/* Notification Popover Dropdown */}
               {notificationsOpen && (
-                <div className="fixed inset-x-4 top-20 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-96 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 text-left overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="fixed inset-x-4 top-20 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-[420px] bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 text-left overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                   {/* Header */}
-                  <div className="bg-neutral-900 text-white p-4 flex items-center justify-between border-b border-neutral-800">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold uppercase tracking-widest text-luxury-gold font-serif">
-                          Brand Updates
-                        </span>
-                        {unreadCount > 0 && (
-                          <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
-                            {unreadCount} new
+                  <div className="bg-neutral-900 text-white p-4 border-b border-neutral-800">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold uppercase tracking-widest text-luxury-gold font-serif">
+                            Notifications & Launches
                           </span>
-                        )}
+                          {unreadCount > 0 && (
+                            <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
+                              {unreadCount} new
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          Latest watch arrivals, collections & announcements
+                        </p>
                       </div>
-                      <p className="text-[10px] text-gray-400 mt-0.5">
-                        Official announcements & brand news
-                      </p>
-                    </div>
 
-                    <div className="flex items-center gap-2">
-                      {unreadCount > 0 && (
+                      <div className="flex items-center gap-2">
+                        {unreadCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleMarkAllRead}
+                            className="text-[10px] text-gray-300 hover:text-white uppercase font-bold tracking-wider underline cursor-pointer"
+                          >
+                            Mark read
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={handleMarkAllRead}
-                          className="text-[10px] text-gray-300 hover:text-white uppercase font-bold tracking-wider underline cursor-pointer"
+                          onClick={() => setNotificationsOpen(false)}
+                          className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition cursor-pointer"
+                          aria-label="Close notifications"
                         >
-                          Mark read
+                          <X size={16} />
                         </button>
-                      )}
+                      </div>
+                    </div>
+
+                    {/* Filter Tabs */}
+                    <div className="flex items-center space-x-1.5 mt-3 pt-2.5 border-t border-neutral-800/80">
                       <button
                         type="button"
-                        onClick={() => setNotificationsOpen(false)}
-                        className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition cursor-pointer"
-                        aria-label="Close notifications"
+                        onClick={() => setNotificationTab('all')}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition ${notificationTab === 'all'
+                            ? 'bg-white text-black'
+                            : 'text-gray-400 hover:text-white bg-neutral-800/60'
+                          }`}
                       >
-                        <X size={16} />
+                        All ({brandUpdates.length + latestWatches.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNotificationTab('watches')}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition flex items-center gap-1 ${notificationTab === 'watches'
+                            ? 'bg-luxury-gold text-black'
+                            : 'text-gray-400 hover:text-white bg-neutral-800/60'
+                          }`}
+                      >
+                        <Sparkles size={11} />
+                        <span>Latest Watches ({latestWatches.length})</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNotificationTab('updates')}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition ${notificationTab === 'updates'
+                            ? 'bg-white text-black'
+                            : 'text-gray-400 hover:text-white bg-neutral-800/60'
+                          }`}
+                      >
+                        Announcements ({brandUpdates.length})
                       </button>
                     </div>
                   </div>
 
-                  {/* Updates List */}
-                  <div className="max-h-[360px] overflow-y-auto divide-y divide-gray-100 bg-white">
-                    {brandUpdates.length === 0 ? (
+                  {/* Notifications Feed */}
+                  <div className="max-h-[380px] overflow-y-auto divide-y divide-gray-100 bg-white">
+                    {/* Empty State */}
+                    {brandUpdates.length === 0 && latestWatches.length === 0 ? (
                       <div className="py-12 px-6 text-center text-gray-400">
                         <Bell size={28} className="mx-auto text-gray-300 mb-2 stroke-1" />
-                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">No Updates Yet</p>
+                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">No Notifications Yet</p>
                         <p className="text-[11px] text-gray-400 mt-1">Check back later for new timepiece releases and announcements.</p>
                       </div>
                     ) : (
-                      brandUpdates.map((update) => {
-                        const isUnread = !readUpdateIds.includes(update._id);
-                        return (
-                          <div
-                            key={update._id}
-                            onClick={() => {
-                              if (isUnread) {
-                                const newIds = [...readUpdateIds, update._id];
-                                setReadUpdateIds(newIds);
-                                try {
-                                  localStorage.setItem('khroniq_read_update_ids', JSON.stringify(newIds));
-                                } catch (e) {}
-                              }
-                            }}
-                            className={`p-4 transition cursor-pointer hover:bg-gray-50/80 ${
-                              isUnread ? 'bg-emerald-50/30' : 'bg-white'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`w-2 h-2 rounded-full shrink-0 ${
-                                    isUnread
-                                      ? 'bg-emerald-500 shadow-[0_0_6px_#10b981] animate-pulse'
-                                      : 'bg-gray-300'
-                                  }`}
-                                />
-                                <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider line-clamp-1">
-                                  {update.title}
-                                </h4>
-                              </div>
-                              {update.createdAt && (
-                                <span className="text-[10px] text-gray-400 font-mono shrink-0 whitespace-nowrap">
-                                  {new Date(update.createdAt).toLocaleDateString('en-IN', {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric'
-                                  }).toUpperCase()}
+                      <>
+                        {/* 1. LATEST WATCHES & COLLECTIONS */}
+                        {(notificationTab === 'all' || notificationTab === 'watches') && latestWatches.length > 0 && (
+                          <div className="bg-amber-50/20">
+                            {notificationTab === 'all' && (
+                              <div className="px-4 py-2 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 flex items-center gap-1">
+                                  <Sparkles size={11} className="text-luxury-gold" />
+                                  Latest Collection Arrivals
                                 </span>
-                              )}
-                            </div>
-
-                            {update.detail && (
-                              <p className="text-xs text-gray-600 mt-1.5 leading-relaxed pl-4 line-clamp-3">
-                                {update.detail}
-                              </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setNotificationsOpen(false);
+                                    onPageChange('shop');
+                                  }}
+                                  className="text-[9px] font-bold text-luxury-gold hover:underline uppercase tracking-wider"
+                                >
+                                  View All &rarr;
+                                </button>
+                              </div>
                             )}
+
+                            {latestWatches.map((watch) => {
+                              const watchKey = watch._id || watch.id;
+                              const isUnread = !readWatchIds.includes(watchKey);
+                              return (
+                                <div
+                                  key={`watch-${watchKey}`}
+                                  onClick={() => {
+                                    if (isUnread) {
+                                      const newIds = [...readWatchIds, watchKey];
+                                      setReadWatchIds(newIds);
+                                      try {
+                                        localStorage.setItem('khroniq_read_watch_ids', JSON.stringify(newIds));
+                                      } catch (e) { }
+                                    }
+                                    setNotificationsOpen(false);
+                                    onPageChange('product-detail', { id: watchKey });
+                                  }}
+                                  className={`p-3.5 flex items-center gap-3 transition cursor-pointer hover:bg-gray-50 border-b border-gray-100/70 last:border-b-0 ${isUnread ? 'bg-amber-50/40' : 'bg-white'
+                                    }`}
+                                >
+                                  {/* Watch Thumbnail */}
+                                  <div className="relative shrink-0 w-13 h-13 rounded-lg overflow-hidden border border-gray-200 bg-neutral-100">
+                                    <img
+                                      src={watch.image}
+                                      alt={watch.name}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition"
+                                      onError={(e) => { e.currentTarget.src = '/assets/watch_placeholder.png'; }}
+                                    />
+                                    {isUnread && (
+                                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981] animate-pulse" />
+                                    )}
+                                  </div>
+
+                                  {/* Watch Details */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="text-[9px] font-extrabold tracking-wider uppercase text-luxury-gold-dark bg-luxury-gold/15 px-1.5 py-0.5 rounded">
+                                        {watch.badge || 'NEW ARRIVAL'}
+                                      </span>
+                                      <span className="text-[10px] text-gray-500 font-medium capitalize truncate">
+                                        {watch.category || 'Collection'}
+                                      </span>
+                                    </div>
+                                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide truncate mt-0.5">
+                                      {watch.name}
+                                    </h4>
+                                    <div className="flex items-center justify-between mt-1">
+                                      <span className="text-xs font-extrabold text-black font-serif">
+                                        {formatPrice(getDiscountedPrice(watch), currentCurrency)}
+                                      </span>
+                                      <span className="text-[10px] font-bold text-luxury-gold hover:text-black transition">
+                                        View Watch &rarr;
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                        );
-                      })
+                        )}
+
+                        {/* 2. BRAND ANNOUNCEMENTS */}
+                        {(notificationTab === 'all' || notificationTab === 'updates') && brandUpdates.length > 0 && (
+                          <div>
+                            {notificationTab === 'all' && (
+                              <div className="px-4 py-2 bg-gray-50/80 border-b border-gray-100">
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">
+                                  Brand Announcements
+                                </span>
+                              </div>
+                            )}
+
+                            {brandUpdates.map((update) => {
+                              const isUnread = !readUpdateIds.includes(update._id);
+                              return (
+                                <div
+                                  key={`update-${update._id}`}
+                                  onClick={() => {
+                                    if (isUnread) {
+                                      const newIds = [...readUpdateIds, update._id];
+                                      setReadUpdateIds(newIds);
+                                      try {
+                                        localStorage.setItem('khroniq_read_update_ids', JSON.stringify(newIds));
+                                      } catch (e) { }
+                                    }
+                                  }}
+                                  className={`p-4 transition cursor-pointer hover:bg-gray-50 ${isUnread ? 'bg-emerald-50/30' : 'bg-white'
+                                    }`}
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className={`w-2 h-2 rounded-full shrink-0 ${isUnread
+                                            ? 'bg-emerald-500 shadow-[0_0_6px_#10b981] animate-pulse'
+                                            : 'bg-gray-300'
+                                          }`}
+                                      />
+                                      <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider line-clamp-1">
+                                        {update.title}
+                                      </h4>
+                                    </div>
+                                    {update.createdAt && (
+                                      <span className="text-[10px] text-gray-400 font-mono shrink-0 whitespace-nowrap">
+                                        {new Date(update.createdAt).toLocaleDateString('en-IN', {
+                                          day: '2-digit',
+                                          month: 'short',
+                                          year: 'numeric'
+                                        }).toUpperCase()}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {update.detail && (
+                                    <p className="text-xs text-gray-600 mt-1.5 leading-relaxed pl-4 line-clamp-3">
+                                      {update.detail}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
                   {/* Footer */}
-                  <div className="p-2.5 bg-gray-50 border-t border-gray-100 text-center">
+                  <div className="p-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between px-4">
                     <span className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.25em]">
                       KHRONIQ
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNotificationsOpen(false);
+                        onPageChange('shop');
+                      }}
+                      className="text-[9px] font-bold text-black hover:underline uppercase tracking-wider"
+                    >
+                      Explore All Collections &rarr;
+                    </button>
                   </div>
                 </div>
               )}
@@ -931,8 +1096,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
                       setMobileMenuOpen(false);
                     }}
                     className={`px-3 py-1 rounded border text-xs font-semibold ${currentCurrency === code
-                        ? 'border-black bg-black/5 text-black'
-                        : 'border-luxury-text/10 text-luxury-text'
+                      ? 'border-black bg-black/5 text-black'
+                      : 'border-luxury-text/10 text-luxury-text'
                       }`}
                   >
                     {details.symbol} {code}
