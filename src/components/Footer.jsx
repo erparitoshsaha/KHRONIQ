@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import { ShieldCheck, ArrowRight, Clock, Award, Gem } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Clock, Award, Gem, Globe } from 'lucide-react';
 import LogoMark from './LogoMark';
 import { DEFAULT_FOOTER_SECTIONS } from '../store/slices/watchSlice';
 
@@ -85,9 +85,26 @@ const SOCIALS = [
 ];
 
 /* ─────────────────────────────────────────────────────────── */
-export default function Footer({ onPageChange, onWarrantyOpen }) {
+export default function Footer({ onPageChange, onWarrantyOpen, onOpenCountryModal }) {
   const [heroRef, heroVisible] = useInView(0.1);
   const [bodyRef, bodyVisible] = useInView(0.05);
+
+  const [shippingCountry, setShippingCountry] = useState(() => {
+    return localStorage.getItem('khroniq_shipping_country') || 'India';
+  });
+
+  useEffect(() => {
+    const updateCountry = () => {
+      const saved = localStorage.getItem('khroniq_shipping_country') || 'India';
+      setShippingCountry(saved);
+    };
+    window.addEventListener('storage', updateCountry);
+    window.addEventListener('focus', updateCountry);
+    return () => {
+      window.removeEventListener('storage', updateCountry);
+      window.removeEventListener('focus', updateCountry);
+    };
+  }, []);
 
   const filters = useSelector(state => state.watch.filters || []);
   const footerSections = useSelector(state => state.watch.footerSections || DEFAULT_FOOTER_SECTIONS);
@@ -396,6 +413,20 @@ export default function Footer({ onPageChange, onWarrantyOpen }) {
               © 2026 KHRONIQ. All Rights Reserved. A TRUE KNOCK GROUP BRAND.
             </p>
           </div>
+
+          {/* Center – shipping destination / country switcher */}
+          {onOpenCountryModal && (
+            <button
+              type="button"
+              onClick={onOpenCountryModal}
+              className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full border border-white/10 hover:border-[#047857]/60 bg-white/[0.04] hover:bg-[#047857]/15 transition-all text-white/70 hover:text-white cursor-pointer group"
+              style={{ fontSize: '0.62rem', letterSpacing: '0.06em' }}
+            >
+              <Globe size={11} className="text-[#047857] group-hover:text-emerald-400 transition" />
+              <span>Shipping to: <strong className="font-semibold text-white">{shippingCountry}</strong></span>
+              <span className="text-[#047857] group-hover:text-emerald-400 underline font-semibold ml-0.5">(Change)</span>
+            </button>
+          )}
 
           {/* Right – legal links */}
           <div style={{ display: 'flex', gap: '1.5rem' }}>

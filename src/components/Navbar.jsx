@@ -3,12 +3,12 @@ import { useSelector, useDispatch } from 'react-redux';
 import { logoutUser, setCurrencyAction, selectCurrentCurrency, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
 import {
   ShoppingBag, Search, Menu, X, User, Heart, Star, Sparkles, Tag, ShieldAlert,
-  ArrowRight, Shield, RefreshCw, Truck, Check, Trash2, Clock, CheckCircle2, ChevronRight, XCircle
+  ArrowRight, Shield, RefreshCw, Truck, Check, Trash2, Clock, CheckCircle2, ChevronRight, XCircle, Globe, Bell
 } from 'lucide-react';
 import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
 
 
-export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
+export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCountryModal }) {
   const dispatch = useDispatch();
   const cart = useSelector(state => state.watch.cart);
   const wishlist = useSelector(state => state.watch.wishlist);
@@ -33,8 +33,84 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
   const lastScrollYRef = useRef(typeof window !== 'undefined' ? window.scrollY : 0);
   const currentCurrency = useSelector(selectCurrentCurrency);
   const [currencyOpen, setCurrencyOpen] = useState(false);
+  const [shippingCountry, setShippingCountry] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('khroniq_shipping_country') || 'India';
+    }
+    return 'India';
+  });
+
+  useEffect(() => {
+    const updateShippingCountry = () => {
+      const c = localStorage.getItem('khroniq_shipping_country');
+      if (c) setShippingCountry(c);
+    };
+    window.addEventListener('storage', updateShippingCountry);
+    window.addEventListener('focus', updateShippingCountry);
+    return () => {
+      window.removeEventListener('storage', updateShippingCountry);
+      window.removeEventListener('focus', updateShippingCountry);
+    };
+  }, []);
   const [activeSubMenu, setActiveSubMenu] = useState('collections');
   const [megaMenuForceClosed, setMegaMenuForceClosed] = useState(false);
+
+  // --- BRAND UPDATES & NOTIFICATIONS STATE ---
+  const [brandUpdates, setBrandUpdates] = useState([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [readUpdateIds, setReadUpdateIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('khroniq_read_update_ids') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const notificationsRef = useRef(null);
+
+  const fetchBrandUpdates = async () => {
+    try {
+      const res = await fetch('/api/brand-updates');
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.updates)) {
+        setBrandUpdates(data.updates);
+      }
+    } catch (err) {
+      console.error('Error fetching brand updates in Navbar:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchBrandUpdates();
+    const interval = setInterval(fetchBrandUpdates, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Close notifications dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target)) {
+        setNotificationsOpen(false);
+      }
+    };
+    if (notificationsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [notificationsOpen]);
+
+  const unreadCount = useMemo(() => {
+    return brandUpdates.filter(u => !readUpdateIds.includes(u._id)).length;
+  }, [brandUpdates, readUpdateIds]);
+
+  const handleMarkAllRead = () => {
+    const allIds = brandUpdates.map(u => u._id);
+    setReadUpdateIds(allIds);
+    try {
+      localStorage.setItem('khroniq_read_update_ids', JSON.stringify(allIds));
+    } catch (e) {}
+  };
 
   const currencyMap = {
     INR: { symbol: '₹', label: 'Indian Currency (Rupees)' },
@@ -236,16 +312,16 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                       {link.label}
                     </button>
 
-                    {/* FULL SCREEN WIDE LIGHT GLASSMORPHIC (LIQUIFIED) MEGA MENU */}
-                    <div className={`fixed left-0 right-0 w-screen bg-white/40 backdrop-blur-2xl border-y border-white/20 shadow-[0_25px_50px_rgba(0,0,0,0.15)] p-0 hidden group-hover:block z-50 text-left transition-all duration-300 top-[80px] left-0 ${megaMenuForceClosed ? '!hidden' : ''}`}>
+                    {/* FULL SCREEN WIDE SOLID WHITE MEGA MENU */}
+                    <div className={`fixed left-0 right-0 w-screen bg-white border-b border-neutral-200 shadow-[0_25px_50px_rgba(0,0,0,0.18)] p-0 hidden group-hover:block z-50 text-left transition-all duration-300 top-[80px] left-0 ${megaMenuForceClosed ? '!hidden' : ''}`}>
                       <div className="max-w-7xl mx-auto px-8 py-10 grid grid-cols-12 gap-10">
                         {/* Left Column: Category selectors */}
-                        <div className="col-span-3 border-r border-neutral-200/40 pr-6 flex flex-col space-y-3">
+                        <div className="col-span-3 border-r border-neutral-200 pr-6 flex flex-col space-y-3">
                           <button
                             type="button"
                             onClick={() => setActiveSubMenu('price')}
                             onMouseEnter={() => setActiveSubMenu('price')}
-                            className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'price' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
+                            className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'price' ? 'bg-neutral-100 border border-neutral-300 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-100/70 border border-transparent'
                               }`}
                           >
                             <span>Shop By Price</span>
@@ -256,7 +332,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                               type="button"
                               onClick={() => setActiveSubMenu('recipient')}
                               onMouseEnter={() => setActiveSubMenu('recipient')}
-                              className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'recipient' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
+                              className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'recipient' ? 'bg-neutral-100 border border-neutral-300 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-100/70 border border-transparent'
                                 }`}
                             >
                               <span>Watches For Recipient</span>
@@ -267,7 +343,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                               type="button"
                               onClick={() => setActiveSubMenu('collections')}
                               onMouseEnter={() => setActiveSubMenu('collections')}
-                              className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'collections' ? 'bg-white/20 backdrop-blur-sm border border-neutral-900/20 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-900/5 border border-transparent'
+                              className={`w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-between transition duration-200 ${activeSubMenu === 'collections' ? 'bg-neutral-100 border border-neutral-300 text-black font-black scale-[1.02]' : 'text-neutral-700 hover:text-black hover:bg-neutral-100/70 border border-transparent'
                                 }`}
                             >
                               <span>Collections</span>
@@ -537,6 +613,152 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
               )}
             </button>
 
+            {/* Notification Bell Icon (Brand Updates from Admin) - Visible on Desktop & Mobile */}
+            <div className="relative" ref={notificationsRef}>
+              <button
+                type="button"
+                onClick={() => setNotificationsOpen(prev => !prev)}
+                className="relative transition cursor-pointer hover:text-luxury-gold p-1 flex items-center justify-center"
+                title="Brand Updates & Notifications"
+                aria-label="Brand Updates & Notifications"
+              >
+                <Bell size={22} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-emerald-500 text-black text-[9px] font-black h-4 w-4 rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Popover Dropdown */}
+              {notificationsOpen && (
+                <div className="fixed inset-x-4 top-20 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-96 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 text-left overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                  {/* Header */}
+                  <div className="bg-neutral-900 text-white p-4 flex items-center justify-between border-b border-neutral-800">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-widest text-luxury-gold font-serif">
+                          Brand Updates
+                        </span>
+                        {unreadCount > 0 && (
+                          <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
+                            {unreadCount} new
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-0.5">
+                        Official announcements & brand news
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleMarkAllRead}
+                          className="text-[10px] text-gray-300 hover:text-white uppercase font-bold tracking-wider underline cursor-pointer"
+                        >
+                          Mark read
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setNotificationsOpen(false)}
+                        className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition cursor-pointer"
+                        aria-label="Close notifications"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Updates List */}
+                  <div className="max-h-[360px] overflow-y-auto divide-y divide-gray-100 bg-white">
+                    {brandUpdates.length === 0 ? (
+                      <div className="py-12 px-6 text-center text-gray-400">
+                        <Bell size={28} className="mx-auto text-gray-300 mb-2 stroke-1" />
+                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">No Updates Yet</p>
+                        <p className="text-[11px] text-gray-400 mt-1">Check back later for new timepiece releases and announcements.</p>
+                      </div>
+                    ) : (
+                      brandUpdates.map((update) => {
+                        const isUnread = !readUpdateIds.includes(update._id);
+                        return (
+                          <div
+                            key={update._id}
+                            onClick={() => {
+                              if (isUnread) {
+                                const newIds = [...readUpdateIds, update._id];
+                                setReadUpdateIds(newIds);
+                                try {
+                                  localStorage.setItem('khroniq_read_update_ids', JSON.stringify(newIds));
+                                } catch (e) {}
+                              }
+                            }}
+                            className={`p-4 transition cursor-pointer hover:bg-gray-50/80 ${
+                              isUnread ? 'bg-emerald-50/30' : 'bg-white'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`w-2 h-2 rounded-full shrink-0 ${
+                                    isUnread
+                                      ? 'bg-emerald-500 shadow-[0_0_6px_#10b981] animate-pulse'
+                                      : 'bg-gray-300'
+                                  }`}
+                                />
+                                <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider line-clamp-1">
+                                  {update.title}
+                                </h4>
+                              </div>
+                              {update.createdAt && (
+                                <span className="text-[10px] text-gray-400 font-mono shrink-0 whitespace-nowrap">
+                                  {new Date(update.createdAt).toLocaleDateString('en-IN', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric'
+                                  }).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+
+                            {update.detail && (
+                              <p className="text-xs text-gray-600 mt-1.5 leading-relaxed pl-4 line-clamp-3">
+                                {update.detail}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="p-2.5 bg-gray-50 border-t border-gray-100 text-center">
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">
+                      KHRONIQ • Haute Horlogerie
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Shipping Country & Language (Opens Timex-style location modal) */}
+            {onOpenCountryModal && (
+              <button
+                type="button"
+                onClick={onOpenCountryModal}
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/20 hover:border-luxury-gold hover:text-luxury-gold transition cursor-pointer text-xs font-semibold"
+                title={`Shipping to ${shippingCountry} — Click to Change`}
+              >
+                <Globe size={13} className="text-gray-400" />
+                <span className="text-[10px] font-bold tracking-wider uppercase truncate max-w-[90px]">
+                  {shippingCountry}
+                </span>
+              </button>
+            )}
+
             {/* Currency Selector Dropdown (Desktop Only) */}
             <div className="hidden md:block relative">
               <button
@@ -678,6 +900,25 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
               <span>Wishlist ({wishlist.length})</span>
             </button>
 
+            {/* Brand Updates / Notifications in mobile drawer */}
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setNotificationsOpen(true);
+              }}
+              className="text-left text-sm text-luxury-text font-bold uppercase tracking-wider flex items-center justify-between"
+            >
+              <div className="flex items-center space-x-2">
+                <Bell size={16} />
+                <span>Brand Updates</span>
+              </div>
+              {unreadCount > 0 && (
+                <span className="bg-emerald-500 text-black text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]">
+                  {unreadCount} NEW
+                </span>
+              )}
+            </button>
+
             {/* Currency Selector inside mobile drawer */}
             <div className="py-2">
               <p className="text-[10px] text-luxury-muted uppercase font-bold tracking-wider mb-1.5">Select Currency</p>
@@ -699,6 +940,27 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage }) {
                 ))}
               </div>
             </div>
+
+            {/* Shipping Country Selector inside mobile drawer */}
+            {onOpenCountryModal && (
+              <div className="py-2 border-t border-luxury-text/5 mt-1 pt-3">
+                <p className="text-[10px] text-luxury-muted uppercase font-bold tracking-wider mb-1.5">Shipping Destination</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenCountryModal();
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-black/10 bg-black/[0.03] text-xs font-medium text-luxury-text hover:bg-black/[0.06] transition"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Globe size={14} className="text-black/70" />
+                    <span>Shipping to: <strong className="font-semibold text-black">{shippingCountry}</strong></span>
+                  </div>
+                  <span className="text-[11px] text-luxury-gold underline uppercase tracking-wider font-semibold">Change</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {currentUser && (

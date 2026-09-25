@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import CartDrawer from '../components/CartDrawer';
 import WarrantyDrawer from '../components/WarrantyDrawer';
 import UpdatesDrawer from '../components/UpdatesDrawer';
+import CountryLocationModal from '../components/CountryLocationModal';
 import ScrollToTop from '../components/ScrollToTop';
 
 export default function MainLayout({
@@ -17,6 +18,20 @@ export default function MainLayout({
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [warrantyOpen, setWarrantyOpen] = useState(false);
   const [internalUpdatesOpen, setInternalUpdatesOpen] = useState(false);
+  const [countryModalOpen, setCountryModalOpen] = useState(false);
+
+  // Automatically trigger country / shipping selection modal on first visit
+  useEffect(() => {
+    if (typeof window !== 'undefined' && currentPage !== 'admin') {
+      const seen = localStorage.getItem('khroniq_country_modal_seen');
+      if (!seen) {
+        const timer = setTimeout(() => {
+          setCountryModalOpen(true);
+        }, 600);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [currentPage]);
 
   const updatesOpen = externalUpdatesOpen !== undefined ? externalUpdatesOpen : internalUpdatesOpen;
   const handleUpdatesOpen = externalOnUpdatesOpen || (() => setInternalUpdatesOpen(true));
@@ -38,6 +53,7 @@ export default function MainLayout({
         onCartOpen={() => setCartDrawerOpen(true)}
         onPageChange={onPageChange}
         currentPage={currentPage}
+        onOpenCountryModal={() => setCountryModalOpen(true)}
       />
 
       {/* Cart Drawer */}
@@ -57,6 +73,12 @@ export default function MainLayout({
       <UpdatesDrawer
         isOpen={updatesOpen}
         onClose={handleUpdatesClose}
+      />
+
+      {/* Country Location Modal (Timex style) */}
+      <CountryLocationModal
+        isOpen={countryModalOpen}
+        onClose={() => setCountryModalOpen(false)}
       />
 
       <button
@@ -80,7 +102,8 @@ export default function MainLayout({
             return React.cloneElement(child, {
               onUpdatesOpen: handleUpdatesOpen,
               onUpdatesClose: handleUpdatesClose,
-              updatesOpen
+              updatesOpen,
+              onOpenCountryModal: () => setCountryModalOpen(true)
             });
           }
           return child;
@@ -88,7 +111,11 @@ export default function MainLayout({
       </main>
 
       {/* Footer */}
-      <Footer onPageChange={onPageChange} onWarrantyOpen={() => setWarrantyOpen(true)} />
+      <Footer 
+        onPageChange={onPageChange} 
+        onWarrantyOpen={() => setWarrantyOpen(true)} 
+        onOpenCountryModal={() => setCountryModalOpen(true)}
+      />
 
       {/* Scroll to Top Scroller */}
       <ScrollToTop />
