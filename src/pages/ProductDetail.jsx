@@ -219,9 +219,9 @@ export default function ProductDetail({ params, onPageChange }) {
     ? (approvedReviews.reduce((sum, r) => sum + r.rating, 0) / approvedReviews.length).toFixed(1)
     : null;
   const mrp = getProductMrp(product);
-  const sellingPrice = getSellingPrice(product);
   const discountPercent = getDiscountPercent(product);
   const isDiscounted = mrp > sellingPrice && discountPercent > 0;
+
 
   const handleAddToCart = async () => {
     const targetId = product.id || product._id;

@@ -4,6 +4,7 @@ import { updateCartQty, removeFromCart, selectCurrentCurrency, formatPrice, getD
 import { handleImageError } from '../utils/imageUtils';
 import { ShoppingBag, Trash2, Plus, Minus, Tag, ArrowRight, ShieldCheck } from 'lucide-react';
 import BackButton from '../components/BackButton';
+import { useSEO } from '../utils/seo';
 
 export default function CartPage({ onPageChange }) {
   const dispatch = useDispatch();
@@ -17,9 +18,13 @@ export default function CartPage({ onPageChange }) {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
 
-  useEffect(() => {
-    document.title = 'Your Atelier Bag | KHRONIQ';
-  }, []);
+  useSEO({
+    title: 'Your Atelier Bag | KHRONIQ',
+    description: 'Review your selected luxury timepieces in your KHRONIQ atelier bag.',
+    canonicalUrl: 'https://www.khroniq.com/cart',
+    robots: 'noindex, nofollow'
+  });
+
 
   // Assemble full item details
   const cartItemsWithDetails = cart.map(item => {

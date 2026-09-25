@@ -6,6 +6,8 @@ import ProductCard from '../components/ProductCard';
 import { Heart, User, Package, LogOut } from 'lucide-react';
 import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
 import PhoneInput from '../components/PhoneInput';
+import { useSEO } from '../utils/seo';
+
 
 
 const getStatusStepIndex = (status) => {
@@ -151,9 +153,13 @@ export default function Profile({ params, onPageChange }) {
   const [country, setCountry] = useState(currentUser?.shippingAddress?.country || '');
   const [phone, setPhone] = useState(currentUser?.shippingAddress?.phone || '');
   const [settingsMessage, setSettingsMessage] = useState('');
-  useEffect(() => {
-    document.title = 'Client Profile | KHRONIQ';
-  }, []);
+  useSEO({
+    title: 'Client Profile & Orders | KHRONIQ',
+    description: 'Manage your KHRONIQ client profile, order history, and personal preferences.',
+    canonicalUrl: 'https://www.khroniq.com/profile',
+    robots: 'noindex, nofollow'
+  });
+
 
   // Sync tab and user profile updates
   useEffect(() => {

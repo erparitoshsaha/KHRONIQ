@@ -7,6 +7,8 @@ import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 import confetti from 'canvas-confetti';
 import { CheckCircle2, CreditCard, Landmark, ArrowRight, ArrowLeft, ShieldCheck, Gift, Check, Tag, X, Loader2, Info, Lock, Truck, RotateCcw, Headphones } from 'lucide-react';
 import BackButton from '../components/BackButton';
+import { useSEO } from '../utils/seo';
+
 import CountrySelect from '../components/CountrySelect';
 import PhoneInput from '../components/PhoneInput';
 import { INDIAN_STATES } from '../constants/countries';
@@ -61,9 +63,13 @@ export default function Checkout({ params, onPageChange }) {
   });
   const [processingPayment, setProcessingPayment] = useState(false);
 
-  useEffect(() => {
-    document.title = 'Secure Checkout | KHRONIQ';
-  }, []);
+  useSEO({
+    title: 'Secure Checkout | KHRONIQ',
+    description: 'Complete your luxury timepiece order securely with encrypted checkout at KHRONIQ.',
+    canonicalUrl: 'https://www.khroniq.com/checkout',
+    robots: 'noindex, nofollow'
+  });
+
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [giftPackage, setGiftPackage] = useState('standard'); // standard | gift-box | luxury
   const [giftNote, setGiftNote] = useState('');

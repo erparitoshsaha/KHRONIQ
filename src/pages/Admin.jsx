@@ -48,6 +48,8 @@ import WebsiteContentManager from '../components/admin/WebsiteContentManager';
 import AdminMediaField from '../components/admin/AdminMediaField';
 import AdminManagement from '../components/admin/AdminManagement';
 import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
+import { useSEO } from '../utils/seo';
+
 import { defaultHomeImages, HOMEPAGE_SECTION_LABELS, HOMEPAGE_MEDIA_SECTIONS } from './Home';
 import {
   Menu, BarChart3, Plus, Edit, Trash2, Check, X, Tag, Star,
@@ -466,9 +468,12 @@ export default function Admin({ onPageChange }) {
     }
   }, [activeTab, dispatch]);
 
-  useEffect(() => {
-    document.title = 'Master Atelier Dashboard | KHRONIQ';
-  }, []);
+  useSEO({
+    title: 'Master Atelier Dashboard | KHRONIQ',
+    description: 'KHRONIQ Master Atelier administration and management system.',
+    robots: 'noindex, nofollow'
+  });
+
 
   // Add Product Form State
   const [showAddForm, setShowAddForm] = useState(false);

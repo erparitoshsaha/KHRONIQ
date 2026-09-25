@@ -4,6 +4,7 @@ import { loginUser, registerUser, checkAdminEmail, requestAdminCode, verifyAdmin
 import { Star, CheckCircle2, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react';
 import { isAdminRole } from '../constants/permissions';
 import PhoneInput from '../components/PhoneInput';
+import { useSEO } from '../utils/seo';
 
 const SUPER_ADMIN_EMAILS = ['er.paritoshsaha@gmail.com', 'khroniqofficial@gmail.com'];
 const checkIsSuperAdmin = (email) => SUPER_ADMIN_EMAILS.includes((email || '').trim().toLowerCase());
@@ -39,9 +40,13 @@ export default function Login({ params, onPageChange }) {
   const [adminStep, setAdminStep] = useState('email'); // 'email' | 'code'
   const [adminCode, setAdminCode] = useState('');
 
-  useEffect(() => {
-    document.title = 'Client Authentication | KHRONIQ';
-  }, []);
+  useSEO({
+    title: 'Client Authentication | KHRONIQ',
+    description: 'Sign in to your KHRONIQ client portal or create your personal account.',
+    canonicalUrl: 'https://www.khroniq.com/login',
+    robots: 'noindex, nofollow'
+  });
+
 
   const handleEmailChange = (e) => {
     const val = e.target.value;

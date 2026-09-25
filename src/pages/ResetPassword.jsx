@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { resetPassword, logoutUser } from '../store/slices/watchSlice';
 import { Star, CheckCircle2 } from 'lucide-react';
+import { useSEO } from '../utils/seo';
 
 export default function ResetPassword({ params, onPageChange }) {
   const dispatch = useDispatch();
@@ -12,10 +13,16 @@ export default function ResetPassword({ params, onPageChange }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [success, setSuccess] = useState(false);
 
+  useSEO({
+    title: 'Reset Credentials | KHRONIQ',
+    description: 'Set a new password for your KHRONIQ account.',
+    robots: 'noindex, nofollow'
+  });
+
   useEffect(() => {
-    document.title = 'Reset Credentials | KHRONIQ';
     dispatch(logoutUser());
   }, [dispatch]);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();

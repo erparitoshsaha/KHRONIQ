@@ -52,20 +52,8 @@ export default function Static({ params, onPageChange }) {
     }
   }, [params]);
 
-  useEffect(() => {
-    const titles = {
-      about: 'About Our Heritage | KHRONIQ',
-      contact: 'Contact Concierge | KHRONIQ',
-      faq: 'Frequently Asked Questions | KHRONIQ',
-      terms: 'Terms of Service | KHRONIQ',
-      privacy: 'Privacy Policy | KHRONIQ',
-      shipping: 'Shipping & Delivery | KHRONIQ',
-      returns: 'Returns & Exchanges | KHRONIQ',
-      cancellation: 'Cancellation Policy | KHRONIQ',
-      blogs: 'Horology Journal & Articles | KHRONIQ'
-    };
-    document.title = titles[activeTab] || 'Atelier Information | KHRONIQ';
-  }, [activeTab]);
+
+
 
   const handleContactSubmit = (e) => {
     e.preventDefault();
@@ -106,6 +94,92 @@ export default function Static({ params, onPageChange }) {
   const displayFaqData = (faqSection?.items && faqSection.items.length > 0)
     ? faqSection.items.filter(it => it.isActive !== false).map(item => ({ q: item.title, a: item.description }))
     : faqData;
+
+  const seoConfig = useMemo(() => {
+    const metaMap = {
+      about: {
+        title: 'Our Heritage & Philosophy | KHRONIQ',
+        description: 'Discover the artisanal horology philosophy and heritage of KHRONIQ. Precision timepieces crafted with modern architectural elegance.',
+        canonicalUrl: 'https://www.khroniq.com/about'
+      },
+      contact: {
+        title: 'Contact Concierge & Customer Care | KHRONIQ',
+        description: 'Connect with KHRONIQ client concierge for timepiece consultations, order inquiries, warranty assistance, or styling advice.',
+        canonicalUrl: 'https://www.khroniq.com/contact'
+      },
+      faq: {
+        title: 'Frequently Asked Questions (FAQ) | KHRONIQ',
+        description: 'Comprehensive answers regarding KHRONIQ timepiece specifications, movement calibration, water resistance ratings, warranty claims, and shipping.',
+        canonicalUrl: 'https://www.khroniq.com/faq',
+        jsonLd: buildFaqSchema(displayFaqData),
+        jsonLdId: 'faq-jsonld'
+      },
+      blogs: {
+        title: 'Horology Journal & Articles | KHRONIQ',
+        description: 'Read the latest essays, horological guides, design philosophy, and watch collector insights from KHRONIQ Atelier.',
+        canonicalUrl: 'https://www.khroniq.com/blogs'
+      },
+      warranty: {
+        title: '12-Month Limited Warranty & Protection | KHRONIQ',
+        description: 'Details on KHRONIQ twelve-month limited warranty coverage, terms, claim procedures, and authentic service standards.',
+        canonicalUrl: 'https://www.khroniq.com/warranty'
+      },
+      policies: {
+        title: 'Terms of Service & Conditions | KHRONIQ',
+        description: 'Read the official terms and conditions for using the KHRONIQ website and purchasing our luxury timepieces.',
+        canonicalUrl: 'https://www.khroniq.com/policies'
+      },
+      terms: {
+        title: 'Terms of Service & Conditions | KHRONIQ',
+        description: 'Read the official terms and conditions for using the KHRONIQ website and purchasing our luxury timepieces.',
+        canonicalUrl: 'https://www.khroniq.com/policies'
+      },
+      privacy: {
+        title: 'Privacy Policy & Data Security | KHRONIQ',
+        description: 'KHRONIQ privacy policy explaining data protection, customer security standards, and privacy rights.',
+        canonicalUrl: 'https://www.khroniq.com/privacy'
+      },
+      shipping: {
+        title: 'Insured Shipping & Delivery Policy | KHRONIQ',
+        description: 'Information on KHRONIQ complimentary insured shipping, estimated delivery timelines, and transit handling across India.',
+        canonicalUrl: 'https://www.khroniq.com/shipping'
+      },
+      returns: {
+        title: 'Returns & Exchange Policy | KHRONIQ',
+        description: 'Understand the return, exchange, and replacement policies for genuine KHRONIQ luxury timepieces.',
+        canonicalUrl: 'https://www.khroniq.com/returns'
+      },
+      cancellation: {
+        title: 'Cancellation & Refund Policy | KHRONIQ',
+        description: 'Guidelines and conditions for order cancellation and refund processing at KHRONIQ.',
+        canonicalUrl: 'https://www.khroniq.com/cancellation'
+      },
+      cod: {
+        title: 'Cash on Delivery (COD) Policy | KHRONIQ',
+        description: 'Official KHRONIQ payment and prepaid order policy.',
+        canonicalUrl: 'https://www.khroniq.com/cod'
+      },
+      cookie: {
+        title: 'Cookie Policy | KHRONIQ',
+        description: 'Information about how cookies and tracking technologies are utilized on KHRONIQ.',
+        canonicalUrl: 'https://www.khroniq.com/cookie'
+      },
+      repair: {
+        title: 'Repair & Servicing | KHRONIQ',
+        description: 'Official servicing, battery replacement, and maintenance standards for KHRONIQ timepieces.',
+        canonicalUrl: 'https://www.khroniq.com/repair'
+      }
+    };
+
+    return metaMap[activeTab] || {
+      title: 'Atelier Information | KHRONIQ',
+      description: 'Official information, horological details, and policies from KHRONIQ.',
+      canonicalUrl: `https://www.khroniq.com/${activeTab}`
+    };
+  }, [activeTab, displayFaqData]);
+
+  useSEO(seoConfig);
+
 
   const policiesData = [
     {
