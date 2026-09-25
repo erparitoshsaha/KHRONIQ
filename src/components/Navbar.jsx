@@ -736,8 +736,8 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
 
                   {/* Footer */}
                   <div className="p-2.5 bg-gray-50 border-t border-gray-100 text-center">
-                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">
-                      KHRONIQ • Haute Horlogerie
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.25em]">
+                      KHRONIQ
                     </span>
                   </div>
                 </div>
