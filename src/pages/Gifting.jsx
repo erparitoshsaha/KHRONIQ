@@ -14,6 +14,7 @@ import {
   Baby, Briefcase, User, UserRound,
 } from 'lucide-react';
 import BackButton from '../components/BackButton';
+import { useSEO } from '../utils/seo';
 
 /* ─────────────────────────────────────────────────────────────────
    HELPERS
@@ -222,9 +223,13 @@ export default function Gifting({ onPageChange, params }) {
   const [giftNote, setGiftNote] = useState('');
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
-  useEffect(() => {
-    document.title = 'Bespoke Luxury Gifting | KHRONIQ';
-  }, []);
+  useSEO({
+    title: 'Bespoke Luxury Watch Gifting | KHRONIQ',
+    description: 'Elevate life’s defining celebrations with KHRONIQ luxury watch gifting. Discover curated timepieces, signature presentation packaging, and complimentary personalized gift notes.',
+    canonicalUrl: 'https://www.khroniq.com/gifting',
+    keywords: 'luxury watch gifting, bespoke watch gift, corporate luxury gifts, anniversary gift watch, KHRONIQ gifting'
+  });
+
 
   // Auto-rotate testimonials
   useEffect(() => {

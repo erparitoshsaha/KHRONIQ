@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import ProductCard from '../components/ProductCard';
 import BackButton from '../components/BackButton';
+import { useSEO } from '../utils/seo';
 import { getDiscountedPrice, getProductMrp, selectCurrentCurrency, formatPrice, fetchFilters, fetchProducts } from '../store/slices/watchSlice';
 import { SlidersHorizontal, Search, RotateCcw, X, ChevronDown, ChevronUp } from 'lucide-react';
 import {
@@ -199,9 +200,50 @@ export default function Shop({ onPageChange, filterParams }) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
-  useEffect(() => {
-    document.title = 'Shop Luxury Watches | KHRONIQ';
-  }, []);
+  // Dynamic SEO metadata based on filter parameters
+  const seoConfig = useMemo(() => {
+    if (filterParams?.gender === 'men') {
+      return {
+        title: "Men's Luxury Watches & Timepieces | KHRONIQ",
+        description: "Explore our collection of sophisticated men's luxury watches. Crafted with precision quartz movement, architectural cases, and durable luxury straps.",
+        canonicalUrl: 'https://www.khroniq.com/men',
+        keywords: "men watches, men's luxury watches, gentleman timepieces, KHRONIQ men"
+      };
+    }
+    if (filterParams?.gender === 'women') {
+      return {
+        title: "Women's Luxury Watches & Timepieces | KHRONIQ",
+        description: "Discover exquisite women's luxury timepieces by KHRONIQ. Timeless silhouettes, refined dials, and elegant horology.",
+        canonicalUrl: 'https://www.khroniq.com/women',
+        keywords: "women watches, women's luxury watches, ladies luxury timepieces, KHRONIQ women"
+      };
+    }
+    if (filterParams?.category) {
+      return {
+        title: `${filterParams.category} Luxury Watches | KHRONIQ`,
+        description: `Shop the distinguished ${filterParams.category} timepiece collection from KHRONIQ. Designed for refined modern aesthetics.`,
+        canonicalUrl: `https://www.khroniq.com/shop?category=${encodeURIComponent(filterParams.category)}`,
+        keywords: `${filterParams.category}, luxury watches, KHRONIQ ${filterParams.category}`
+      };
+    }
+    if (filterParams?.search) {
+      return {
+        title: `Search: "${filterParams.search}" | KHRONIQ Watches`,
+        description: `Search results for "${filterParams.search}" across the KHRONIQ luxury timepiece catalog.`,
+        canonicalUrl: `https://www.khroniq.com/shop`,
+        robots: 'noindex, follow'
+      };
+    }
+    return {
+      title: 'Shop Luxury Watches & Contemporary Timepieces | KHRONIQ',
+      description: 'Browse the complete collection of contemporary luxury watches and precision timepieces by KHRONIQ. Enjoy complimentary insured delivery across India.',
+      canonicalUrl: 'https://www.khroniq.com/shop',
+      keywords: 'shop luxury watches, KHRONIQ collection, buy watches online India, luxury horology'
+    };
+  }, [filterParams?.gender, filterParams?.category, filterParams?.search]);
+
+  useSEO(seoConfig);
+
 
   // Prevent background scrolling when mobile filters drawer is open
   useEffect(() => {

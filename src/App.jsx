@@ -234,8 +234,13 @@ function AppContent() {
       } else if (effectivePage === 'reset-password') {
         targetPath = `/reset-password/${effectiveParams?.token || ''}`;
       } else if (effectivePage === 'static') {
-        targetPath = '/';
+        const view = effectiveParams?.view || 'about';
+        const queryParams = new URLSearchParams();
+        if (effectiveParams?.id) queryParams.set('id', effectiveParams.id);
+        const qs = queryParams.toString();
+        targetPath = qs ? `/${view}?${qs}` : `/${view}`;
       }
+
 
       const currentFullUrl = window.location.pathname + window.location.search;
       if (currentFullUrl !== targetPath) {

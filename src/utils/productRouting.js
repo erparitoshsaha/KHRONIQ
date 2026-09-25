@@ -236,8 +236,23 @@ export function parseRouteFromPath(pathname, search) {
     return { page: 'gifting', params: queryParams };
   }
 
+  // Static content & policy routes (/about, /contact, /blogs, /faq, /policies, /warranty, etc.)
+  const staticViews = [
+    'about', 'contact', 'faq', 'terms', 'privacy', 'shipping',
+    'returns', 'cancellation', 'blogs', 'warranty', 'policies',
+    'cod', 'cookie', 'repair', 'exchange', 'refund', 'community'
+  ];
+  const staticSlug = lowerPath.startsWith('/') ? lowerPath.slice(1) : lowerPath;
+  if (staticViews.includes(staticSlug)) {
+    return {
+      page: 'static',
+      params: { view: staticSlug === 'terms' ? 'policies' : staticSlug, ...(queryParams || {}) }
+    };
+  }
+
   return { page: 'home', params: null };
 }
+
 
 /**
  * Checks if the current page was reached via in-app navigation within this session

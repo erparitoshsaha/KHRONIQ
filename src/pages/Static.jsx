@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Compass, Mail, Phone, MapPin, Award, CheckCircle2, ChevronDown, BookOpen, ArrowRight, X } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchBlogs } from '../store/slices/watchSlice';
 import BackButton from '../components/BackButton';
+import { useSEO, buildFaqSchema } from '../utils/seo';
 
 export default function Static({ params, onPageChange }) {
   const dispatch = useDispatch();

@@ -31,6 +31,7 @@ import newsletterRoutes from './_routes/newsletter.js';
 import filterRoutes, { seedDefaultFiltersSafe } from './_routes/filters.js';
 import footerRoutes, { seedDefaultFooterSafe } from './_routes/footer.js';
 import contentRoutes, { seedDefaultContentSafe } from './_routes/content.js';
+import sitemapRoutes from './_routes/sitemap.js';
 import ensureSuperAdminRoleIntegrity from './utils/ensureSuperAdmin.js';
 
 // 1. Validate environment configuration on boot
@@ -177,6 +178,8 @@ app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/filters', filterRoutes);
 app.use('/api/footer', footerRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/sitemap.xml', sitemapRoutes);
+app.use('/sitemap-products.xml', sitemapRoutes);
 
 // Base Endpoint
 app.get('/api', (req, res) => {

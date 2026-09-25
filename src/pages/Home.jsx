@@ -4,6 +4,7 @@ import { selectCurrentCurrency, formatPrice, getDiscountedPrice, fetchFeaturedRe
 import { handleImageError } from '../utils/imageUtils';
 import ProductCard from '../components/ProductCard';
 import LogoMark from '../components/LogoMark';
+import { useSEO } from '../utils/seo';
 
 import {
   motion,
@@ -997,9 +998,14 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   }, [dispatch]);
 
 
-  useEffect(() => {
-    document.title = 'KHRONIQ — Born from The Movement Of Time';
-  }, []);
+  useSEO({
+    title: 'KHRONIQ — Born from The Movement Of Time',
+    description: 'KHRONIQ — Born from The Movement Of Time. Discover our collection of contemporary luxury watches and precision timepieces, crafted for modern style, elegance, and distinction.',
+    canonicalUrl: 'https://www.khroniq.com/',
+    ogImage: 'https://www.khroniq.com/assets/spotlight_red_angled.png',
+    keywords: 'KHRONIQ, luxury watches, timepieces, luxury watch brand India, men watches, women watches, horology'
+  });
+
 
   useEffect(() => {
     if (publicMediaCache) {
@@ -1638,15 +1644,6 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                     {featured[safeFeaturedIndex]?.category
                       ? featured[safeFeaturedIndex].category.toUpperCase()
                       : (featured[safeFeaturedIndex]?.subtitle || 'PRECISION AT EVERY LEVEL')}
-                  </p>
-
-                  <p
-                    style={{ color: '#047857' }}
-                    className="text-xl sm:text-2xl font-serif italic font-light tracking-wider uppercase"
-                  >
-                    {featured[safeFeaturedIndex]?.price !== undefined && featured[safeFeaturedIndex]?.price !== null
-                      ? `₹${Number(featured[safeFeaturedIndex].price).toLocaleString('en-IN')}`
-                      : formatPrice(getDiscountedPrice(featured[safeFeaturedIndex]), currentCurrency)}
                   </p>
 
                   <div className="pt-1">

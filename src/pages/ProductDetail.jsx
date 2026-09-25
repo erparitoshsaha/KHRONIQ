@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { addToCart, toggleWishlist, addReview, updateReview, deleteReview, selectCurrentCurrency, formatPrice, getDiscountedPrice, fetchSingleProduct, getProductMrp, getSellingPrice, getDiscountPercent } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
@@ -7,6 +7,7 @@ import ProductCard from '../components/ProductCard';
 import BackButton from '../components/BackButton';
 import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2, Zap, Share2, Edit2, Trash2, X } from 'lucide-react';
 import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
+import { useSEO, buildProductSchema } from '../utils/seo';
 
 export default function ProductDetail({ params, onPageChange }) {
   const dispatch = useDispatch();
@@ -145,50 +146,34 @@ export default function ProductDetail({ params, onPageChange }) {
 
   const isWishlisted = product ? wishlist.includes(product.id) : false;
 
-  useEffect(() => {
-    if (product) {
-      document.title = `KHRONIQ — ${product.name}`;
+  const sellingPrice = product ? getSellingPrice(product) : 0;
+  const canonicalIdentifier = product ? (product.slug || product.modelNo || product.id || '') : (rawParamId || '');
+  const canonicalUrl = `https://www.khroniq.com/product/${encodeURIComponent(canonicalIdentifier)}`;
+  
+  const productDescription = product
+    ? (product.description
+        ? `${product.name} — ${product.description.slice(0, 160).trim()}`
+        : `${product.name} luxury timepiece featuring ${product.specs?.movement || 'precision quartz movement'}, ${product.specs?.case || 'refined stainless steel case'}, and ${product.specs?.waterResistance || 'water-resistant design'}.`)
+    : 'Discover luxury timepieces crafted for modern distinction at KHRONIQ.';
 
-      const scriptId = 'product-jsonld';
-      let scriptTag = document.getElementById(scriptId);
-      if (!scriptTag) {
-        scriptTag = document.createElement('script');
-        scriptTag.id = scriptId;
-        scriptTag.type = 'application/ld+json';
-        document.head.appendChild(scriptTag);
-      }
+  const productSchema = useMemo(() => {
+    return product ? buildProductSchema(product, sellingPrice, canonicalUrl) : null;
+  }, [product, sellingPrice, canonicalUrl]);
 
-      const productSchema = {
-        '@context': 'https://schema.org',
-        '@type': 'Product',
-        name: product.name,
-        image: allImages.length > 0 ? allImages : (product.image ? [product.image] : []),
-        description: product.description || `${product.name} luxury timepiece by KHRONIQ`,
-        sku: product.id,
-        brand: {
-          '@type': 'Brand',
-          name: product.brand || 'KHRONIQ'
-        },
-        offers: {
-          '@type': 'Offer',
-          url: window.location.href,
-          priceCurrency: 'INR',
-          price: getSellingPrice(product),
-          availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-          itemCondition: 'https://schema.org/NewCondition'
-        }
-      };
+  useSEO({
+    title: product ? `${product.name} — Luxury Timepiece | KHRONIQ` : (productsLoaded && apiAttempted ? 'KHRONIQ — Timepiece Not Found' : 'KHRONIQ — Luxury Timepiece'),
+    description: productDescription,
+    canonicalUrl: canonicalUrl,
+    ogTitle: product ? `${product.name} | KHRONIQ` : 'KHRONIQ Luxury Watch',
+    ogDescription: productDescription,
+    ogImage: product?.image,
+    ogType: 'product',
+    keywords: product ? `${product.name}, KHRONIQ ${product.name}, ${product.category || 'luxury'} watch, ${product.specs?.movement || 'watch'}, luxury timepiece` : 'luxury watches, KHRONIQ',
+    robots: product ? 'index, follow, max-image-preview:large' : (productsLoaded && apiAttempted ? 'noindex, follow' : 'index, follow'),
+    jsonLd: productSchema,
+    jsonLdId: 'product-jsonld'
+  });
 
-      scriptTag.textContent = JSON.stringify(productSchema);
-    } else if (productsLoaded && apiAttempted) {
-      document.title = 'KHRONIQ — Timepiece Not Found';
-    }
-
-    return () => {
-      const existing = document.getElementById('product-jsonld');
-      if (existing) existing.remove();
-    };
-  }, [product, productsLoaded, apiAttempted]);
 
   if (!product) {
     if (!productsLoaded || isSearchingApi || !apiAttempted) {

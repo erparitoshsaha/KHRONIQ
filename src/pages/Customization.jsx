@@ -5,6 +5,7 @@ import { handleImageError } from '../utils/imageUtils';
 import { Paintbrush, ShoppingBag, ChevronLeft, Check, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BackButton from '../components/BackButton';
+import { useSEO } from '../utils/seo';
 
 // ─── Colour & option data ─────────────────────────────────────────────────────
 const FALLBACK_DIAL_COLORS = [
@@ -231,9 +232,13 @@ export default function Customization({ onPageChange, params }) {
     return finalBasePrice + dialPrice + strapPrice + casePrice;
   }, [selectedProduct, dialPrice, strapPrice, casePrice]);
 
-  useEffect(() => {
-    document.title = 'Custom Timepiece Atelier | KHRONIQ';
-  }, []);
+  useSEO({
+    title: 'Custom Timepiece Atelier & Personalization | KHRONIQ',
+    description: 'Personalize your KHRONIQ luxury timepiece. Choose bespoke dial colors, interchangeable premium straps, case finishes, and custom case engravings.',
+    canonicalUrl: 'https://www.khroniq.com/customization',
+    keywords: 'custom watch, watch personalization, bespoke watch maker, engraved watch, KHRONIQ customization'
+  });
+
 
   // Reset page back to customizable models selection when params.reset is received from Navbar
   useEffect(() => {

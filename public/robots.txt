@@ -1,15 +1,30 @@
 User-agent: *
 Allow: /
 Allow: /shop
+Allow: /product/
+Allow: /men
+Allow: /women
+Allow: /shop-all
 Allow: /gifting
 Allow: /customization
 Allow: /warranty
 Allow: /contact
+Allow: /about
+Allow: /blogs
+Allow: /faq
+Allow: /privacy
+Allow: /policies
+Allow: /shipping
+Allow: /returns
+Allow: /cancellation
 Disallow: /admin
+Disallow: /admin/
 Disallow: /api/
 Disallow: /checkout
 Disallow: /profile
 Disallow: /cart
 Disallow: /reset-password/
 
-Sitemap: https://khroniq-sage.vercel.app/sitemap.xml
+Sitemap: https://www.khroniq.com/sitemap.xml
+Sitemap: https://www.khroniq.com/api/sitemap.xml
+

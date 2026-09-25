@@ -58,7 +58,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
   // --- BRAND UPDATES & NOTIFICATIONS STATE ---
   const [brandUpdates, setBrandUpdates] = useState([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notificationTab, setNotificationTab] = useState('all'); // 'all' | 'watches' | 'updates'
+  const [notificationTab, setNotificationTab] = useState('watches'); // 'watches' | 'updates'
   const [readUpdateIds, setReadUpdateIds] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('khroniq_read_update_ids') || '[]');
@@ -107,6 +107,22 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [notificationsOpen]);
+
+  // Search popover ref & outside click
+  const searchRef = useRef(null);
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setSearchOpen(false);
+      }
+    };
+    if (searchOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [searchOpen]);
 
   // Latest added watches for notifications
   const latestWatches = useMemo(() => {
@@ -539,37 +555,38 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
 
           {/* Right Icons */}
           <div className="flex items-center space-x-4 md:space-x-5 text-white">
-            {/* Search Icon / Bar (Desktop Only) */}
-            <div className="hidden md:flex relative items-center">
-              {searchOpen ? (
-                <form onSubmit={handleSearchSubmit} className="flex items-center">
-                  <input
-                    type="text"
-                    placeholder="Search watches..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-40 sm:w-48 bg-luxury-bg text-luxury-text text-xs px-3 py-1.5 rounded-l-md border border-luxury-text/10 focus:outline-none focus:border-luxury-gold-dark"
-                    autoFocus
-                  />
-                  <button type="submit" className="bg-black text-white px-2.5 py-1.5 rounded-r-md border border-black hover:bg-neutral-700 transition cursor-pointer">
-                    <Search size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSearchOpen(false)}
-                    className="ml-2 text-white/60 hover:text-white"
-                  >
-                    <X size={16} />
-                  </button>
-                </form>
-              ) : (
-                <button
-                  onClick={() => setSearchOpen(true)}
-                  className="transition cursor-pointer hover:text-luxury-gold"
-                  title="Search"
-                >
-                  <Search size={24} />
-                </button>
+            {/* Search Icon / Dropdown (Desktop Only) */}
+            <div className="hidden md:flex relative items-center" ref={searchRef}>
+              <button
+                type="button"
+                onClick={() => setSearchOpen(prev => !prev)}
+                className={`transition cursor-pointer hover:text-luxury-gold p-1 flex items-center justify-center ${searchOpen ? 'text-luxury-gold' : ''}`}
+                title="Search watches"
+                aria-label="Search watches"
+              >
+                <Search size={22} />
+              </button>
+
+              {searchOpen && (
+                <div className="absolute right-0 top-full mt-3 w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-200 text-left">
+                  <form onSubmit={handleSearchSubmit} className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:border-black focus-within:bg-white transition">
+                    <input
+                      type="text"
+                      placeholder="Search watches..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-transparent text-gray-900 text-xs px-3.5 py-2.5 focus:outline-none placeholder-gray-400 font-medium"
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      className="bg-black text-white px-3.5 py-2.5 hover:bg-neutral-800 transition cursor-pointer text-xs font-bold uppercase tracking-wider flex items-center gap-1 shrink-0"
+                    >
+                      <Search size={13} />
+                      <span>Search</span>
+                    </button>
+                  </form>
+                </div>
               )}
             </div>
 
@@ -686,33 +703,24 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
                         <button
                           type="button"
                           onClick={() => setNotificationsOpen(false)}
-                          className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition cursor-pointer"
+                          className="text-white hover:text-gray-300 p-1 rounded-full hover:bg-white/15 transition cursor-pointer"
                           aria-label="Close notifications"
                         >
-                          <X size={16} />
+                          <X size={16} className="text-white stroke-[2.5]" />
                         </button>
                       </div>
                     </div>
 
-                    {/* Filter Tabs */}
-                    <div className="flex items-center space-x-1.5 mt-3 pt-2.5 border-t border-neutral-800/80">
-                      <button
-                        type="button"
-                        onClick={() => setNotificationTab('all')}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition ${notificationTab === 'all'
-                          ? 'bg-white text-black'
-                          : 'text-white hover:text-white bg-neutral-800/60'
-                          }`}
-                      >
-                        All ({brandUpdates.length + latestWatches.length})
-                      </button>
+                    {/* Filter Tabs (Latest Watches & Announcements only) */}
+                    <div className="flex items-center space-x-2 mt-3 pt-2.5 border-t border-neutral-800/80">
                       <button
                         type="button"
                         onClick={() => setNotificationTab('watches')}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition flex items-center gap-1 ${notificationTab === 'watches'
-                          ? 'bg-luxury-gold text-black'
-                          : 'text-white hover:text-white bg-neutral-800/60'
-                          }`}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer ${
+                          notificationTab === 'watches'
+                            ? 'bg-luxury-gold text-black shadow-sm'
+                            : 'text-white hover:text-white bg-neutral-800/80 hover:bg-neutral-800'
+                        }`}
                       >
                         <Sparkles size={11} />
                         <span>Latest Watches ({latestWatches.length})</span>
@@ -720,10 +728,11 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
                       <button
                         type="button"
                         onClick={() => setNotificationTab('updates')}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition ${notificationTab === 'updates'
-                          ? 'bg-white text-black'
-                          : 'text-white hover:text-white bg-neutral-800/60'
-                          }`}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                          notificationTab === 'updates'
+                            ? 'bg-white text-black shadow-sm'
+                            : 'text-white hover:text-white bg-neutral-800/80 hover:bg-neutral-800'
+                        }`}
                       >
                         Announcements ({brandUpdates.length})
                       </button>
@@ -732,160 +741,141 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
 
                   {/* Notifications Feed */}
                   <div className="max-h-[380px] overflow-y-auto divide-y divide-gray-100 bg-white">
-                    {/* Empty State */}
-                    {brandUpdates.length === 0 && latestWatches.length === 0 ? (
-                      <div className="py-12 px-6 text-center text-gray-400">
-                        <Bell size={28} className="mx-auto text-gray-300 mb-2 stroke-1" />
-                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">No Notifications Yet</p>
-                        <p className="text-[11px] text-gray-400 mt-1">Check back later for new timepiece releases and announcements.</p>
-                      </div>
-                    ) : (
-                      <>
-                        {/* 1. LATEST WATCHES & COLLECTIONS */}
-                        {(notificationTab === 'all' || notificationTab === 'watches') && latestWatches.length > 0 && (
-                          <div className="bg-amber-50/20">
-                            {notificationTab === 'all' && (
-                              <div className="px-4 py-2 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
-                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 flex items-center gap-1">
-                                  <Sparkles size={11} className="text-luxury-gold" />
-                                  Latest Collection Arrivals
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setNotificationsOpen(false);
-                                    onPageChange('shop');
-                                  }}
-                                  className="text-[9px] font-bold text-luxury-gold hover:underline uppercase tracking-wider"
-                                >
-                                  View All &rarr;
-                                </button>
-                              </div>
-                            )}
-
-                            {latestWatches.map((watch) => {
-                              const watchKey = watch._id || watch.id;
-                              const isUnread = !readWatchIds.includes(watchKey);
-                              return (
-                                <div
-                                  key={`watch-${watchKey}`}
-                                  onClick={() => {
-                                    if (isUnread) {
-                                      const newIds = [...readWatchIds, watchKey];
-                                      setReadWatchIds(newIds);
-                                      try {
-                                        localStorage.setItem('khroniq_read_watch_ids', JSON.stringify(newIds));
-                                      } catch (e) { }
-                                    }
-                                    setNotificationsOpen(false);
-                                    onPageChange('product-detail', { id: watchKey });
-                                  }}
-                                  className={`p-3.5 flex items-center gap-3 transition cursor-pointer hover:bg-gray-50 border-b border-gray-100/70 last:border-b-0 ${isUnread ? 'bg-amber-50/40' : 'bg-white'
-                                    }`}
-                                >
-                                  {/* Watch Thumbnail */}
-                                  <div className="relative shrink-0 w-13 h-13 rounded-lg overflow-hidden border border-gray-200 bg-neutral-100">
-                                    <img
-                                      src={watch.image}
-                                      alt={watch.name}
-                                      className="w-full h-full object-cover group-hover:scale-105 transition"
-                                      onError={(e) => { e.currentTarget.src = '/assets/watch_placeholder.png'; }}
-                                    />
-                                    {isUnread && (
-                                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981] animate-pulse" />
-                                    )}
-                                  </div>
-
-                                  {/* Watch Details */}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className="text-[9px] font-extrabold tracking-wider uppercase text-luxury-gold-dark bg-luxury-gold/15 px-1.5 py-0.5 rounded">
-                                        {watch.badge || 'NEW ARRIVAL'}
-                                      </span>
-                                      <span className="text-[10px] text-gray-500 font-medium capitalize truncate">
-                                        {watch.category || 'Collection'}
-                                      </span>
-                                    </div>
-                                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide truncate mt-0.5">
-                                      {watch.name}
-                                    </h4>
-                                    <div className="flex items-center justify-between mt-1">
-                                      <span className="text-xs font-extrabold text-black font-serif">
-                                        {formatPrice(getDiscountedPrice(watch), currentCurrency)}
-                                      </span>
-                                      <span className="text-[10px] font-bold text-luxury-gold hover:text-black transition">
-                                        View Watch &rarr;
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        {/* 2. BRAND ANNOUNCEMENTS */}
-                        {(notificationTab === 'all' || notificationTab === 'updates') && brandUpdates.length > 0 && (
-                          <div>
-                            {notificationTab === 'all' && (
-                              <div className="px-4 py-2 bg-gray-50/80 border-b border-gray-100">
-                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">
-                                  Brand Announcements
-                                </span>
-                              </div>
-                            )}
-
-                            {brandUpdates.map((update) => {
-                              const isUnread = !readUpdateIds.includes(update._id);
-                              return (
-                                <div
-                                  key={`update-${update._id}`}
-                                  onClick={() => {
-                                    if (isUnread) {
-                                      const newIds = [...readUpdateIds, update._id];
-                                      setReadUpdateIds(newIds);
-                                      try {
-                                        localStorage.setItem('khroniq_read_update_ids', JSON.stringify(newIds));
-                                      } catch (e) { }
-                                    }
-                                  }}
-                                  className={`p-4 transition cursor-pointer hover:bg-gray-50 ${isUnread ? 'bg-emerald-50/30' : 'bg-white'
-                                    }`}
-                                >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="flex items-center gap-2">
-                                      <span
-                                        className={`w-2 h-2 rounded-full shrink-0 ${isUnread
-                                          ? 'bg-emerald-500 shadow-[0_0_6px_#10b981] animate-pulse'
-                                          : 'bg-gray-300'
-                                          }`}
-                                      />
-                                      <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider line-clamp-1">
-                                        {update.title}
-                                      </h4>
-                                    </div>
-                                    {update.createdAt && (
-                                      <span className="text-[10px] text-gray-400 font-mono shrink-0 whitespace-nowrap">
-                                        {new Date(update.createdAt).toLocaleDateString('en-IN', {
-                                          day: '2-digit',
-                                          month: 'short',
-                                          year: 'numeric'
-                                        }).toUpperCase()}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {update.detail && (
-                                    <p className="text-xs text-gray-600 mt-1.5 leading-relaxed pl-4 line-clamp-3">
-                                      {update.detail}
-                                    </p>
+                    {/* 1. LATEST WATCHES TAB */}
+                    {notificationTab === 'watches' && (
+                      latestWatches.length === 0 ? (
+                        <div className="py-12 px-6 text-center text-gray-400">
+                          <Sparkles size={28} className="mx-auto text-gray-300 mb-2 stroke-1" />
+                          <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">No New Watches Yet</p>
+                          <p className="text-[11px] text-gray-400 mt-1">Check back later for new timepiece releases and collection launches.</p>
+                        </div>
+                      ) : (
+                        <div className="bg-white divide-y divide-gray-100">
+                          {latestWatches.map((watch) => {
+                            const watchKey = watch._id || watch.id;
+                            const isUnread = !readWatchIds.includes(watchKey);
+                            return (
+                              <div
+                                key={`watch-${watchKey}`}
+                                onClick={() => {
+                                  if (isUnread) {
+                                    const newIds = [...readWatchIds, watchKey];
+                                    setReadWatchIds(newIds);
+                                    try {
+                                      localStorage.setItem('khroniq_read_watch_ids', JSON.stringify(newIds));
+                                    } catch (e) { }
+                                  }
+                                  setNotificationsOpen(false);
+                                  onPageChange('product-detail', { id: watchKey });
+                                }}
+                                className={`p-3.5 flex items-center gap-3 transition cursor-pointer hover:bg-gray-50/80 ${
+                                  isUnread ? 'bg-amber-50/30' : 'bg-white'
+                                }`}
+                              >
+                                {/* Watch Thumbnail */}
+                                <div className="relative shrink-0 w-13 h-13 rounded-lg overflow-hidden border border-gray-200 bg-neutral-100">
+                                  <img
+                                    src={watch.image}
+                                    alt={watch.name}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition"
+                                    onError={(e) => { e.currentTarget.src = '/assets/watch_placeholder.png'; }}
+                                  />
+                                  {isUnread && (
+                                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981] animate-pulse" />
                                   )}
                                 </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </>
+
+                                {/* Watch Details */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-[9px] font-extrabold tracking-wider uppercase text-luxury-gold-dark bg-luxury-gold/15 px-1.5 py-0.5 rounded">
+                                      {watch.badge || 'NEW ARRIVAL'}
+                                    </span>
+                                    <span className="text-[10px] text-gray-500 font-medium capitalize truncate">
+                                      {watch.category || 'Collection'}
+                                    </span>
+                                  </div>
+                                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide truncate mt-0.5">
+                                    {watch.name}
+                                  </h4>
+                                  <div className="flex items-center justify-between mt-1">
+                                    <span className="text-xs font-extrabold text-black font-serif">
+                                      {formatPrice(getDiscountedPrice(watch), currentCurrency)}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-luxury-gold hover:text-black transition">
+                                      View Watch &rarr;
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )
+                    )}
+
+                    {/* 2. ANNOUNCEMENTS TAB */}
+                    {notificationTab === 'updates' && (
+                      brandUpdates.length === 0 ? (
+                        <div className="py-12 px-6 text-center text-gray-400">
+                          <Bell size={28} className="mx-auto text-gray-300 mb-2 stroke-1" />
+                          <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">No Announcements Yet</p>
+                          <p className="text-[11px] text-gray-400 mt-1">Check back later for official announcements and brand news.</p>
+                        </div>
+                      ) : (
+                        <div className="bg-white divide-y divide-gray-100">
+                          {brandUpdates.map((update) => {
+                            const isUnread = !readUpdateIds.includes(update._id);
+                            return (
+                              <div
+                                key={`update-${update._id}`}
+                                onClick={() => {
+                                  if (isUnread) {
+                                    const newIds = [...readUpdateIds, update._id];
+                                    setReadUpdateIds(newIds);
+                                    try {
+                                      localStorage.setItem('khroniq_read_update_ids', JSON.stringify(newIds));
+                                    } catch (e) { }
+                                  }
+                                }}
+                                className={`p-4 transition cursor-pointer hover:bg-gray-50 ${
+                                  isUnread ? 'bg-emerald-50/30' : 'bg-white'
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`w-2 h-2 rounded-full shrink-0 ${
+                                        isUnread
+                                          ? 'bg-emerald-500 shadow-[0_0_6px_#10b981] animate-pulse'
+                                          : 'bg-gray-300'
+                                      }`}
+                                    />
+                                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider line-clamp-1">
+                                      {update.title}
+                                    </h4>
+                                  </div>
+                                  {update.createdAt && (
+                                    <span className="text-[10px] text-gray-400 font-mono shrink-0 whitespace-nowrap">
+                                      {new Date(update.createdAt).toLocaleDateString('en-IN', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric'
+                                      }).toUpperCase()}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {update.detail && (
+                                  <p className="text-xs text-gray-600 mt-1.5 leading-relaxed pl-4 line-clamp-3">
+                                    {update.detail}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )
                     )}
                   </div>
 
