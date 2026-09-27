@@ -17,6 +17,8 @@ Allow: /policies
 Allow: /shipping
 Allow: /returns
 Allow: /cancellation
+Allow: /api/sitemap.xml
+Allow: /sitemap-products.xml
 Disallow: /admin
 Disallow: /admin/
 Disallow: /api/
@@ -26,5 +28,6 @@ Disallow: /cart
 Disallow: /reset-password/
 
 Sitemap: https://www.khroniq.com/sitemap.xml
+Sitemap: https://www.khroniq.com/sitemap-products.xml
 Sitemap: https://www.khroniq.com/api/sitemap.xml
 

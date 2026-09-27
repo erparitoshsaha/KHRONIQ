@@ -84,6 +84,33 @@ const SOCIALS = [
   },
 ];
 
+const resolveFooterHref = ({ page, args, action }) => {
+  if (action === 'warranty') return '#warranty';
+  if (page === 'home') return '/';
+  if (page === 'shop') {
+    if (args?.gender) return `/${args.gender}`;
+    if (args?.category) return `/shop?category=${encodeURIComponent(args.category)}`;
+    return '/shop';
+  }
+  if (page === 'static' && args?.view) {
+    const view = args.view;
+    if (view === 'about') return '/about';
+    if (view === 'contact') return '/contact';
+    if (view === 'faq') return '/faq';
+    if (view === 'blogs') return '/blogs';
+    if (view === 'warranty') return '/warranty';
+    if (view === 'privacy') return '/privacy-policy';
+    if (view === 'shipping') return '/shipping-policy';
+    if (view === 'refund') return '/refund-policy';
+    if (view === 'exchange') return '/replacement-policy';
+    if (view === 'cancellation') return '/cancellation-policy';
+    if (view === 'terms' || view === 'policies') return '/policies';
+    return `/policies?view=${view}`;
+  }
+  if (page) return `/${page}`;
+  return '#';
+};
+
 /* ─────────────────────────────────────────────────────────── */
 export default function Footer({ onPageChange, onWarrantyOpen, onOpenCountryModal }) {
   const [heroRef, heroVisible] = useInView(0.1);
@@ -171,15 +198,24 @@ export default function Footer({ onPageChange, onWarrantyOpen, onOpenCountryModa
               <div className="flex items-center space-x-3 sm:space-x-4 mb-8">
                 <img
                   src="/assets/logo_icon.png"
-                  alt="KHRONIQ Logo"
+                  alt="KHRONIQ Watchmaker Crest"
+                  loading="lazy"
+                  decoding="async"
+                  width="64"
+                  height="64"
                   className="h-10 sm:h-14 md:h-16 w-auto object-contain shrink-0 -mt-1"
                 />
                 <img
                   src="/assets/logo_text.png"
                   alt="KHRONIQ"
+                  loading="lazy"
+                  decoding="async"
+                  width="180"
+                  height="48"
                   className="h-7 sm:h-10 md:h-12 w-auto max-w-[60vw] sm:max-w-none object-contain shrink-0"
                 />
               </div>
+
 
               {/* Divider */}
               <div style={{ width: '48px', height: '1.5px', background: '#047857', marginBottom: '1.5rem' }} />
@@ -250,20 +286,23 @@ export default function Footer({ onPageChange, onWarrantyOpen, onOpenCountryModa
             }}>
               {/* Column heading with gold underline */}
               <div style={{ marginBottom: '1.25rem' }}>
-                <h4 style={{
+                <h3 style={{
                   fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.22em',
                   textTransform: 'uppercase', color: '#ffffff', marginBottom: '0.5rem',
-                }}>{title}</h4>
+                }}>{title}</h3>
                 <div style={{ width: '20px', height: '1.5px', background: '#047857' }} />
               </div>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {links.map(({ label, page, args, action }) => (
                   <li key={label}>
-                    <button
-                      onClick={() => {
+                    <a
+                      href={resolveFooterHref({ page, args, action })}
+                      onClick={(e) => {
                         if (action === 'warranty' || label === 'Register My Watch') {
+                          e.preventDefault();
                           onWarrantyOpen && onWarrantyOpen();
-                        } else {
+                        } else if (onPageChange && page) {
+                          e.preventDefault();
                           localStorage.setItem('khroniq_is_gifting_journey', 'false');
                           onPageChange(page, args);
                         }
@@ -273,7 +312,7 @@ export default function Footer({ onPageChange, onWarrantyOpen, onOpenCountryModa
                         fontSize: '0.72rem', color: '#ffffff',
                         cursor: 'pointer', transition: 'color 0.25s',
                         display: 'flex', alignItems: 'center', gap: '6px',
-                        fontFamily: 'inherit',
+                        fontFamily: 'inherit', textDecoration: 'none'
                       }}
                       onMouseEnter={e => { e.currentTarget.style.color = '#047857'; }}
                       onMouseLeave={e => { e.currentTarget.style.color = '#ffffff'; }}
@@ -284,7 +323,7 @@ export default function Footer({ onPageChange, onWarrantyOpen, onOpenCountryModa
                         transition: 'width 0.3s',
                       }} className="link-dash" />
                       {label}
-                    </button>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -293,10 +332,10 @@ export default function Footer({ onPageChange, onWarrantyOpen, onOpenCountryModa
               {ci === 0 && (
                 <div style={{ marginTop: '2.5rem' }}>
                   <div style={{ marginBottom: '1.25rem' }}>
-                    <h4 style={{
+                    <h3 style={{
                       fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.22em',
                       textTransform: 'uppercase', color: '#ffffff', marginBottom: '0.5rem',
-                    }}>Connect</h4>
+                    }}>Connect</h3>
                     <div style={{ width: '20px', height: '1.5px', background: '#047857' }} />
                   </div>
 
@@ -435,18 +474,25 @@ export default function Footer({ onPageChange, onWarrantyOpen, onOpenCountryModa
               { label: 'Privacy Policy', page: 'static', args: { view: 'privacy' } },
               { label: 'Cookie Preferences', page: 'static', args: { view: 'cookie' } },
             ].map(({ label, page, args }) => (
-              <button
+              <a
                 key={label}
-                onClick={() => onPageChange(page, args)}
+                href={resolveFooterHref({ page, args })}
+                onClick={(e) => {
+                  if (onPageChange && page) {
+                    e.preventDefault();
+                    onPageChange(page, args);
+                  }
+                }}
                 style={{
                   background: 'none', border: 'none', padding: 0,
                   fontSize: '0.6rem', color: '#ffffff', opacity: 0.6,
                   cursor: 'pointer', letterSpacing: '0.06em',
                   transition: 'color 0.25s', fontFamily: 'inherit',
+                  textDecoration: 'none'
                 }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#047857'; e.currentTarget.style.opacity = '1'; }}
                 onMouseLeave={e => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.opacity = '0.6'; }}
-              >{label}</button>
+              >{label}</a>
             ))}
           </div>
 
@@ -460,15 +506,24 @@ export default function Footer({ onPageChange, onWarrantyOpen, onOpenCountryModa
         <div className="flex items-center justify-center space-x-3 sm:space-x-6 md:space-x-8 select-none pointer-events-none opacity-90">
           <img
             src="/assets/logo_icon.png"
-            alt="KHRONIQ Logo"
+            alt="KHRONIQ Brand Crest"
+            loading="lazy"
+            decoding="async"
+            width="112"
+            height="112"
             className="h-10 sm:h-18 md:h-24 lg:h-28 w-auto object-contain shrink-0 -mt-1 sm:-mt-2 md:-mt-3 filter drop-shadow-[0_0_15px_rgba(4,120,87,0.2)]"
           />
           <img
             src="/assets/logo_text.png"
             alt="KHRONIQ"
+            loading="lazy"
+            decoding="async"
+            width="320"
+            height="80"
             className="h-7 sm:h-13 md:h-17 lg:h-20 w-auto max-w-[65vw] sm:max-w-none object-contain shrink-0 filter drop-shadow-[0_0_15px_rgba(4,120,87,0.2)]"
           />
         </div>
+
       </div>
 
       {/* thin gold bottom line */}

@@ -14,6 +14,7 @@ import {
   Baby, Briefcase, User, UserRound,
 } from 'lucide-react';
 import BackButton from '../components/BackButton';
+import Breadcrumbs from '../components/Breadcrumbs';
 import { useSEO } from '../utils/seo';
 
 /* ─────────────────────────────────────────────────────────────────
@@ -258,13 +259,19 @@ export default function Gifting({ onPageChange, params }) {
     { width: 3, height: 3, top: '88%', left: '42%', background: '#fff', dur: 7, del: 2.5 },
   ];
 
+  const giftingBreadcrumbs = [
+    { label: 'Home', page: 'home' },
+    { label: 'Gifting' }
+  ];
+
   return (
     <div className="dark-panel">
       {/* ══════ HERO ══════ */}
       <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden bg-[#0d0b08]">
-        {/* Back Button */}
-        <div className="absolute top-6 left-6 z-20">
+        {/* Top Navigation Row: Back Button & Breadcrumbs */}
+        <div className="absolute top-6 left-6 right-6 z-20 flex items-center justify-between gap-4">
           <BackButton onPageChange={onPageChange} fallbackPage="home" label="BACK" dark={true} />
+          <Breadcrumbs items={giftingBreadcrumbs} onPageChange={onPageChange} dark={true} />
         </div>
         {/* Background image */}
         <div
@@ -283,7 +290,7 @@ export default function Gifting({ onPageChange, params }) {
         {particleData.map((p, i) => <FloatingParticle key={i} style={p} />)}
 
         {/* Content */}
-        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto space-y-8">
+        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto space-y-8 pt-16 sm:pt-0">
           {/* Badge */}
           <motion.div
             initial={{ opacity: 0, y: -24 }}
@@ -297,21 +304,21 @@ export default function Gifting({ onPageChange, params }) {
             </span>
           </motion.div>
 
-          {/* Headline */}
+          {/* Headline - Unified Semantic H1 for SEO */}
           <motion.div
             initial={{ opacity: 0, y: 36 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.85, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           >
             <h1 className="font-cinzel font-bold text-5xl sm:text-6xl md:text-8xl tracking-wide uppercase leading-tight" style={{ color: '#ffffff' }}>
-              Gift the
-            </h1>
-            <h1 className="font-cinzel font-bold text-5xl sm:text-6xl md:text-8xl tracking-wide uppercase leading-tight mt-2 text-white"
-              style={{
-                color: '#ffffff',
-                filter: 'drop-shadow(0 0 24px rgba(255,255,255,0.4))',
-              }}>
-              Art of Time
+              <span>Gift the</span>
+              <span className="block mt-2 text-white"
+                style={{
+                  color: '#ffffff',
+                  filter: 'drop-shadow(0 0 24px rgba(255,255,255,0.4))',
+                }}>
+                Art of Time
+              </span>
             </h1>
           </motion.div>
 

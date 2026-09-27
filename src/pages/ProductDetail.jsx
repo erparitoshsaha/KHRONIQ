@@ -5,6 +5,8 @@ import { handleImageError } from '../utils/imageUtils';
 import { findProductInList, getProductUrl } from '../utils/productRouting';
 import ProductCard from '../components/ProductCard';
 import BackButton from '../components/BackButton';
+import Breadcrumbs from '../components/Breadcrumbs';
+
 import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2, Zap, Share2, Edit2, Trash2, X } from 'lucide-react';
 import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 import { useSEO, buildProductSchema } from '../utils/seo';
@@ -483,15 +485,27 @@ export default function ProductDetail({ params, onPageChange }) {
     }
   };
 
+  const collectionName = (product?.category === 'Khronomaster' ? 'Classic' : product?.category) || 'Collection';
+  const breadcrumbItems = [
+    { label: 'Home', page: 'home' },
+    { label: 'Shop', page: 'shop' },
+    { label: collectionName, page: 'shop', params: { category: collectionName } },
+    { label: product?.name || 'Timepiece' }
+  ];
+
   return (
-    <div className="space-y-16 pb-12">
+    <div className="space-y-12 pb-12">
       
-      {/* Back Button */}
-      <BackButton
-        onPageChange={onPageChange}
-        fallbackPage="shop"
-        label="BACK TO CATALOGUE"
-      />
+      {/* Top Navigation Row: Back Button & Breadcrumbs */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-black/5 pb-4">
+        <BackButton
+          onPageChange={onPageChange}
+          fallbackPage="shop"
+          label="BACK TO CATALOGUE"
+        />
+        <Breadcrumbs items={breadcrumbItems} onPageChange={onPageChange} />
+      </div>
+
 
       {/* Main Details Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -506,7 +520,12 @@ export default function ProductDetail({ params, onPageChange }) {
           >
             <img
               src={currentImage}
-              alt={product.name}
+              alt={product.name ? `${product.name} luxury watch — KHRONIQ` : 'KHRONIQ luxury watch'}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              width="600"
+              height="600"
               onError={(e) => handleImageError(e)}
               className="w-full h-full object-cover filter drop-shadow-[0_15px_35px_rgba(0,0,0,0.6)]"
             />
@@ -526,6 +545,8 @@ export default function ProductDetail({ params, onPageChange }) {
                 <img 
                   src={currentImage}
                   alt="Zoomed view"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => handleImageError(e)}
                   className="absolute max-w-none"
                   style={{
@@ -572,6 +593,10 @@ export default function ProductDetail({ params, onPageChange }) {
                   <img
                     src={imgUrl}
                     alt={`${product.name} perspective ${idx + 1}`}
+                    loading="lazy"
+                    decoding="async"
+                    width="80"
+                    height="80"
                     onError={(e) => handleImageError(e)}
                     className="w-full h-full object-cover"
                   />
@@ -579,6 +604,7 @@ export default function ProductDetail({ params, onPageChange }) {
               );
             })}
           </div>
+
           {/* Guarantees Box */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white p-4 border border-luxury-text/5 rounded shadow-sm mt-4">
             <div className="flex flex-col items-center text-center p-2 space-y-1">
@@ -849,7 +875,7 @@ export default function ProductDetail({ params, onPageChange }) {
         {/* Left: View Reviews */}
         <div className="lg:col-span-7 space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold font-serif uppercase tracking-widest text-luxury-text">Client Reviews</h3>
+            <h2 className="text-lg font-bold font-serif uppercase tracking-widest text-luxury-text">Client Reviews</h2>
             {approvedReviews.length > 0 && (
               <span className="text-xs text-gray-500 font-medium">
                 {approvedReviews.length} {approvedReviews.length === 1 ? 'Review' : 'Reviews'}
@@ -1137,7 +1163,7 @@ export default function ProductDetail({ params, onPageChange }) {
       {/* Related Products Section */}
       <section className="space-y-8">
         <div className="text-center">
-          <h3 className="text-xl font-bold font-serif uppercase tracking-widest text-luxury-text">Suggested Timepieces</h3>
+          <h2 className="text-xl font-bold font-serif uppercase tracking-widest text-luxury-text">Suggested Timepieces</h2>
           <div className="w-10 h-[1.5px] bg-luxury-gold-dark mx-auto mt-3" />
         </div>
 

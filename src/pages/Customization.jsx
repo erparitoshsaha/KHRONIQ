@@ -5,6 +5,7 @@ import { handleImageError } from '../utils/imageUtils';
 import { Paintbrush, ShoppingBag, ChevronLeft, Check, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BackButton from '../components/BackButton';
+import Breadcrumbs from '../components/Breadcrumbs';
 import { useSEO } from '../utils/seo';
 
 // ─── Colour & option data ─────────────────────────────────────────────────────
@@ -279,9 +280,16 @@ export default function Customization({ onPageChange, params }) {
   if (!selectedProduct) {
     return (
       <div className="space-y-10 pb-16">
-        {/* Back Button */}
-        <div>
+        {/* Top Navigation Row: Back Button & Breadcrumbs */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-luxury-text/10 pb-4">
           <BackButton onPageChange={onPageChange} fallbackPage="shop" label="BACK" />
+          <Breadcrumbs
+            items={[
+              { label: 'Home', page: 'home' },
+              { label: 'Bespoke Atelier' }
+            ]}
+            onPageChange={onPageChange}
+          />
         </div>
 
         {/* Header */}
@@ -380,13 +388,26 @@ export default function Customization({ onPageChange, params }) {
         transition={{ duration: 0.35 }}
         className="pb-16"
       >
-        {/* Back */}
-        <BackButton
-          customAction={() => setSelectedProduct(null)}
-          label="All Customizable Models"
-          className="mb-8"
-          dark={true}
-        />
+        {/* Top Navigation Row: Back Button & Breadcrumbs */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/10 pb-4 mb-8">
+          <BackButton
+            customAction={() => setSelectedProduct(null)}
+            label="All Customizable Models"
+            dark={true}
+          />
+          <Breadcrumbs
+            items={[
+              { label: 'Home', page: 'home' },
+              { label: 'Bespoke Atelier', page: 'customization' },
+              { label: selectedProduct.name }
+            ]}
+            onPageChange={(page) => {
+              if (page === 'customization') setSelectedProduct(null);
+              else onPageChange(page);
+            }}
+            dark={true}
+          />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
 

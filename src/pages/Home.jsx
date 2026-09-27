@@ -498,11 +498,22 @@ function WatchWheel({ products, selectedIndex, setSelectedIndex, size = 350 }) {
                 }}
                 transition={{ type: 'spring', ...springCfg }}
               >
-                <img src={p.image || p.images?.[0] || ''} alt={p.name || 'Timepiece'} onError={(e) => handleImageError(e)} className="w-full h-full object-contain p-2" />
+                <img
+                  src={p.image || p.images?.[0] || ''}
+                  alt={p.name ? `${p.name} — KHRONIQ timepiece` : 'KHRONIQ luxury watch'}
+                  loading="lazy"
+                  decoding="async"
+                  width="100"
+                  height="100"
+                  onError={(e) => handleImageError(e)}
+                  className="w-full h-full object-contain p-2"
+                />
               </motion.button>
+
             );
           })}
         </motion.div>
+
       </div>
 
       {/* Position counter below wheel — placed with safe margin below the lowest thumbnail reach */}
@@ -796,10 +807,15 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages }) {
               <div className="w-14 h-14 bg-black/95 rounded-sm p-1.5 flex items-center justify-center flex-shrink-0 shadow-sm">
                 <img
                   src={currentSlide.productImg}
-                  alt={currentSlide.name}
+                  alt={currentSlide.name ? `${currentSlide.name} — KHRONIQ timepiece` : 'KHRONIQ luxury watch'}
+                  loading="lazy"
+                  decoding="async"
+                  width="56"
+                  height="56"
                   onError={(e) => handleImageError(e)}
                   className="w-full h-full object-contain"
                 />
+
               </div>
               <div className="space-y-0.5">
                 <h3 className="font-serif text-lg font-bold text-black tracking-widest uppercase">
@@ -1247,24 +1263,30 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                 <img
                   src="/assets/logo_text.png"
                   alt="KHRONIQ"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                  width="240"
+                  height="48"
                   className="h-6 sm:h-8 md:h-10 lg:h-12 w-auto max-w-[65vw] sm:max-w-xs md:max-w-sm lg:max-w-none object-contain shrink-0"
                   style={{ filter: 'brightness(1.05) saturate(1.1)' }}
                 />
+
               </motion.span>
             </motion.div>
 
-            {/* Heading — both lines same depth */}
-            <motion.div initial={{ opacity: 0, y: 36 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, delay: 0.16, ease: [0.22, 1, 0.36, 1] }} className="select-none cursor-default">
-              <div className="font-cinzel font-bold text-2xl sm:text-3xl md:text-4xl tracking-wider text-white uppercase leading-tight">
+            {/* Heading — Semantic H1 for SEO */}
+            <motion.h1 initial={{ opacity: 0, y: 36 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, delay: 0.16, ease: [0.22, 1, 0.36, 1] }} className="select-none cursor-default font-cinzel font-bold text-2xl sm:text-3xl md:text-4xl tracking-wider text-white uppercase leading-tight">
+              <span className="block">
                 {heroSection?.title || 'Born from The'}
-              </div>
-              <div className="font-cinzel font-bold text-2xl sm:text-3xl md:text-4xl tracking-wider uppercase leading-tight mt-1">
-                <span className="text-white inline-block" style={{
-                  color: '#ffffff',
-                  filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.4)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))',
-                }}>{heroSection?.subtitle || 'Movement Of Time'}</span>
-              </div>
-            </motion.div>
+              </span>
+              <span className="text-white inline-block mt-1" style={{
+                color: '#ffffff',
+                filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.4)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))',
+              }}>
+                {heroSection?.subtitle || 'Movement Of Time'}
+              </span>
+            </motion.h1>
 
             {/* Subtitle */}
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.85, delay: 0.32 }}
@@ -1697,10 +1719,15 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-white/90 border border-neutral-200 flex items-center justify-center p-1">
                               <img
                                 src={item.image || item.images?.[0] || ''}
-                                alt={item.name || 'Timepiece'}
+                                alt={item.name ? `${item.name} — KHRONIQ timepiece` : 'KHRONIQ timepiece'}
+                                loading="lazy"
+                                decoding="async"
+                                width="56"
+                                height="56"
                                 onError={(e) => handleImageError(e)}
                                 className="max-h-full max-w-full object-contain"
                               />
+
                             </div>
                             {isSel && (
                               <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#047857]" />
@@ -1794,10 +1821,15 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                       <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10 border border-white/10 flex-shrink-0">
                         <img
                           src={review.productImage}
-                          alt={review.productName}
+                          alt={review.productName ? `${review.productName} luxury timepiece review` : 'Client Review Timepiece'}
+                          loading="lazy"
+                          decoding="async"
+                          width="40"
+                          height="40"
                           onError={(e) => handleImageError(e)}
                           className="w-full h-full object-cover"
                         />
+
                       </div>
                     )}
                     <div className="min-w-0">

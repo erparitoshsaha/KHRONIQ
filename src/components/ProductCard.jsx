@@ -100,11 +100,16 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
         <div className="aspect-square bg-[#f6f6f6] rounded-sm overflow-hidden relative flex items-center justify-center">
           <img
             src={product.image}
-            alt={product.name}
+            alt={product.name ? `${product.name} — Luxury Watch by KHRONIQ` : 'KHRONIQ Luxury Watch'}
+            loading="lazy"
+            decoding="async"
+            width="400"
+            height="400"
             onError={(e) => handleImageError(e)}
             className="w-full h-full object-cover transition-transform duration-500 ease-out"
             style={{ transform: isHovered ? 'scale(1.08)' : 'scale(1)' }}
           />
+
 
           {/* Hover shimmer */}
           <div

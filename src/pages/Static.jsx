@@ -3,7 +3,9 @@ import { Compass, Mail, Phone, MapPin, Award, CheckCircle2, ChevronDown, BookOpe
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchBlogs } from '../store/slices/watchSlice';
 import BackButton from '../components/BackButton';
+import Breadcrumbs from '../components/Breadcrumbs';
 import { useSEO, buildFaqSchema } from '../utils/seo';
+
 
 export default function Static({ params, onPageChange }) {
   const dispatch = useDispatch();
@@ -2109,18 +2111,49 @@ export default function Static({ params, onPageChange }) {
       )
     }
   ];
+  const staticTabTitles = {
+    about: 'Our Heritage & Brand Story',
+    contact: 'Contact Concierge',
+    shipping: 'Shipping & Delivery Policy',
+    exchange: 'Replacement & Exchange Policy',
+    refund: 'Refund Policy',
+    cancellation: 'Cancellation Policy',
+    warranty: 'Warranty Policy & Guarantee',
+    privacy: 'Privacy & Data Protection',
+    cod: 'Cash on Delivery (COD) Policy',
+    gifting: 'Gifting Policy',
+    repair: 'Repair & Servicing',
+    community: 'Community Guidelines',
+    faq: 'Frequently Asked Questions',
+    blogs: 'Horology Journal & Articles',
+    policies: 'Terms & Conditions',
+    terms: 'Terms of Service',
+    cookie: 'Cookie Policy'
+  };
+
+  const breadcrumbItems = [
+    { label: 'Home', page: 'home' },
+    { label: 'Concierge', page: 'static', params: { view: 'about' } },
+    { label: staticTabTitles[activeTab] || 'Information' }
+  ];
+
   return (
     <div className="space-y-8 pb-12">
-      {/* Back Button */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-0">
+      {/* Top Navigation Row: Back Button & Breadcrumbs */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-luxury-text/10 pb-4">
         <BackButton onPageChange={onPageChange} fallbackPage="home" label="BACK" />
+        <Breadcrumbs items={breadcrumbItems} onPageChange={onPageChange} />
       </div>
+
       {/* Header Banner */}
       <div className="border-b border-luxury-text/10 pb-6 text-center max-w-xl mx-auto space-y-2">
-        <span className="text-[10px] text-luxury-gold-dark font-bold tracking-widest uppercase">Client Services</span>
-        <h1 className="font-serif text-3xl font-bold uppercase tracking-wider text-luxury-text">Khroniq Concierge</h1>
+        <span className="text-[10px] text-luxury-gold-dark font-bold tracking-widest uppercase">Client Services & Atelier</span>
+        <h1 className="font-serif text-3xl font-bold uppercase tracking-wider text-luxury-text">
+          {staticTabTitles[activeTab] || 'Khroniq Concierge'}
+        </h1>
         <div className="w-12 h-[2px] bg-luxury-gold-dark mx-auto mt-3" />
       </div>
+
 
       {/* Tab Navigation */}
       <div className="flex flex-wrap justify-center border-b border-luxury-text/10 max-w-4xl mx-auto gap-y-1">
@@ -2201,6 +2234,20 @@ export default function Static({ params, onPageChange }) {
                   <p className="text-[11px] text-luxury-muted leading-relaxed font-light">{pil.description}</p>
                 </div>
               ))}
+            </div>
+
+            <div className="pt-6 text-center border-t border-luxury-text/10">
+              <a
+                href="/shop"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onPageChange('shop');
+                }}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-900 text-white hover:bg-neutral-800 transition text-xs font-bold uppercase tracking-widest rounded"
+              >
+                <span>Discover Our Collections</span>
+                <ArrowRight size={14} />
+              </a>
             </div>
           </div>
         )}

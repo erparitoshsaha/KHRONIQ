@@ -12,19 +12,33 @@
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="canonical" href="https://www.khroniq.com/" />
 
+    <!-- International & Local SEO (Geo & Hreflang) -->
+    <link rel="alternate" hreflang="en-IN" href="https://www.khroniq.com/" />
+    <link rel="alternate" hreflang="x-default" href="https://www.khroniq.com/" />
+    <meta name="geo.region" content="IN" />
+    <meta name="geo.placename" content="India" />
+    <meta name="geo.position" content="28.6139;77.2090" />
+    <meta name="ICBM" content="28.6139, 77.2090" />
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_IN" />
     <meta property="og:site_name" content="KHRONIQ" />
     <meta property="og:url" content="https://www.khroniq.com/" />
     <meta property="og:title" content="KHRONIQ — Born from The Movement Of Time" />
     <meta property="og:description" content="KHRONIQ — Born from The Movement Of Time. Discover our collection of contemporary luxury watches and precision timepieces, crafted for modern style, elegance, and distinction." />
     <meta property="og:image" content="https://www.khroniq.com/assets/spotlight_red_angled.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="KHRONIQ Luxury Watches" />
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@khroniq" />
     <meta name="twitter:title" content="KHRONIQ — Born from The Movement Of Time" />
     <meta name="twitter:description" content="KHRONIQ — Born from The Movement Of Time. Discover our collection of contemporary luxury watches and precision timepieces, crafted for modern style, elegance, and distinction." />
     <meta name="twitter:image" content="https://www.khroniq.com/assets/spotlight_red_angled.png" />
+    <meta name="twitter:image:alt" content="KHRONIQ Luxury Watches" />
 
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
@@ -36,9 +50,33 @@
             "@id": "https://www.khroniq.com/#organization",
             "name": "KHRONIQ",
             "url": "https://www.khroniq.com",
-            "logo": "https://www.khroniq.com/assets/logo_icon.png",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://www.khroniq.com/assets/logo_icon.png",
+              "width": 512,
+              "height": 512
+            },
+            "image": "https://www.khroniq.com/assets/spotlight_red_angled.png",
             "slogan": "Born from The Movement Of Time",
-            "description": "Born from The Movement Of Time. KHRONIQ crafts contemporary luxury watches and precision timepieces."
+            "description": "Born from The Movement Of Time. KHRONIQ crafts contemporary luxury watches and precision timepieces.",
+            "sameAs": [
+              "https://www.instagram.com/khroniqofficial",
+              "https://www.facebook.com/p/Khroniq-61590964700030/",
+              "https://www.linkedin.com/company/khroniq/"
+            ],
+            "contactPoint": [
+              {
+                "@type": "ContactPoint",
+                "contactType": "customer service",
+                "email": "support@khroniq.com",
+                "availableLanguage": ["en", "hi"],
+                "areaServed": "IN"
+              }
+            ],
+            "address": {
+              "@type": "PostalAddress",
+              "addressCountry": "IN"
+            }
           },
           {
             "@type": "WebSite",
@@ -48,17 +86,31 @@
             "headline": "Born from The Movement Of Time",
             "publisher": {
               "@id": "https://www.khroniq.com/#organization"
+            },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://www.khroniq.com/shop?search={search_term_string}"
+              },
+              "query-input": "required name=search_term_string"
             }
           }
         ]
       }
     </script>
 
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <!-- Resource Hints & Preconnections -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
+    <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+    <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@700;900&display=swap" rel="stylesheet" />
+
+    <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
   </head>
+
   <body class="bg-luxury-bg text-luxury-text">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

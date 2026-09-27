@@ -541,16 +541,28 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
               className="flex flex-col items-center gap-0.5 sm:gap-1 transition duration-300 cursor-pointer py-1 max-w-[130px] sm:max-w-none"
             >
               <img
+
                 src="/assets/logo_icon.png"
                 alt="KHRONIQ Logo"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                width="48"
+                height="48"
                 className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain shrink-0"
               />
               <img
                 src="/assets/logo_text.png"
-                alt="KHRONIQ"
+                alt="KHRONIQ - Born from The Movement Of Time"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                width="120"
+                height="20"
                 className="h-3.5 sm:h-4 md:h-5 max-w-[100px] sm:max-w-[120px] md:max-w-none object-contain shrink-0"
               />
             </button>
+
           </div>
 
           {/* Right Icons */}
@@ -695,7 +707,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
                           <button
                             type="button"
                             onClick={handleMarkAllRead}
-                            className="text-[10px] text-gray-300 hover:text-white uppercase font-bold tracking-wider underline cursor-pointer"
+                            className="text-[10px] text-white hover:text-white uppercase font-bold tracking-wider underline cursor-pointer"
                           >
                             Mark read
                           </button>

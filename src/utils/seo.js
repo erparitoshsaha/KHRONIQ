@@ -80,13 +80,17 @@ export function updateSEO({
 
   setMeta('property', 'og:type', ogType);
   setMeta('property', 'og:site_name', 'KHRONIQ');
+  setMeta('property', 'og:locale', 'en_IN');
   setMeta('property', 'og:title', effectiveOgTitle);
   setMeta('property', 'og:description', effectiveOgDesc);
   setMeta('property', 'og:image', effectiveOgImage);
+  setMeta('property', 'og:image:width', '1200');
+  setMeta('property', 'og:image:height', '630');
   setMeta('property', 'og:url', effectiveOgUrl);
 
   // 5. Twitter Card Tags
   setMeta('name', 'twitter:card', twitterCard);
+  setMeta('name', 'twitter:site', '@khroniq');
   setMeta('name', 'twitter:title', effectiveOgTitle);
   setMeta('name', 'twitter:description', effectiveOgDesc);
   setMeta('name', 'twitter:image', effectiveOgImage);
@@ -142,6 +146,7 @@ export function buildProductSchema(product, sellingPrice, canonicalUrl) {
     name: product.name,
     image: images,
     description: product.description || `${product.name} luxury timepiece crafted by KHRONIQ.`,
+    category: product.category || 'Luxury Watches',
     sku: product.id || (product._id ? product._id.toString() : ''),
     mpn: product.modelNo || product.uniqueCode || product.id,
     brand: {
@@ -153,6 +158,7 @@ export function buildProductSchema(product, sellingPrice, canonicalUrl) {
       url: canonicalUrl,
       priceCurrency: 'INR',
       price: sellingPrice || product.price || 0,
+      priceValidUntil: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       availability: (product.stock > 0)
         ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',
@@ -160,6 +166,41 @@ export function buildProductSchema(product, sellingPrice, canonicalUrl) {
       seller: {
         '@type': 'Organization',
         name: 'KHRONIQ'
+      },
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: 'IN',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+        merchantReturnDays: 7,
+        returnMethod: 'https://schema.org/ReturnByMail',
+        returnFees: 'https://schema.org/FreeReturn'
+      },
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: 0,
+          currency: 'INR'
+        },
+        shippingDestination: {
+          '@type': 'DefinedRegion',
+          addressCountry: 'IN'
+        },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 2,
+            unitCode: 'DAY'
+          },
+          transitTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 2,
+            maxValue: 4,
+            unitCode: 'DAY'
+          }
+        }
       }
     }
   };
@@ -218,3 +259,23 @@ export function buildFaqSchema(faqList) {
     }))
   };
 }
+
+/**
+ * Builds schema.org BreadcrumbList structured data for rich SERP breadcrumbs
+ * @param {Array<{ name: string, url: string }>} items
+ */
+export function buildBreadcrumbSchema(items) {
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((crumb, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      name: crumb.name,
+      item: crumb.url.startsWith('http') ? crumb.url : `${BASE_URL}${crumb.url.startsWith('/') ? '' : '/'}${crumb.url}`
+    }))
+  };
+}
+

@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import ProductCard from '../components/ProductCard';
 import BackButton from '../components/BackButton';
+import Breadcrumbs from '../components/Breadcrumbs';
 import { useSEO } from '../utils/seo';
+
 import { getDiscountedPrice, getProductMrp, selectCurrentCurrency, formatPrice, fetchFilters, fetchProducts } from '../store/slices/watchSlice';
 import { SlidersHorizontal, Search, RotateCcw, X, ChevronDown, ChevronUp } from 'lucide-react';
 import {
@@ -548,18 +550,49 @@ export default function Shop({ onPageChange, filterParams }) {
     </div>
   );
 
+  const shopHeading = useMemo(() => {
+
+    if (filterParams?.gender === 'men') return "Men's Luxury Watches";
+    if (filterParams?.gender === 'women') return "Women's Luxury Watches";
+    if (filterParams?.category) return `${filterParams.category} Collection`;
+    if (filterParams?.search) return `Search: "${filterParams.search}"`;
+    return 'Khroniq Catalogue';
+  }, [filterParams?.gender, filterParams?.category, filterParams?.search]);
+
+  const shopBreadcrumbs = useMemo(() => {
+    const crumbs = [{ label: 'Home', page: 'home' }];
+    if (filterParams?.gender === 'men') {
+      crumbs.push({ label: 'Shop', page: 'shop' });
+      crumbs.push({ label: 'Men' });
+    } else if (filterParams?.gender === 'women') {
+      crumbs.push({ label: 'Shop', page: 'shop' });
+      crumbs.push({ label: 'Women' });
+    } else if (filterParams?.category) {
+      crumbs.push({ label: 'Shop', page: 'shop' });
+      crumbs.push({ label: filterParams.category });
+    } else if (filterParams?.search) {
+      crumbs.push({ label: 'Shop', page: 'shop' });
+      crumbs.push({ label: `Search: "${filterParams.search}"` });
+    } else {
+      crumbs.push({ label: 'Catalogue' });
+    }
+    return crumbs;
+  }, [filterParams?.gender, filterParams?.category, filterParams?.search]);
+
   return (
     <div className="space-y-8 px-4 sm:px-6 lg:px-8 xl:px-10 py-8 max-w-[100vw] overflow-x-hidden">
-      {/* Back Button */}
-      <div>
+      {/* Top Navigation Row: Back Button & Breadcrumbs */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-luxury-text/10 pb-4">
         <BackButton onPageChange={onPageChange} fallbackPage="home" label="BACK" />
+        <Breadcrumbs items={shopBreadcrumbs} onPageChange={onPageChange} />
       </div>
 
       {/* Page Header */}
       <div className="border-b border-luxury-text/10 pb-6">
-        <h1 className="font-serif text-3xl font-bold uppercase text-luxury-text tracking-widest">Khroniq Catalogue</h1>
-        <p className="text-luxury-muted text-xs mt-1">Discover precision Swadeshi timepieces engineered for ultimate endurance.</p>
+        <h1 className="font-serif text-3xl font-bold uppercase text-luxury-text tracking-widest">{shopHeading}</h1>
+        <p className="text-luxury-muted text-xs mt-1">Discover precision Swadeshi timepieces engineered for modern luxury and ultimate endurance.</p>
       </div>
+
 
       {/* Main Grid: Filters & Products */}
       <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 items-start">
