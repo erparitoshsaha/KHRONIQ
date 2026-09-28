@@ -183,7 +183,7 @@ function GenderPanel({ label, img, gender, delay, accent, onPageChange }) {
       onMouseMove={handleMove}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={handleLeave}
-      className="dark-panel relative h-[600px] overflow-hidden cursor-pointer"
+      className="dark-panel relative h-[420px] sm:h-[500px] md:h-[560px] lg:h-[620px] overflow-hidden cursor-pointer rounded-2xl md:rounded-none shadow-md md:shadow-none"
       initial={{ opacity: 0, y: 60 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -202,9 +202,13 @@ function GenderPanel({ label, img, gender, delay, accent, onPageChange }) {
         }}
       />
 
-      {/* ── Image — follows mouse direction ── */}
+      {/* ── Image — follows mouse direction with responsive focal alignment ── */}
       <motion.div
-        className="absolute inset-[-5%] bg-cover bg-center"
+        className={`absolute inset-[-5%] bg-cover ${
+          gender === 'men'
+            ? 'bg-[position:22%_center] md:bg-center'
+            : 'bg-[position:50%_center] md:bg-center'
+        }`}
         style={{
           backgroundImage: `url('${panelImg}')`,
           x: imgX,
@@ -218,7 +222,7 @@ function GenderPanel({ label, img, gender, delay, accent, onPageChange }) {
       <motion.div
         className="absolute inset-0"
         style={{
-          background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.18) 50%, transparent 100%)',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.3) 45%, transparent 100%)',
           opacity: overlayOp,
         }}
       />
@@ -243,11 +247,11 @@ function GenderPanel({ label, img, gender, delay, accent, onPageChange }) {
 
       {/* ── Text block — parallax lift ── */}
       <motion.div
-        className="absolute bottom-0 left-0 w-full p-8 sm:p-12 space-y-4 z-10"
+        className="absolute bottom-0 left-0 w-full p-6 sm:p-10 md:p-12 space-y-2 sm:space-y-4 z-10"
         style={{ y: txtY }}
       >
         <motion.h3
-          className="font-serif text-3xl sm:text-4xl font-bold text-white tracking-wide uppercase drop-shadow-xl"
+          className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-wide uppercase drop-shadow-xl"
           animate={{ y: hovered ? -4 : 0, letterSpacing: hovered ? '0.08em' : '0.05em' }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         >
@@ -261,7 +265,7 @@ function GenderPanel({ label, img, gender, delay, accent, onPageChange }) {
         >
           <motion.button
             onClick={(e) => { e.stopPropagation(); onPageChange('shop', { gender }); }}
-            className="flex items-center gap-2 border-b pb-0.5 w-fit"
+            className="flex items-center gap-2 border-b pb-0.5 w-fit cursor-pointer"
             style={{ borderColor: accent }}
             whileHover={{ gap: 14 }}
             transition={{ duration: 0.35 }}
@@ -594,6 +598,9 @@ function HeroVideoCycler() {
       <button
         type="button"
         onClick={handlePrev}
+        onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onMouseMove={(e) => e.stopPropagation()}
         aria-label="Previous video"
         className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-40 w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-black/50 backdrop-blur-md border border-white/30 text-white flex items-center justify-center hover:bg-black/80 active:scale-95 transition-all duration-150 cursor-pointer pointer-events-auto touch-manipulation select-none shadow-xl"
       >
@@ -602,6 +609,9 @@ function HeroVideoCycler() {
       <button
         type="button"
         onClick={handleNext}
+        onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onMouseMove={(e) => e.stopPropagation()}
         aria-label="Next video"
         className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-40 w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-black/50 backdrop-blur-md border border-white/30 text-white flex items-center justify-center hover:bg-black/80 active:scale-95 transition-all duration-150 cursor-pointer pointer-events-auto touch-manipulation select-none shadow-xl"
       >
@@ -1249,11 +1259,8 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           { width: 5, height: 5, top: '44%', left: '30%', background: '#34d399', dur: 7.5, del: 2.5 },
         ].map((p, i) => <FloatingParticle key={i} style={p} />)}
 
-        {/* ── ALL content as one unified block — follows cursor ── */}
-        <motion.div
-          className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-12 gap-8 items-center pointer-events-none"
-          style={{ x: contentX, y: contentY }}
-        >
+        {/* ── ALL content as one unified block — stable and fixed in place ── */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-12 gap-8 items-center pointer-events-none">
           <div className="col-span-1 sm:col-span-8 space-y-6 text-center sm:text-left pointer-events-none sm:-translate-x-5 translate-y-4 sm:translate-y-8">
             {/* Badge */}
             <motion.div initial={{ opacity: 0, y: -26 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }} className="flex justify-center sm:justify-start pointer-events-auto">
@@ -1304,7 +1311,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
               </MagBtn>
             </motion.div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Scroll indicator */}
         <motion.div style={{ opacity: scrollFade }} className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 z-20 pointer-events-none">
@@ -1337,7 +1344,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
             transition={{ duration: 0.65, delay: 0.28, ease: [0.22, 1, 0.36, 1] }} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-0 px-3 sm:px-6 md:px-0">
           <GenderPanel
             label={genderSplitSection?.items?.[0]?.title || "Men's Watches"}
             img={genderSplitSection?.items?.[0]?.image || homeImages.gender_men || "/assets/men_watches.jpg"}

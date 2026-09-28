@@ -83,7 +83,7 @@ export default function MainLayout({
 
       <button
         onClick={() => setWarrantyOpen(true)}
-        className="fixed right-0 bottom-24 font-extrabold text-[11px] sm:text-[12px] tracking-[0.22em] uppercase py-4 px-2 rounded-l border border-r-0 border-[#047857]/40 shadow-[0_4px_25px_rgba(0,0,0,0.55)] hover:opacity-90 transition-all duration-300 z-40 cursor-pointer"
+        className="fixed right-0 bottom-28 sm:bottom-24 font-extrabold text-[9px] sm:text-[12px] tracking-[0.18em] sm:tracking-[0.22em] uppercase py-2.5 sm:py-4 px-1.5 sm:px-2 rounded-l border border-r-0 border-[#047857]/40 shadow-[0_4px_25px_rgba(0,0,0,0.55)] hover:opacity-90 transition-all duration-300 z-40 cursor-pointer"
         style={{
           writingMode: "vertical-rl",
           textOrientation: "mixed",
@@ -92,6 +92,7 @@ export default function MainLayout({
           WebkitTextFillColor: "#FFFFFF",
           textShadow: "0 0 2px rgba(255,255,255,0.8)",
         }}
+        aria-label="View Warranty Policy"
       >
         WARRANTY
       </button>

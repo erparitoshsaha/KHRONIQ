@@ -8,7 +8,7 @@ import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 
 import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2, Zap, Share2, Edit2, Trash2, X } from 'lucide-react';
-import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
+import { getExpectedDeliveryDate, calculateDeliveryEstimate, WAREHOUSE_ORIGIN_PINCODE } from '../utils/deliveryUtils';
 import { useSEO, buildProductSchema } from '../utils/seo';
 
 export default function ProductDetail({ params, onPageChange }) {
@@ -90,24 +90,34 @@ export default function ProductDetail({ params, onPageChange }) {
     };
   }, []);
 
-  // Pincode Checker States
+  // Pincode Checker States (Origin: 201010)
   const [pincode, setPincode] = useState('');
-  const [deliveryEstimate, setDeliveryEstimate] = useState('');
-  const [isChecked, setIsChecked] = useState(false);
+  const [deliveryResult, setDeliveryResult] = useState(null);
+  const [pincodeError, setPincodeError] = useState('');
+  const [isCheckingPincode, setIsCheckingPincode] = useState(false);
 
   const handleCheckPincode = (e) => {
-    e.preventDefault();
-    if (!pincode.trim()) {
-      alert('Please enter a pincode.');
+    if (e) e.preventDefault();
+    setPincodeError('');
+
+    if (!pincode || !pincode.trim()) {
+      setPincodeError('Please enter your 6-digit PIN code.');
+      setDeliveryResult(null);
       return;
     }
-    const dateStr = getExpectedDeliveryDate(pincode);
-    if (dateStr) {
-      setDeliveryEstimate(dateStr);
-      setIsChecked(true);
-    } else {
-      alert('Invalid pincode. Please enter digits.');
-    }
+
+    setIsCheckingPincode(true);
+    setTimeout(() => {
+      const result = calculateDeliveryEstimate(pincode);
+      if (result.isValid) {
+        setDeliveryResult(result);
+        setPincodeError('');
+      } else {
+        setDeliveryResult(null);
+        setPincodeError(result.error || 'Please enter a valid 6-digit Indian PIN code.');
+      }
+      setIsCheckingPincode(false);
+    }, 150);
   };
 
   // Hover Zoom States & Handler
@@ -754,37 +764,82 @@ export default function ProductDetail({ params, onPageChange }) {
           </div>
 
           {/* Delivery Pincode Checker */}
-          <div className="bg-luxury-gray border border-white/5 p-4 rounded space-y-3">
-            <div className="flex items-center space-x-2">
-              <Truck size={14} className="text-luxury-gold-dark" />
-              <h4 className="text-xs font-bold uppercase tracking-wider text-luxury-text">Estimated Delivery Courier</h4>
+          <div className="bg-white border border-gray-200/80 shadow-xs p-4 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Truck size={15} className="text-black" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-black">Estimated Delivery Courier</h4>
+              </div>
+              <span className="text-[10px] text-gray-500 font-medium tracking-tight">Origin: {WAREHOUSE_ORIGIN_PINCODE}</span>
             </div>
             
             <form onSubmit={handleCheckPincode} className="flex gap-2">
-              <input
-                type="text"
-                value={pincode}
-                onChange={(e) => {
-                  setPincode(e.target.value);
-                  setIsChecked(false);
-                }}
-                placeholder="Enter pincode (e.g. 110001)"
-                maxLength={8}
-                className="flex-1 bg-white border border-gray-300 rounded text-xs px-3 py-2 focus:outline-none focus:border-luxury-gold-dark text-luxury-text"
-              />
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={pincode}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setPincode(val);
+                    if (pincodeError) setPincodeError('');
+                  }}
+                  placeholder="Enter pincode (e.g. 110001)"
+                  maxLength={6}
+                  className="w-full bg-white border border-gray-300 rounded text-xs px-3.5 py-2.5 focus:outline-none focus:border-black focus:ring-1 focus:ring-black text-gray-900 placeholder:text-gray-400 font-medium"
+                />
+              </div>
               <button
                 type="submit"
-                className="px-5 py-2 bg-luxury-gold text-luxury-dark text-xs font-bold uppercase tracking-widest hover:bg-luxury-gold-dark transition cursor-pointer"
+                disabled={isCheckingPincode}
+                className="px-5 py-2.5 bg-black hover:bg-neutral-800 active:scale-95 text-white text-xs font-bold uppercase tracking-widest transition-all duration-200 cursor-pointer rounded flex items-center justify-center min-w-[84px] shrink-0"
               >
-                Check
+                {isCheckingPincode ? (
+                  <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : (
+                  'Check'
+                )}
               </button>
             </form>
 
-            {isChecked && deliveryEstimate && (
-              <div className="pt-2.5 border-t border-white/5 space-y-1">
-                <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Estimated Delivery</p>
-                <p className="text-xs font-semibold text-luxury-text">{deliveryEstimate}</p>
-                <p className="text-[8px] text-gray-500 font-light leading-relaxed">Secure courier service dispatched directly from our Indian Manufacture headquarters.</p>
+            {pincodeError && (
+              <p className="text-[11px] text-red-600 font-medium">{pincodeError}</p>
+            )}
+
+            {deliveryResult && (
+              <div className="pt-3 border-t border-gray-100 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-1.5 text-emerald-700">
+                      <CheckCircle2 size={14} className="shrink-0" />
+                      <p className="text-[11px] font-bold uppercase tracking-wider">
+                        Delivery by {deliveryResult.dateRangeText}
+                      </p>
+                    </div>
+                    <p className="text-[11px] text-gray-600 mt-0.5">
+                      Estimated transit: <strong className="text-gray-900">{deliveryResult.daysText}</strong> ({deliveryResult.zone})
+                    </p>
+                  </div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded shrink-0">
+                    Free Shipping
+                  </span>
+                </div>
+
+                <div className="bg-gray-50/80 rounded p-2.5 text-[10px] text-gray-600 space-y-1 border border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <span>Dispatched from:</span>
+                    <strong className="text-gray-800">Ghaziabad Central Hub (PIN: {WAREHOUSE_ORIGIN_PINCODE})</strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Courier Partner:</span>
+                    <strong className="text-gray-800">{deliveryResult.courier}</strong>
+                  </div>
+                  <div className="flex items-center justify-between text-emerald-700 font-semibold pt-0.5 border-t border-gray-200/60">
+                    <span>Cash on Delivery:</span>
+                    <span>Available</span>
+                  </div>
+                </div>
               </div>
             )}
           </div>

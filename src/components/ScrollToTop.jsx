@@ -45,7 +45,7 @@ export default function ScrollToTop() {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={scrollToTop}
-          className="fixed bottom-8 right-8 z-50 w-12 h-12 flex items-center justify-center bg-[#0e0d0b] border border-white/10 text-luxury-gold hover:text-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.35)] cursor-pointer focus:outline-none transition-colors duration-200"
+          className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-50 w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-[#0e0d0b] border border-white/10 text-luxury-gold hover:text-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.35)] cursor-pointer focus:outline-none transition-colors duration-200"
           aria-label="Scroll to top"
         >
           {/* Circular Progress SVG */}
