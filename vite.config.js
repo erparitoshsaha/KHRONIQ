@@ -17,5 +17,27 @@ export default defineConfig({
         secure: false
       }
     }
+  },
+  build: {
+    target: 'es2020',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('framer-motion')) {
+              return 'framer-motion';
+            }
+            if (id.includes('lucide-react')) {
+              return 'lucide-icons';
+            }
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-redux') || id.includes('@reduxjs/toolkit')) {
+              return 'react-vendor';
+            }
+          }
+        }
+      }
+    }
   }
 })

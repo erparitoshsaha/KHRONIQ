@@ -587,6 +587,7 @@ function HeroVideoCycler() {
         key={vidIdx}
         muted
         playsInline
+        preload="metadata"
         onEnded={handleEnded}
         className="object-cover w-full h-full brightness-[0.87]"
         style={{ objectPosition: '30% 50%', opacity: fade ? 1 : 0, transition: 'opacity 0.35s ease' }}

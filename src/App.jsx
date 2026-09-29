@@ -4,13 +4,13 @@ import { store } from './store';
 import { parseRouteFromPath, getProductIdentifier, findProductInList, incrementNavCount } from './utils/productRouting';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
-import Shop from './pages/Shop';
-import ProductDetail from './pages/ProductDetail';
-import CartPage from './pages/CartPage';
-import Login from './pages/Login';
 import { fetchProducts, fetchCoupons, fetchUserProfile, fetchFilters, fetchFooterSections, fetchContentSections } from './store/slices/watchSlice';
 
-// Lazy-load secondary / heavy routes to split bundles cleanly
+// Lazy-load routes to split bundles cleanly and minimize initial bundle size
+const Shop = lazy(() => import('./pages/Shop'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail'));
+const CartPage = lazy(() => import('./pages/CartPage'));
+const Login = lazy(() => import('./pages/Login'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Admin = lazy(() => import('./pages/Admin'));
