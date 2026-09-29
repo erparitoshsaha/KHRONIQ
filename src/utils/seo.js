@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 
 const BASE_URL = 'https://www.khroniq.com';
 const DEFAULT_IMAGE = 'https://www.khroniq.com/assets/spotlight_red_angled.png';
-const DEFAULT_TITLE = 'KHRONIQ — Born from The Movement Of Time';
-const DEFAULT_DESCRIPTION = 'KHRONIQ — Born from The Movement Of Time. Discover our collection of contemporary luxury watches and precision timepieces, crafted for modern style, elegance, and distinction.';
-const DEFAULT_KEYWORDS = 'KHRONIQ, luxury watches, timepieces, luxury watch brand India, men watches, women watches, horology, bespoke watches';
+const DEFAULT_TITLE = "KHRONIQ Watches India — Men's & Women's Analog Watches Online | Luxury & Stylish Timepieces";
+const DEFAULT_DESCRIPTION = "Discover KHRONIQ Watches India. Shop premium men's & women's analog watches online, stylish leather strap watches, classic black dial watches, and luxury timepieces under 1000, 2000, 3000, 5000 with free insured express shipping.";
+const DEFAULT_KEYWORDS = "KHRONIQ Watches, KHRONIQ Watch, KHRONIQ Watches India, KHRONIQ Men's Watches, KHRONIQ Women's Watches, men's analog watches, men's analog watches India, men's watches online, stylish watches for men, premium watches for men, luxury watches for men, classic watches for men, elegant watches for men, formal watches for men, casual watches for men, black dial watches for men, leather strap watches for men, brown leather strap watches, minimalist watches for men, fashionable watches for men, women's analog watches, women's watches online, watches for women India, stylish watches for women, elegant watches for women, premium watches for women, fashionable watches for women, minimalist watches for women, ladies analog watches, women's leather strap watches, watches under 1000, watches under 2000, watches under 3000, watches under 5000";
 
 /**
  * Normalizes an image URL to an absolute URL

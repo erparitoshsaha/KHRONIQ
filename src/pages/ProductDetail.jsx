@@ -8,7 +8,7 @@ import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 
 import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2, Zap, Share2, Edit2, Trash2, X } from 'lucide-react';
-import { getExpectedDeliveryDate, calculateDeliveryEstimate, WAREHOUSE_ORIGIN_PINCODE } from '../utils/deliveryUtils';
+import { getExpectedDeliveryDate, calculateDeliveryEstimate } from '../utils/deliveryUtils';
 import { useSEO, buildProductSchema } from '../utils/seo';
 
 export default function ProductDetail({ params, onPageChange }) {
@@ -180,7 +180,7 @@ export default function ProductDetail({ params, onPageChange }) {
     ogDescription: productDescription,
     ogImage: product?.image,
     ogType: 'product',
-    keywords: product ? `${product.name}, KHRONIQ ${product.name}, ${product.category || 'luxury'} watch, ${product.specs?.movement || 'watch'}, luxury timepiece` : 'luxury watches, KHRONIQ',
+    keywords: product ? `${product.name}, KHRONIQ ${product.name}, KHRONIQ Watches India, ${product.gender === 'women' ? "women's analog watches, stylish watches for women, ladies analog watches, women's leather strap watches" : "men's analog watches, stylish watches for men, classic watches for men, black dial watches for men, leather strap watches for men"}, ${product.category || 'luxury'} watch, analog watches online India` : 'luxury watches, KHRONIQ Watches India',
     robots: product ? 'index, follow, max-image-preview:large' : (productsLoaded && apiAttempted ? 'noindex, follow' : 'index, follow'),
     jsonLd: productSchema,
     jsonLdId: 'product-jsonld'
@@ -765,12 +765,9 @@ export default function ProductDetail({ params, onPageChange }) {
 
           {/* Delivery Pincode Checker */}
           <div className="bg-white border border-gray-200/80 shadow-xs p-4 rounded-lg space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Truck size={15} className="text-black" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-black">Estimated Delivery Courier</h4>
-              </div>
-              <span className="text-[10px] text-gray-500 font-medium tracking-tight">Origin: {WAREHOUSE_ORIGIN_PINCODE}</span>
+            <div className="flex items-center space-x-2">
+              <Truck size={15} className="text-black" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-black">Estimated Delivery Courier</h4>
             </div>
             
             <form onSubmit={handleCheckPincode} className="flex gap-2">
@@ -826,19 +823,9 @@ export default function ProductDetail({ params, onPageChange }) {
                   </span>
                 </div>
 
-                <div className="bg-gray-50/80 rounded p-2.5 text-[10px] text-gray-600 space-y-1 border border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <span>Dispatched from:</span>
-                    <strong className="text-gray-800">Ghaziabad Central Hub (PIN: {WAREHOUSE_ORIGIN_PINCODE})</strong>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Courier Partner:</span>
-                    <strong className="text-gray-800">{deliveryResult.courier}</strong>
-                  </div>
-                  <div className="flex items-center justify-between text-emerald-700 font-semibold pt-0.5 border-t border-gray-200/60">
-                    <span>Cash on Delivery:</span>
-                    <span>Available</span>
-                  </div>
+                <div className="flex items-center justify-between bg-gray-50/80 rounded px-2.5 py-1.5 text-[10px] text-gray-600 border border-gray-100">
+                  <span>Courier Partner:</span>
+                  <strong className="text-gray-800 font-semibold">{deliveryResult.courier}</strong>
                 </div>
               </div>
             )}

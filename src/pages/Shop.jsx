@@ -206,26 +206,34 @@ export default function Shop({ onPageChange, filterParams }) {
   const seoConfig = useMemo(() => {
     if (filterParams?.gender === 'men') {
       return {
-        title: "Men's Luxury Watches & Timepieces | KHRONIQ",
-        description: "Explore our collection of sophisticated men's luxury watches. Crafted with precision quartz movement, architectural cases, and durable luxury straps.",
+        title: "Men's Analog Watches Online India | Stylish, Classic & Luxury Watches for Men — KHRONIQ",
+        description: "Discover KHRONIQ men's analog watches online in India. Shop stylish, premium, classic, formal, and casual watches for men with black dials, brown leather straps, and minimalist designs.",
         canonicalUrl: 'https://www.khroniq.com/men',
-        keywords: "men watches, men's luxury watches, gentleman timepieces, KHRONIQ men"
+        keywords: "men's analog watches, men's analog watches India, men's watches online, stylish watches for men, premium watches for men, luxury watches for men, classic watches for men, elegant watches for men, formal watches for men, casual watches for men, black dial watches for men, leather strap watches for men, brown leather strap watches, minimalist watches for men, fashionable watches for men, KHRONIQ Men's Watches"
       };
     }
     if (filterParams?.gender === 'women') {
       return {
-        title: "Women's Luxury Watches & Timepieces | KHRONIQ",
-        description: "Discover exquisite women's luxury timepieces by KHRONIQ. Timeless silhouettes, refined dials, and elegant horology.",
+        title: "Women's Analog Watches Online India | Stylish, Elegant & Ladies Leather Strap Watches — KHRONIQ",
+        description: "Shop women's analog watches online in India by KHRONIQ. Explore stylish, elegant, premium, fashionable, and minimalist watches for women, ladies analog watches, and leather strap watches.",
         canonicalUrl: 'https://www.khroniq.com/women',
-        keywords: "women watches, women's luxury watches, ladies luxury timepieces, KHRONIQ women"
+        keywords: "women's analog watches, women's watches online, watches for women India, stylish watches for women, elegant watches for women, premium watches for women, fashionable watches for women, minimalist watches for women, ladies analog watches, women's leather strap watches, KHRONIQ Women's Watches"
+      };
+    }
+    if (filterParams?.maxPrice) {
+      return {
+        title: `Watches Under ${filterParams.maxPrice} India | Stylish & Luxury Analog Watches — KHRONIQ`,
+        description: `Buy the best men's and women's analog watches under ${filterParams.maxPrice} online in India. Premium craftsmanship, official warranty, and free express delivery from KHRONIQ.`,
+        canonicalUrl: `https://www.khroniq.com/shop?maxPrice=${filterParams.maxPrice}`,
+        keywords: `watches under ${filterParams.maxPrice}, watches under 1000, watches under 2000, watches under 3000, watches under 5000, stylish watches for men, women's analog watches India`
       };
     }
     if (filterParams?.category) {
       return {
-        title: `${filterParams.category} Luxury Watches | KHRONIQ`,
-        description: `Shop the distinguished ${filterParams.category} timepiece collection from KHRONIQ. Designed for refined modern aesthetics.`,
+        title: `${filterParams.category} Luxury Watches | KHRONIQ India`,
+        description: `Shop the distinguished ${filterParams.category} timepiece collection from KHRONIQ. Contemporary men's and women's analog watches crafted for refined modern style.`,
         canonicalUrl: `https://www.khroniq.com/shop?category=${encodeURIComponent(filterParams.category)}`,
-        keywords: `${filterParams.category}, luxury watches, KHRONIQ ${filterParams.category}`
+        keywords: `${filterParams.category}, luxury watches, KHRONIQ ${filterParams.category}, men's analog watches, stylish watches`
       };
     }
     if (filterParams?.search) {
@@ -237,12 +245,12 @@ export default function Shop({ onPageChange, filterParams }) {
       };
     }
     return {
-      title: 'Shop Luxury Watches & Contemporary Timepieces | KHRONIQ',
-      description: 'Browse the complete collection of contemporary luxury watches and precision timepieces by KHRONIQ. Enjoy complimentary insured delivery across India.',
+      title: "Shop Luxury Watches & Contemporary Timepieces | KHRONIQ India",
+      description: "Browse men's & women's analog watches online at KHRONIQ. Explore stylish, classic, formal, black dial, leather strap watches, and collections under 1000, 2000, 3000, 5000.",
       canonicalUrl: 'https://www.khroniq.com/shop',
-      keywords: 'shop luxury watches, KHRONIQ collection, buy watches online India, luxury horology'
+      keywords: "KHRONIQ Watches, KHRONIQ Watch, KHRONIQ Watches India, men's analog watches, women's analog watches, stylish watches for men, watches for women India, leather strap watches, black dial watches, watches under 2000, watches under 3000, watches under 5000"
     };
-  }, [filterParams?.gender, filterParams?.category, filterParams?.search]);
+  }, [filterParams?.gender, filterParams?.category, filterParams?.search, filterParams?.maxPrice]);
 
   useSEO(seoConfig);
 
