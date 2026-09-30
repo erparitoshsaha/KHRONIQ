@@ -501,7 +501,7 @@ const watchSlice = createSlice({
       const targetId = (productId?._id || productId)?.toString();
       const existing = state.cart.find(item => {
         const itemProdId = (item.productId?._id || item.productId)?.toString();
-        return itemProdId === targetId && 
+        return itemProdId === targetId &&
           JSON.stringify(item.customization || {}) === JSON.stringify(customization || {});
       });
       if (existing) {
@@ -517,7 +517,7 @@ const watchSlice = createSlice({
       const targetId = (productId?._id || productId)?.toString();
       state.cart = state.cart.filter(item => {
         const itemProdId = (item.productId?._id || item.productId)?.toString();
-        return !(itemProdId === targetId && 
+        return !(itemProdId === targetId &&
           JSON.stringify(item.customization || {}) === JSON.stringify(customization || {}));
       });
     },
@@ -526,7 +526,7 @@ const watchSlice = createSlice({
       const targetId = (productId?._id || productId)?.toString();
       const existing = state.cart.find(item => {
         const itemProdId = (item.productId?._id || item.productId)?.toString();
-        return itemProdId === targetId && 
+        return itemProdId === targetId &&
           JSON.stringify(item.customization || {}) === JSON.stringify(customization || {});
       });
       if (existing) {
@@ -1083,7 +1083,7 @@ export const addToCart = (productId, quantity = 1, price = null, customization =
 
   const cartItem = cart.find(item => {
     const itemProdId = (item.productId?._id || item.productId)?.toString();
-    return itemProdId === targetId && 
+    return itemProdId === targetId &&
       JSON.stringify(item.customization || {}) === JSON.stringify(customization || {});
   });
   const currentQty = cartItem ? cartItem.quantity : 0;
@@ -2597,6 +2597,26 @@ export const fetchAdminUserSessions = (id) => async () => {
   } catch (error) {
     console.error('fetchAdminUserSessions error:', error);
     return { success: false, message: 'Server error fetching sessions.' };
+  }
+};
+export const assignOrderCourier = (orderId, logisticsPayload) => async (dispatch) => {
+  try {
+    const res = await fetch(`/api/logistics/assign-courier/${orderId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(logisticsPayload)
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      await dispatch(fetchOrders());
+      return { success: true, message: data.message, order: data.order };
+    } else {
+      return { success: false, message: data.message || 'Failed to assign courier' };
+    }
+  } catch (err) {
+    console.error('assignOrderCourier error:', err);
+    return { success: false, message: 'Network error while assigning courier' };
   }
 };
 

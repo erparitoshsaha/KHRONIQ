@@ -42,13 +42,16 @@ import {
   fetchLoginActivity,
   revokeAdminSession,
   revokeAllOtherSessions,
-  fetchAdminContentSections
+  fetchAdminContentSections,
+  assignOrderCourier
 } from '../store/slices/watchSlice';
 import WebsiteContentManager from '../components/admin/WebsiteContentManager';
 import AdminMediaField from '../components/admin/AdminMediaField';
 import AdminManagement from '../components/admin/AdminManagement';
 import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
 import { useSEO } from '../utils/seo';
+import { showToast } from '../utils/toast';
+import { calculateDeliveryEstimate } from '../utils/deliveryUtils';
 
 import { defaultHomeImages, HOMEPAGE_SECTION_LABELS, HOMEPAGE_MEDIA_SECTIONS } from './Home';
 import {
@@ -69,7 +72,12 @@ import {
   ChevronDown,
   FileText,
   Bell,
-  Users
+  Users,
+  Truck,
+  Calendar,
+  ExternalLink,
+  RefreshCw,
+  Clock
 } from 'lucide-react';
 
 const PRESET_STRAPS = [
@@ -370,6 +378,84 @@ export default function Admin({ onPageChange }) {
   const [sessionActionMsg, setSessionActionMsg] = useState(null);
   const [revokingSession, setRevokingSession] = useState(null);
   const [showRevokeAllModal, setShowRevokeAllModal] = useState(false);
+
+  // Live Logistics Courier Partners & Dispatch Management State
+  const [logisticsPartners, setLogisticsPartners] = useState([
+    { id: 'bluedart', name: 'Blue Dart Air Express', code: 'BLUEDART', status: 'Active', latencyMs: 142, avgWorkingDays: '1-2 Working Days' },
+    { id: 'delhivery', name: 'Delhivery Surface & Express', code: 'DELHIVERY', status: 'Active', latencyMs: 210, avgWorkingDays: '2-3 Working Days' },
+    { id: 'shiprocket', name: 'Shiprocket Multi-Carrier', code: 'SHIPROCKET', status: 'Active', latencyMs: 185, avgWorkingDays: '2-4 Working Days' },
+    { id: 'dtdc', name: 'DTDC Premium Express', code: 'DTDC', status: 'Maintenance', latencyMs: 890, avgWorkingDays: '3-5 Working Days' }
+  ]);
+  const [logisticsModalOrder, setLogisticsModalOrder] = useState(null);
+  const [logisticsFormData, setLogisticsFormData] = useState({
+    courierPartner: 'Blue Dart Air Express',
+    awbNumber: '',
+    estimatedDeliveryDate: '',
+    trackingUrl: '',
+    updateStatusToShipped: false
+  });
+  const [isSubmittingLogistics, setIsSubmittingLogistics] = useState(false);
+  const [isRefreshingLogistics, setIsRefreshingLogistics] = useState(false);
+
+  const fetchLiveLogistics = async () => {
+    setIsRefreshingLogistics(true);
+    try {
+      const res = await fetch('/api/logistics/partners', {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token || localStorage.getItem('token') || ''}`
+        }
+      });
+      const data = await res.json();
+      if (data?.success && Array.isArray(data.partners)) {
+        setLogisticsPartners(data.partners);
+        showToast('Logistics partners status refreshed', 'success');
+      }
+    } catch {
+      // Keep state resilient
+    } finally {
+      setIsRefreshingLogistics(false);
+    }
+  };
+
+  const openLogisticsModal = (order) => {
+    const existingLogistics = order.logistics || {};
+    let defaultEstimate = existingLogistics.estimatedDeliveryDate || '';
+    if (!defaultEstimate && order.shippingDetails?.zipCode) {
+      const estimate = calculateDeliveryEstimate(order.shippingDetails.zipCode);
+      if (estimate && estimate.isValid) {
+        defaultEstimate = estimate.dateRangeText;
+      }
+    }
+
+    setLogisticsModalOrder(order);
+    setLogisticsFormData({
+      courierPartner: existingLogistics.courierPartner || 'Blue Dart Air Express',
+      awbNumber: existingLogistics.awbNumber || `AWB-${Math.floor(100000000 + Math.random() * 900000000)}`,
+      estimatedDeliveryDate: defaultEstimate,
+      trackingUrl: existingLogistics.trackingUrl || '',
+      updateStatusToShipped: order.status === 'Paid' || order.status === 'Processing'
+    });
+  };
+
+  const handleSaveLogistics = async (e) => {
+    e.preventDefault();
+    if (!logisticsModalOrder) return;
+    setIsSubmittingLogistics(true);
+    try {
+      const res = await dispatch(assignOrderCourier(logisticsModalOrder.id, logisticsFormData));
+      if (res?.success) {
+        showToast(res.message || 'Courier assigned successfully!', 'success');
+        setLogisticsModalOrder(null);
+      } else {
+        showToast(res?.message || 'Failed to assign courier', 'error');
+      }
+    } catch {
+      showToast('Error assigning courier partner', 'error');
+    } finally {
+      setIsSubmittingLogistics(false);
+    }
+  };
+
 
   const dynamicCollectionOptions = (() => {
     const colCat = adminFilters.find(c => c.slug === 'collection');
@@ -7135,10 +7221,53 @@ export default function Admin({ onPageChange }) {
             </div>
           )}
 
-          {/* --- TAB CONTENT: ORDER DISPATCHER (MANAGE STATUSES) --- */}
+          {/* --- TAB CONTENT: ORDER DISPATCHER (MANAGE STATUSES & LOGISTICS) --- */}
           {activeTab === 'orders' && (
             <div className="space-y-6">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-white">Client Invoice Dispatcher</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-white">Client Invoice & Logistics Dispatcher</h3>
+                  <p className="text-[10px] text-gray-400 mt-0.5">Manage live courier partner availability, automated dispatch, and manual delivery date overrides.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchLiveLogistics}
+                  disabled={isRefreshingLogistics}
+                  className="self-start sm:self-auto text-[9px] font-bold uppercase tracking-wider text-gray-300 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded bg-white/5 border border-white/10 hover:bg-white/10 transition cursor-pointer"
+                >
+                  <RefreshCw size={11} className={isRefreshingLogistics ? 'animate-spin text-amber-400' : 'text-gray-400'} />
+                  <span>{isRefreshingLogistics ? 'Pinging APIs...' : 'Refresh Partner Status'}</span>
+                </button>
+              </div>
+
+              {/* LIVE LOGISTICS CARRIERS HEALTH MONITOR */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {logisticsPartners.map((partner) => {
+                  const isActive = partner.status === 'Active';
+                  return (
+                    <div key={partner.id} className="bg-luxury-dark/90 border border-white/10 p-3.5 rounded-lg flex items-center justify-between shadow-sm">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <Truck size={12} className={isActive ? 'text-amber-400' : 'text-gray-500'} />
+                          <p className="text-[11px] font-bold text-white">{partner.name}</p>
+                        </div>
+                        <p className="text-[9px] text-gray-400">SLA: <span className="text-gray-300">{partner.avgWorkingDays}</span></p>
+                        {partner.latencyMs && (
+                          <p className="text-[8px] font-mono text-gray-500">Latency: {partner.latencyMs}ms</p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded border border-white/5">
+                          <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                          <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? 'text-emerald-400' : 'text-amber-400'}`}>
+                            {partner.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
 
               {orders.length === 0 ? (
                 <p className="text-gray-400 text-xs italic p-4 text-center border border-dashed border-white/10 rounded">No order records found in simulated database.</p>
@@ -7152,96 +7281,307 @@ export default function Admin({ onPageChange }) {
                         <th className="p-4">Items</th>
                         <th className="p-4">Address</th>
                         <th className="p-4">Charged</th>
+                        <th className="p-4">Logistics & Courier</th>
                         <th className="p-4">Status Dispatch</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5 text-gray-300">
-                      {orders.map((o) => (
-                        <React.Fragment key={o.id}>
-                          <tr className="hover:bg-white/5 transition">
-                            <td className="p-4 font-mono font-bold text-black tracking-wider uppercase">
-                              <div className="flex items-center gap-1.5">
-                                <span>{o.id}</span>
-                                {(o.giftingOptions?.isGifting || o.giftingOptions?.occasion || o.giftingOptions?.note) && (
-                                  <Gift size={13} className="text-black animate-pulse" title={`Gifting Order: ${o.giftingOptions.occasion || 'Yes'}`} />
-                                )}
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <p className="text-white font-semibold">{o.userName}</p>
-                              <p className="text-[10px] text-gray-500 mt-0.5">{o.userEmail}</p>
-                            </td>
-                            <td className="p-4 max-w-xs">
-                              <p className="truncate text-gray-300 font-light" title={o.items.map(item => `${item.name} (x${item.quantity})`).join(', ')}>
-                                {o.items.map(item => `${item.name} (x${item.quantity})`).join(', ')}
-                              </p>
-                              {(o.giftingOptions?.isGifting || o.giftingOptions?.occasion || o.giftingOptions?.note) && (
-                                <div className="mt-1 text-[10px] text-black space-y-0.5 bg-white/5 border border-white/20 p-2 rounded">
-                                  <p className="font-bold uppercase tracking-wider">🎁 Curated Gift Order</p>
-                                  {o.giftingOptions.occasion && <p><span className="font-semibold text-black">Occasion:</span> {o.giftingOptions.occasion}</p>}
-                                  {o.giftingOptions.packaging && <p><span className="font-semibold text-black">Packaging:</span> {o.giftingOptions.packaging === 'couple' ? 'Couple Packaging' : 'Single Packaging'}</p>}
-                                  {o.giftingOptions.note && (
-                                    <div className="mt-1.5 pt-1.5 border-t border-white/5">
-                                      <button
-                                        type="button"
-                                        onClick={() => setExpandedNotes(prev => ({ ...prev, [o.id]: !prev[o.id] }))}
-                                        className="action-btn text-[9px] font-black tracking-widest uppercase bg-white/20 hover:bg-white/30 text-black px-2 py-0.5 rounded cursor-pointer transition"
-                                      >
-                                        {expandedNotes[o.id] ? '▲ Hide Note' : '▼ View Note'}
-                                      </button>
-                                    </div>
+                      {orders.map((o) => {
+                        const logistics = o.logistics || {};
+                        const partner = logistics.courierPartner || 'Blue Dart Air Express';
+                        const isManual = logistics.assignedMode === 'Manual';
+                        const awb = logistics.awbNumber;
+                        const estDate = logistics.estimatedDeliveryDate || (o.shippingDetails?.zipCode ? calculateDeliveryEstimate(o.shippingDetails.zipCode)?.dateRangeText : null);
+
+                        return (
+                          <React.Fragment key={o.id}>
+                            <tr className="hover:bg-white/5 transition">
+                              <td className="p-4 font-mono font-bold text-black tracking-wider uppercase">
+                                <div className="flex items-center gap-1.5">
+                                  <span>{o.id}</span>
+                                  {(o.giftingOptions?.isGifting || o.giftingOptions?.occasion || o.giftingOptions?.note) && (
+                                    <Gift size={13} className="text-black animate-pulse" title={`Gifting Order: ${o.giftingOptions.occasion || 'Yes'}`} />
                                   )}
                                 </div>
-                              )}
-                            </td>
-                            <td className="p-4 max-w-[180px] text-[11px] text-gray-300 leading-relaxed">
-                              <p className="font-semibold text-white">{o.shippingDetails?.fullName}</p>
-                              <p>{[o.shippingDetails?.houseNumber, o.shippingDetails?.streetAddress].filter(Boolean).join(', ')}</p>
-                              {o.shippingDetails?.landmark && <p className="text-gray-400">Landmark: {o.shippingDetails.landmark}</p>}
-                              <p>{o.shippingDetails?.city}, {o.shippingDetails?.zipCode}</p>
-                              <p className="text-gray-500">{o.shippingDetails?.country}</p>
-                            </td>
-                            <td className="p-4 font-bold text-black">{formatPrice(o.total, currentCurrency)}</td>
-                            <td className="p-4">
-                              <select
-                                value={o.status}
-                                onChange={(e) => dispatch(updateOrderStatus(o.id, e.target.value))}
-                                className={`bg-luxury-dark text-xs border rounded px-2.5 py-1 font-semibold focus:outline-none ${o.status === 'Delivered'
-                                    ? 'border-emerald-500 text-emerald-400'
-                                    : o.status === 'Cancelled'
-                                      ? 'border-red-500 text-red-400'
-                                      : o.status === 'Shipped'
-                                        ? 'border-sky-500 text-sky-400'
-                                        : o.status === 'Exchange/Refund Requested'
-                                          ? 'border-purple-500 text-purple-450'
-                                          : 'border-yellow-500 text-yellow-450'
-                                  }`}
-                              >
-                                <option value="Paid">Paid</option>
-                                <option value="Processing">Processing</option>
-                                <option value="Shipped">Shipped</option>
-                                <option value="Delivered">Delivered</option>
-                                <option value="Cancelled">Cancelled</option>
-                                <option value="Exchange/Refund Requested">Exchange/Refund Requested</option>
-                              </select>
-                            </td>
-                          </tr>
-                          {expandedNotes[o.id] && o.giftingOptions?.note && (
-                            <tr className="bg-white/5">
-                              <td colSpan={6} className="px-4 pb-4 pt-0">
-                                <div className="bg-black/40 border border-white/20 rounded-md p-4">
-                                  <p className="text-[9px] font-black uppercase tracking-widest text-white mb-2">Gift Note</p>
-                                  <p className="italic text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">
-                                    "{o.giftingOptions.note}"
-                                  </p>
+                              </td>
+                              <td className="p-4">
+                                <p className="text-white font-semibold">{o.userName}</p>
+                                <p className="text-[10px] text-gray-500 mt-0.5">{o.userEmail}</p>
+                              </td>
+                              <td className="p-4 max-w-xs">
+                                <p className="truncate text-gray-300 font-light" title={o.items.map(item => `${item.name} (x${item.quantity})`).join(', ')}>
+                                  {o.items.map(item => `${item.name} (x${item.quantity})`).join(', ')}
+                                </p>
+                                {(o.giftingOptions?.isGifting || o.giftingOptions?.occasion || o.giftingOptions?.note) && (
+                                  <div className="mt-1 text-[10px] text-black space-y-0.5 bg-white/5 border border-white/20 p-2 rounded">
+                                    <p className="font-bold uppercase tracking-wider">🎁 Curated Gift Order</p>
+                                    {o.giftingOptions.occasion && <p><span className="font-semibold text-black">Occasion:</span> {o.giftingOptions.occasion}</p>}
+                                    {o.giftingOptions.packaging && <p><span className="font-semibold text-black">Packaging:</span> {o.giftingOptions.packaging === 'couple' ? 'Couple Packaging' : 'Single Packaging'}</p>}
+                                    {o.giftingOptions.note && (
+                                      <div className="mt-1.5 pt-1.5 border-t border-white/5">
+                                        <button
+                                          type="button"
+                                          onClick={() => setExpandedNotes(prev => ({ ...prev, [o.id]: !prev[o.id] }))}
+                                          className="action-btn text-[9px] font-black tracking-widest uppercase bg-white/20 hover:bg-white/30 text-black px-2 py-0.5 rounded cursor-pointer transition"
+                                        >
+                                          {expandedNotes[o.id] ? '▲ Hide Note' : '▼ View Note'}
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="p-4 max-w-[180px] text-[11px] text-gray-300 leading-relaxed">
+                                <p className="font-semibold text-white">{o.shippingDetails?.fullName}</p>
+                                <p>{[o.shippingDetails?.houseNumber, o.shippingDetails?.streetAddress].filter(Boolean).join(', ')}</p>
+                                {o.shippingDetails?.landmark && <p className="text-gray-400">Landmark: {o.shippingDetails.landmark}</p>}
+                                <p>{o.shippingDetails?.city}, <span className="text-white font-mono">{o.shippingDetails?.zipCode}</span></p>
+                                <p className="text-gray-500">{o.shippingDetails?.country}</p>
+                              </td>
+                              <td className="p-4 font-bold text-black">{formatPrice(o.total, currentCurrency)}</td>
+                              
+                              {/* LOGISTICS & COURIER PARTNER COLUMN */}
+                              <td className="p-4 min-w-[210px]">
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-semibold text-white text-[11px] flex items-center gap-1">
+                                      <Truck size={12} className="text-amber-400 flex-shrink-0" />
+                                      <span>{partner}</span>
+                                    </span>
+                                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                                      isManual 
+                                        ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30' 
+                                        : 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30'
+                                    }`}>
+                                      {isManual ? 'Manual' : 'Auto'}
+                                    </span>
+                                  </div>
+
+                                  {estDate && (
+                                    <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                                      <Calendar size={10} className="text-gray-500 flex-shrink-0" />
+                                      <span>Est: <strong className="text-gray-200">{estDate}</strong></span>
+                                    </p>
+                                  )}
+
+                                  {awb && (
+                                    <p className="text-[9px] font-mono text-gray-400">
+                                      <span className="text-gray-500">AWB: </span>
+                                      <span className="text-white font-medium">{awb}</span>
+                                    </p>
+                                  )}
+
+                                  {logistics.assignedAt && isManual && (
+                                    <p className="text-[8px] text-gray-500 flex items-center gap-1">
+                                      <Clock size={9} />
+                                      <span>Updated: {new Date(logistics.assignedAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                    </p>
+                                  )}
+
+                                  <button
+                                    type="button"
+                                    onClick={() => openLogisticsModal(o)}
+                                    className="mt-1 text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-white border border-white/20 flex items-center gap-1 transition cursor-pointer"
+                                  >
+                                    <Edit size={10} />
+                                    <span>{isManual ? 'Re-assign Partner' : 'Assign / Manage'}</span>
+                                  </button>
                                 </div>
                               </td>
+
+                              <td className="p-4">
+                                <select
+                                  value={o.status}
+                                  onChange={(e) => dispatch(updateOrderStatus(o.id, e.target.value))}
+                                  className={`bg-luxury-dark text-xs border rounded px-2.5 py-1 font-semibold focus:outline-none ${o.status === 'Delivered'
+                                      ? 'border-emerald-500 text-emerald-400'
+                                      : o.status === 'Cancelled'
+                                        ? 'border-red-500 text-red-400'
+                                        : o.status === 'Shipped'
+                                          ? 'border-sky-500 text-sky-400'
+                                          : o.status === 'Exchange/Refund Requested'
+                                            ? 'border-purple-500 text-purple-450'
+                                            : 'border-yellow-500 text-yellow-450'
+                                    }`}
+                                >
+                                  <option value="Paid">Paid</option>
+                                  <option value="Processing">Processing</option>
+                                  <option value="Shipped">Shipped</option>
+                                  <option value="Delivered">Delivered</option>
+                                  <option value="Cancelled">Cancelled</option>
+                                  <option value="Exchange/Refund Requested">Exchange/Refund Requested</option>
+                                </select>
+                              </td>
                             </tr>
-                          )}
-                        </React.Fragment>
-                      ))}
+                            {expandedNotes[o.id] && o.giftingOptions?.note && (
+                              <tr className="bg-white/5">
+                                <td colSpan={7} className="px-4 pb-4 pt-0">
+                                  <div className="bg-black/40 border border-white/20 rounded-md p-4">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-white mb-2">Gift Note</p>
+                                    <p className="italic text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">
+                                      "{o.giftingOptions.note}"
+                                    </p>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* COURIER ASSIGNMENT & DELIVERY DATE OVERRIDE MODAL */}
+              {logisticsModalOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+                  <div className="bg-luxury-dark border border-white/20 rounded-lg max-w-lg w-full p-6 space-y-5 shadow-2xl relative">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                      <div className="flex items-center gap-2">
+                        <Truck size={16} className="text-amber-400" />
+                        <div>
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-white">Logistics & Delivery Dispatch</h4>
+                          <p className="text-[10px] text-gray-400">Order ID: <span className="font-mono text-white">{logisticsModalOrder.id}</span></p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setLogisticsModalOrder(null)}
+                        className="text-gray-400 hover:text-white p-1 rounded hover:bg-white/10 transition cursor-pointer"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+
+                    {/* Customer Destination Preview */}
+                    <div className="bg-white/5 border border-white/10 rounded p-3 text-xs space-y-1">
+                      <p className="text-[10px] uppercase font-bold text-gray-400">Destination Info</p>
+                      <p className="text-white font-medium">{logisticsModalOrder.shippingDetails?.fullName} — {logisticsModalOrder.shippingDetails?.city} ({logisticsModalOrder.shippingDetails?.zipCode})</p>
+                      {logisticsModalOrder.shippingDetails?.zipCode && (() => {
+                        const est = calculateDeliveryEstimate(logisticsModalOrder.shippingDetails.zipCode);
+                        return est?.isValid ? (
+                          <p className="text-[10px] text-emerald-400">
+                            Zone: {est.zone} • Transit: {est.daysText}
+                          </p>
+                        ) : null;
+                      })()}
+                    </div>
+
+                    <form onSubmit={handleSaveLogistics} className="space-y-4 text-xs">
+                      {/* Courier Partner Selection */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase font-bold text-gray-300 block">Select Logistics Partner</label>
+                        <select
+                          value={logisticsFormData.courierPartner}
+                          onChange={(e) => setLogisticsFormData(prev => ({ ...prev, courierPartner: e.target.value }))}
+                          className="w-full bg-luxury-gray border border-white/20 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+                        >
+                          {logisticsPartners.map(p => (
+                            <option key={p.id} value={p.name}>
+                              {p.name} {p.status === 'Active' ? '🟢 (Active)' : '🟡 (Maintenance)'} — {p.avgWorkingDays}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Estimated Delivery Date */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase font-bold text-gray-300 block">Estimated Delivery Date / Range</label>
+                        <input
+                          type="text"
+                          value={logisticsFormData.estimatedDeliveryDate}
+                          onChange={(e) => setLogisticsFormData(prev => ({ ...prev, estimatedDeliveryDate: e.target.value }))}
+                          placeholder="e.g. Thu, Oct 3 – Fri, Oct 4"
+                          className="w-full bg-luxury-gray border border-white/20 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+                        />
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <span className="text-[9px] text-gray-500">Quick suggestions:</span>
+                          {['+2 Working Days', '+3 Working Days', '+5 Working Days'].map((pill, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                const d = new Date();
+                                d.setDate(d.getDate() + (idx === 0 ? 2 : idx === 1 ? 3 : 5));
+                                const dateStr = d.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' });
+                                setLogisticsFormData(prev => ({ ...prev, estimatedDeliveryDate: dateStr }));
+                              }}
+                              className="text-[9px] px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 transition cursor-pointer"
+                            >
+                              {pill}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* AWB Number */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] uppercase font-bold text-gray-300">AWB Tracking Number</label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const autoAwb = `AWB-${Math.floor(100000000 + Math.random() * 900000000)}`;
+                              setLogisticsFormData(prev => ({ ...prev, awbNumber: autoAwb }));
+                            }}
+                            className="text-[9px] text-amber-400 hover:underline cursor-pointer"
+                          >
+                            Auto-Generate AWB
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={logisticsFormData.awbNumber}
+                          onChange={(e) => setLogisticsFormData(prev => ({ ...prev, awbNumber: e.target.value }))}
+                          placeholder="Enter Air Waybill (AWB) number"
+                          className="w-full bg-luxury-gray border border-white/20 rounded px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+
+                      {/* Update status checkbox */}
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="checkbox"
+                          id="markShippedCheckbox"
+                          checked={logisticsFormData.updateStatusToShipped}
+                          onChange={(e) => setLogisticsFormData(prev => ({ ...prev, updateStatusToShipped: e.target.checked }))}
+                          className="rounded border-white/20 bg-luxury-gray text-amber-400 focus:ring-0 cursor-pointer"
+                        />
+                        <label htmlFor="markShippedCheckbox" className="text-[11px] text-gray-300 cursor-pointer select-none">
+                          Mark order status as <strong className="text-white">Shipped</strong> automatically
+                        </label>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                        <button
+                          type="button"
+                          onClick={() => setLogisticsModalOrder(null)}
+                          className="px-4 py-2 rounded text-xs font-semibold text-gray-400 hover:text-white bg-transparent hover:bg-white/5 transition cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSubmittingLogistics}
+                          className="px-5 py-2 rounded text-xs font-bold uppercase tracking-wider text-black bg-white hover:bg-neutral-200 transition shadow-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          {isSubmittingLogistics ? (
+                            <>
+                              <RefreshCw size={12} className="animate-spin" />
+                              <span>Assigning...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check size={13} />
+                              <span>Save & Dispatch</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               )}
             </div>
