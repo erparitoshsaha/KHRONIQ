@@ -162,11 +162,11 @@ export default function ProductDetail({ params, onPageChange }) {
   const sellingPrice = product ? getSellingPrice(product) : 0;
   const canonicalIdentifier = product ? (product.slug || product.modelNo || product.id || '') : (rawParamId || '');
   const canonicalUrl = `https://www.khroniq.com/product/${encodeURIComponent(canonicalIdentifier)}`;
-  
+
   const productDescription = product
     ? (product.description
-        ? `${product.name} — ${product.description.slice(0, 160).trim()}`
-        : `${product.name} luxury timepiece featuring ${product.specs?.movement || 'precision quartz movement'}, ${product.specs?.case || 'refined stainless steel case'}, and ${product.specs?.waterResistance || 'water-resistant design'}.`)
+      ? `${product.name} — ${product.description.slice(0, 160).trim()}`
+      : `${product.name} luxury timepiece featuring ${product.specs?.movement || 'precision quartz movement'}, ${product.specs?.case || 'refined stainless steel case'}, and ${product.specs?.waterResistance || 'water-resistant design'}.`)
     : 'Discover luxury timepieces crafted for modern distinction at KHRONIQ.';
 
   const productSchema = useMemo(() => {
@@ -426,7 +426,7 @@ export default function ProductDetail({ params, onPageChange }) {
   const relatedProducts = products
     .filter(p => p.category === product.category && p.id !== product.id)
     .slice(0, 3);
-  
+
   // If not enough related products, fill with others
   if (relatedProducts.length < 3) {
     const fillProducts = products.filter(p => p.id !== product.id && !relatedProducts.some(rp => rp.id === p.id)).slice(0, 3 - relatedProducts.length);
@@ -506,7 +506,7 @@ export default function ProductDetail({ params, onPageChange }) {
 
   return (
     <div className="space-y-12 pb-12">
-      
+
       {/* Top Navigation Row: Back Button & Breadcrumbs */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-black/5 pb-4">
         <BackButton
@@ -520,10 +520,10 @@ export default function ProductDetail({ params, onPageChange }) {
 
       {/* Main Details Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        
+
         {/* Left Column: Image Gallery */}
         <div className="lg:col-span-6 space-y-6">
-          <div 
+          <div
             onMouseEnter={() => setIsZoomed(true)}
             onMouseLeave={() => { setIsZoomed(false); setZoomPos({ x: 0, y: 0, pxX: 0, pxY: 0, width: 0, height: 0 }); }}
             onMouseMove={handleMouseMove}
@@ -543,7 +543,7 @@ export default function ProductDetail({ params, onPageChange }) {
 
             {/* Hover Target Magnifying Square Lens */}
             {isZoomed && (
-              <div 
+              <div
                 className="absolute border-2 border-luxury-gold bg-[#0d0d0d] overflow-hidden rounded-full pointer-events-none hidden lg:block shadow-[0_20px_50px_rgba(0,0,0,0.65)] z-10"
                 style={{
                   width: '180px',
@@ -553,7 +553,7 @@ export default function ProductDetail({ params, onPageChange }) {
                   transform: 'translate(-50%, -50%)',
                 }}
               >
-                <img 
+                <img
                   src={currentImage}
                   alt="Zoomed view"
                   loading="lazy"
@@ -595,11 +595,10 @@ export default function ProductDetail({ params, onPageChange }) {
                   key={idx}
                   type="button"
                   onClick={() => setSelectedImageIndex(idx)}
-                  className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded border transition-all duration-200 overflow-hidden cursor-pointer ${
-                    isSelected
+                  className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded border transition-all duration-200 overflow-hidden cursor-pointer ${isSelected
                       ? 'border-luxury-gold ring-1 ring-luxury-gold shadow-md shadow-black/40 scale-105'
                       : 'border-white/10 opacity-70 hover:opacity-100 hover:border-white/40'
-                  }`}
+                    }`}
                 >
                   <img
                     src={imgUrl}
@@ -621,7 +620,7 @@ export default function ProductDetail({ params, onPageChange }) {
             <div className="flex flex-col items-center text-center p-2 space-y-1">
               <Truck size={18} className="text-luxury-gold-dark" />
               <span className="text-[9px] font-bold text-gray-800 tracking-widest uppercase">FREE SHIPPING</span>
-              <p className="text-[9px] text-gray-500">2-4 Business Days Express</p>
+              <p className="text-[9px] text-gray-500">2-4 Working Days Express</p>
             </div>
             <div className="flex flex-col items-center text-center p-2 space-y-1 border-t sm:border-t-0 sm:border-l sm:border-r border-luxury-text/10">
               <RefreshCw size={18} className="text-luxury-gold-dark" />
@@ -658,15 +657,15 @@ export default function ProductDetail({ params, onPageChange }) {
                 )}
               </button>
             </div>
-            
+
             {/* Review Badge */}
             <div className="flex items-center space-x-2">
               <div className="flex text-luxury-gold-dark">
                 {[...Array(5)].map((_, i) => (
-                  <Star 
-                    key={i} 
-                    size={14} 
-                    fill={i < Math.floor(Number(averageRating || 0)) ? "var(--color-luxury-gold-dark)" : "none"} 
+                  <Star
+                    key={i}
+                    size={14}
+                    fill={i < Math.floor(Number(averageRating || 0)) ? "var(--color-luxury-gold-dark)" : "none"}
                     className="stroke-1"
                   />
                 ))}
@@ -688,7 +687,7 @@ export default function ProductDetail({ params, onPageChange }) {
               <p className="text-2xl font-bold text-luxury-text">{formatPrice(sellingPrice, currentCurrency)}</p>
             )}
           </div>
-           
+
           <p className="text-gray-700 text-xs sm:text-sm leading-relaxed font-normal">{product.description}</p>
 
           <div className="border-t border-b border-luxury-text/10 py-6 space-y-4">
@@ -749,14 +748,13 @@ export default function ProductDetail({ params, onPageChange }) {
                   </button>
                 </div>
               )}
-              
+
               <button
                 onClick={() => dispatch(toggleWishlist(product.id))}
-                className={`w-full py-3.5 px-6 border text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer ${
-                  isWishlisted 
+                className={`w-full py-3.5 px-6 border text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer ${isWishlisted
                     ? 'border-luxury-gold-dark bg-luxury-gold-dark text-white'
                     : 'border-luxury-text/10 hover:border-luxury-text text-luxury-text bg-white'
-                }`}
+                  }`}
               >
                 <Heart size={16} fill={isWishlisted ? "currentColor" : "none"} />
                 <span>{isWishlisted ? 'Wishlisted' : 'Add to Wishlist'}</span>
@@ -770,7 +768,7 @@ export default function ProductDetail({ params, onPageChange }) {
               <Truck size={15} className="text-black" />
               <h4 className="text-xs font-bold uppercase tracking-wider text-black">Estimated Delivery Courier</h4>
             </div>
-            
+
             <form onSubmit={handleCheckPincode} className="flex gap-2">
               <div className="relative flex-1">
                 <input
@@ -840,21 +838,19 @@ export default function ProductDetail({ params, onPageChange }) {
         <div className="flex border-b border-luxury-text/10">
           <button
             onClick={() => setActiveTab('specs')}
-            className={`py-3 px-6 text-xs font-bold tracking-widest uppercase border-b-2 cursor-pointer transition ${
-              activeTab === 'specs' 
-                ? 'border-luxury-gold-dark text-luxury-gold-dark' 
+            className={`py-3 px-6 text-xs font-bold tracking-widest uppercase border-b-2 cursor-pointer transition ${activeTab === 'specs'
+                ? 'border-luxury-gold-dark text-luxury-gold-dark'
                 : 'border-transparent text-luxury-muted hover:text-luxury-text'
-            }`}
+              }`}
           >
             Technical Specifications
           </button>
           <button
             onClick={() => setActiveTab('details')}
-            className={`py-3 px-6 text-xs font-bold tracking-widest uppercase border-b-2 cursor-pointer transition ${
-              activeTab === 'details' 
-                ? 'border-luxury-gold-dark text-luxury-gold-dark' 
+            className={`py-3 px-6 text-xs font-bold tracking-widest uppercase border-b-2 cursor-pointer transition ${activeTab === 'details'
+                ? 'border-luxury-gold-dark text-luxury-gold-dark'
                 : 'border-transparent text-luxury-muted hover:text-luxury-text'
-            }`}
+              }`}
           >
             Craftsmanship
           </button>
@@ -865,30 +861,31 @@ export default function ProductDetail({ params, onPageChange }) {
           <div className="text-xs bg-white border border-luxury-text/10 rounded p-6 sm:p-8 shadow-sm">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
               {[
-                { label: 'Movement Type',    value: product.specs?.movement },
-                { label: 'Case Dimensions',  value: product.specs?.case },
-                { label: 'Dial Color',       value: product.specs?.dialColor },
-                { label: 'Case Material',    value: product.specs?.caseMaterial },
-                { label: 'Strap Material',   value: product.specs?.strap },
+                { label: 'Movement Type', value: product.specs?.movement },
+                { label: 'Case Dimensions', value: product.specs?.case },
+                { label: 'Dial Color', value: product.specs?.dialColor },
+                { label: 'Case Material', value: product.specs?.caseMaterial },
+                { label: 'Strap Material', value: product.specs?.strap },
                 { label: 'Water Resistance', value: product.specs?.waterResistance },
-                { label: 'Dial Glass Type',  value: product.specs?.glass },
-                { label: 'Function',         value: product.specs?.watchFunction },
-                { label: 'Collection',       value: product.specs?.collection || product.category },
-                { label: 'Gender',           value: product.gender ? (product.gender.toLowerCase() === 'men' ? "Men's" : product.gender.toLowerCase() === 'women' ? "Women's" : (product.gender.toLowerCase() === 'unisex' ? 'Unisex' : product.gender)) : '' },
+                { label: 'Dial Glass Type', value: product.specs?.glass },
+                { label: 'Function', value: product.specs?.watchFunction },
+                { label: 'Collection', value: product.specs?.collection || product.category },
+                { label: 'Gender', value: product.gender ? (product.gender.toLowerCase() === 'men' ? "Men's" : product.gender.toLowerCase() === 'women' ? "Women's" : (product.gender.toLowerCase() === 'unisex' ? 'Unisex' : product.gender)) : '' },
                 { label: 'Warranty Details', value: product.specs?.warrantyDetails },
-                { label: 'Warranty Period',  value: (() => {
+                {
+                  label: 'Warranty Period', value: (() => {
                     if (product.specs?.warrantyPeriod) return product.specs.warrantyPeriod;
                     const m = Number(product.warrantyMonths) || 0;
                     if (m <= 0) return '';
                     return m % 12 === 0 ? `${m / 12} Year${m / 12 > 1 ? 's' : ''}` : `${m} Month${m > 1 ? 's' : ''}`;
-                  })() },
-                { label: 'Origin',           value: product.specs?.origin },
+                  })()
+                },
+                { label: 'Origin', value: product.specs?.origin },
               ].map(({ label, value }, i, arr) => (
                 <div
                   key={label}
-                  className={`flex justify-between py-2.5 border-b border-luxury-text/10 ${
-                    i >= arr.length - 2 ? 'md:border-b-0' : ''
-                  } ${i === arr.length - 1 ? 'border-b-0' : ''}`}
+                  className={`flex justify-between py-2.5 border-b border-luxury-text/10 ${i >= arr.length - 2 ? 'md:border-b-0' : ''
+                    } ${i === arr.length - 1 ? 'border-b-0' : ''}`}
                 >
                   <span className="text-gray-500 tracking-wider uppercase">{label}</span>
                   <span className="text-gray-800 font-semibold uppercase text-right ml-4">{value || '—'}</span>
@@ -925,7 +922,7 @@ export default function ProductDetail({ params, onPageChange }) {
               </span>
             )}
           </div>
-          
+
           {approvedReviews.length === 0 ? (
             <p className="text-gray-500 text-xs italic">No reviews found for this timepiece yet.</p>
           ) : (
@@ -936,11 +933,10 @@ export default function ProductDetail({ params, onPageChange }) {
                 const isEditing = editingReviewId === revId;
 
                 return (
-                  <div 
-                    key={revId} 
-                    className={`bg-white border p-5 rounded shadow-sm transition-all duration-200 ${
-                      isEditing ? 'border-luxury-gold-dark ring-1 ring-luxury-gold-dark/40 shadow-md' : 'border-luxury-text/10'
-                    }`}
+                  <div
+                    key={revId}
+                    className={`bg-white border p-5 rounded shadow-sm transition-all duration-200 ${isEditing ? 'border-luxury-gold-dark ring-1 ring-luxury-gold-dark/40 shadow-md' : 'border-luxury-text/10'
+                      }`}
                   >
                     <div className="flex justify-between items-start">
                       <div className="space-y-1">
@@ -955,10 +951,10 @@ export default function ProductDetail({ params, onPageChange }) {
                         {/* Star icons */}
                         <div className="flex text-luxury-gold-dark">
                           {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i} 
-                              size={10} 
-                              fill={i < rev.rating ? "var(--color-luxury-gold-dark)" : "none"} 
+                            <Star
+                              key={i}
+                              size={10}
+                              fill={i < rev.rating ? "var(--color-luxury-gold-dark)" : "none"}
                               className="stroke-1"
                             />
                           ))}
@@ -1003,7 +999,7 @@ export default function ProductDetail({ params, onPageChange }) {
                               {editHoverRating || editRating} / 5 Stars
                             </span>
                           </div>
-                          <div 
+                          <div
                             className="flex space-x-2 py-0.5"
                             onMouseLeave={() => setEditHoverRating(0)}
                           >
@@ -1018,10 +1014,10 @@ export default function ProductDetail({ params, onPageChange }) {
                                   onMouseEnter={() => setEditHoverRating(star)}
                                   className="text-luxury-gold-dark focus:outline-none hover:scale-125 transition-transform duration-150 cursor-pointer p-0.5"
                                 >
-                                  <Star 
-                                    size={18} 
-                                    fill={isFilled ? "var(--color-luxury-gold-dark, #b8860b)" : "none"} 
-                                    stroke={isFilled ? "var(--color-luxury-gold-dark, #b8860b)" : "#9ca3af"} 
+                                  <Star
+                                    size={18}
+                                    fill={isFilled ? "var(--color-luxury-gold-dark, #b8860b)" : "none"}
+                                    stroke={isFilled ? "var(--color-luxury-gold-dark, #b8860b)" : "#9ca3af"}
                                   />
                                 </button>
                               );
@@ -1088,13 +1084,13 @@ export default function ProductDetail({ params, onPageChange }) {
               </button>
             )}
           </div>
-          
+
           {editingReviewId && (
             <div className="p-2.5 bg-luxury-gold-dark/10 border border-luxury-gold-dark/30 rounded text-luxury-gold-dark text-[11px] font-medium flex items-center justify-between">
               <span>Editing your existing review. Update your score and comment below.</span>
             </div>
           )}
-          
+
           {reviewMessage && (
             <div className="p-3 bg-luxury-gold-dark/10 border border-luxury-gold-dark/30 rounded text-luxury-gold-dark text-xs font-medium">
               {reviewMessage}
@@ -1120,7 +1116,7 @@ export default function ProductDetail({ params, onPageChange }) {
                     </span>
                   )}
                 </div>
-                <div 
+                <div
                   className="flex space-x-2 py-0.5"
                   onMouseLeave={() => setHoverRating(0)}
                 >
@@ -1139,9 +1135,9 @@ export default function ProductDetail({ params, onPageChange }) {
                         className="text-luxury-gold-dark focus:outline-none hover:scale-125 transition-transform duration-150 cursor-pointer p-0.5"
                         title={`${star} Star${star > 1 ? 's' : ''}`}
                       >
-                        <Star 
-                          size={22} 
-                          fill={isFilled ? "var(--color-luxury-gold-dark, #b8860b)" : "none"} 
+                        <Star
+                          size={22}
+                          fill={isFilled ? "var(--color-luxury-gold-dark, #b8860b)" : "none"}
                           stroke={isFilled ? "var(--color-luxury-gold-dark, #b8860b)" : "#9ca3af"}
                           className="transition-colors duration-150"
                         />
@@ -1212,10 +1208,10 @@ export default function ProductDetail({ params, onPageChange }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {relatedProducts.map((relProduct) => (
-            <ProductCard 
-              key={relProduct.id} 
-              product={relProduct} 
-              onPageChange={onPageChange} 
+            <ProductCard
+              key={relProduct.id}
+              product={relProduct}
+              onPageChange={onPageChange}
             />
           ))}
         </div>
@@ -1226,11 +1222,10 @@ export default function ProductDetail({ params, onPageChange }) {
         <div
           role="status"
           aria-live="polite"
-          className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded shadow-lg text-xs font-medium tracking-wide transition-all duration-300 ${
-            shareFeedback.isError
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded shadow-lg text-xs font-medium tracking-wide transition-all duration-300 ${shareFeedback.isError
               ? 'bg-neutral-900 text-red-400 border border-red-500/30'
               : 'bg-neutral-900 text-white border border-neutral-700'
-          }`}
+            }`}
         >
           {!shareFeedback.isError && <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />}
           <span>{shareFeedback.message}</span>

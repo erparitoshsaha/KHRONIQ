@@ -90,13 +90,13 @@ export function calculateDeliveryEstimate(destPincode, originPincode = WAREHOUSE
   const minDateStr = minDate.toLocaleDateString('en-IN', formatOptions);
   const maxDateStr = maxDate.toLocaleDateString('en-IN', formatOptions);
 
-  const dateRangeText = minDays === maxDays 
-    ? minDateStr 
+  const dateRangeText = minDays === maxDays
+    ? minDateStr
     : `${minDateStr} – ${maxDateStr}`;
 
-  const daysText = minDays === maxDays 
-    ? `${minDays} Business Day` 
-    : `${minDays}–${maxDays} Business Days`;
+  const daysText = minDays === maxDays
+    ? `${minDays} Working Day`
+    : `${minDays}–${maxDays} Working Days`;
 
   return {
     isValid: true,
