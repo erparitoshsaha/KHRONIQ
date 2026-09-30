@@ -56,6 +56,7 @@ export default function CountrySelect({
 
   // Close dropdown on outside click
   useEffect(() => {
+    if (!isOpen) return;
     function handleClickOutside(event) {
       if (containerRef.current && !containerRef.current.contains(event.target)) {
         setIsOpen(false);
@@ -64,7 +65,9 @@ export default function CountrySelect({
           c => c.toLowerCase() === searchQuery.trim().toLowerCase()
         );
         if (match) {
-          onChange(match);
+          if (match !== value) {
+            onChange(match);
+          }
           setSearchQuery(match);
         } else {
           // Revert to valid value
@@ -74,7 +77,7 @@ export default function CountrySelect({
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [searchQuery, value, onChange]);
+  }, [isOpen, searchQuery, value, onChange]);
 
   const handleSelect = (country) => {
     onChange(country);

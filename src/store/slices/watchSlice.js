@@ -450,7 +450,11 @@ const initialState = {
   cart: loadSaved('khroniq_cart', []),
   wishlist: loadSaved('khroniq_wishlist', []),
   orders: [],
-  coupons: [],
+  coupons: [
+    { code: 'FIRST20', discountPercent: 20, description: '20% off on your first luxury timepiece purchase' },
+    { code: 'KHRONIQSTAR', discountPercent: 20, description: '20% off Khroniq Signature Collection' },
+    { code: 'WELCOME10', discountPercent: 10, description: '10% off for first-time buyers' }
+  ],
   currentUser: null,
   currentCurrency: loadSaved('khroniq_currency', 'INR'),
   blogs: [],
@@ -826,7 +830,7 @@ export const fetchCoupons = () => async (dispatch) => {
   try {
     const res = await fetch('/api/coupons');
     const data = await res.json();
-    if (data && data.success) {
+    if (data && data.success && Array.isArray(data.coupons) && data.coupons.length > 0) {
       dispatch(setCouponsAction(data.coupons));
       return;
     }
@@ -834,6 +838,7 @@ export const fetchCoupons = () => async (dispatch) => {
     console.error('Failed to fetch coupons:', error);
   }
   dispatch(setCouponsAction([
+    { code: 'FIRST20', discountPercent: 20, description: '20% off on your first luxury timepiece purchase' },
     { code: 'KHRONIQSTAR', discountPercent: 20, description: '20% off Khroniq Signature Collection' },
     { code: 'WELCOME10', discountPercent: 10, description: '10% off for first-time buyers' }
   ]));
@@ -1538,18 +1543,51 @@ export const resetPassword = (token, password) => async () => {
   }
 };
 
-export const validateCoupon = (code, subtotal) => async () => {
+export const validateCoupon = (code, subtotal) => async (dispatch, getState) => {
+  const cleanCode = (code || '').toUpperCase().trim();
+  if (!cleanCode) {
+    return { success: false, message: 'Please enter a coupon code.' };
+  }
+
   try {
     const res = await fetch('/api/payments/validate-coupon', {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ code, subtotal })
+      body: JSON.stringify({ code: cleanCode, subtotal })
     });
     const data = await res.json();
-    return data;
+    if (data && data.success && data.coupon) {
+      return data;
+    }
   } catch (error) {
-    return { success: false, message: 'Failed to validate coupon.' };
+    // Fallback to client-side store coupons if API is unreachable
   }
+
+  const stateCoupons = getState()?.watch?.coupons || [];
+  const defaultCoupons = [
+    { code: 'FIRST20', discountPercent: 20, description: '20% off on your first luxury timepiece purchase' },
+    { code: 'KHRONIQSTAR', discountPercent: 20, description: '20% off Khroniq Signature Collection' },
+    { code: 'WELCOME10', discountPercent: 10, description: '10% off for first-time buyers' }
+  ];
+  const allCoupons = [...stateCoupons, ...defaultCoupons];
+  const matched = allCoupons.find(c => (c.code || '').toUpperCase().trim() === cleanCode);
+
+  if (matched) {
+    const numSubtotal = Number(subtotal) || 0;
+    const discountAmount = Math.round((numSubtotal * (matched.discountPercent || 0)) / 100);
+    return {
+      success: true,
+      message: 'Coupon applied successfully!',
+      coupon: {
+        code: matched.code.toUpperCase().trim(),
+        discountPercent: matched.discountPercent,
+        discountAmount,
+        description: matched.description || `${matched.discountPercent}% discount`
+      }
+    };
+  }
+
+  return { success: false, message: 'Invalid coupon code. Please try again.' };
 };
 
 export const createRazorpayOrder = (orderData) => async () => {

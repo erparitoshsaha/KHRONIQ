@@ -141,6 +141,7 @@ const ensureDb = async (req, res, next) => {
     if (!superAdminIntegrityEnsured) {
       superAdminIntegrityEnsured = true;
       ensureSuperAdminRoleIntegrity().catch(() => {});
+      seedDefaultCouponsSafe().catch(() => {});
     }
     next();
   } catch (err) {

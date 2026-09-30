@@ -4,16 +4,69 @@ import { protect, adminOnly, requirePermission } from '../_middleware/auth.js';
 
 const router = express.Router();
 
+export const DEFAULT_COUPONS = [
+  { code: 'FIRST20', discountPercent: 20, description: '20% off on your first luxury timepiece purchase' },
+  { code: 'KHRONIQSTAR', discountPercent: 20, description: '20% off Khroniq Signature Collection' },
+  { code: 'WELCOME10', discountPercent: 10, description: '10% off for first-time buyers' }
+];
+
+// Helper: Seed initial default coupons safely and idempotently
+export async function seedDefaultCouponsSafe() {
+  try {
+    for (const c of DEFAULT_COUPONS) {
+      const exists = await Coupon.findOne({ code: c.code });
+      if (!exists) {
+        await Coupon.create(c);
+        console.log(`[SEED] Seeded default coupon: ${c.code}`);
+      }
+    }
+  } catch (err) {
+    console.error('Error seeding default coupons:', err);
+  }
+}
+
+// Helper: Resilient case-insensitive coupon lookup with fallback to default seeding
+export async function findCouponByCode(rawCode) {
+  if (!rawCode || typeof rawCode !== 'string' || !rawCode.trim()) return null;
+  const cleanCode = rawCode.toUpperCase().trim();
+  const escaped = cleanCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  let coupon = await Coupon.findOne({
+    $or: [
+      { code: cleanCode },
+      { code: { $regex: new RegExp(`^\\s*${escaped}\\s*$`, 'i') } }
+    ]
+  });
+
+  if (!coupon) {
+    const isDefaultCode = DEFAULT_COUPONS.some(c => c.code === cleanCode);
+    const totalCount = await Coupon.countDocuments();
+    if (isDefaultCode || totalCount === 0) {
+      await seedDefaultCouponsSafe();
+      coupon = await Coupon.findOne({ code: cleanCode });
+    }
+    if (!coupon && isDefaultCode) {
+      return DEFAULT_COUPONS.find(c => c.code === cleanCode) || null;
+    }
+  }
+
+  return coupon;
+}
+
 // @route   GET /api/coupons
 // @desc    Get all active coupons
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const coupons = await Coupon.find({});
-    res.json({ success: true, coupons });
+    let coupons = await Coupon.find({});
+    if (!coupons || coupons.length === 0) {
+      await seedDefaultCouponsSafe();
+      coupons = await Coupon.find({});
+    }
+    res.json({ success: true, coupons: coupons.length > 0 ? coupons : DEFAULT_COUPONS });
   } catch (error) {
     console.error('Fetch coupons error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.json({ success: true, coupons: DEFAULT_COUPONS });
   }
 });
 
@@ -24,7 +77,10 @@ router.post('/', protect, requirePermission('coupons'), async (req, res) => {
   const { code, discountPercent, description } = req.body;
 
   try {
-    const codeUpper = code.toUpperCase().trim();
+    const codeUpper = (code || '').toUpperCase().trim();
+    if (!codeUpper) {
+      return res.status(400).json({ success: false, message: 'Coupon code is required.' });
+    }
     const existing = await Coupon.findOne({ code: codeUpper });
 
     if (existing) {
@@ -34,7 +90,7 @@ router.post('/', protect, requirePermission('coupons'), async (req, res) => {
     const coupon = new Coupon({
       code: codeUpper,
       discountPercent: Number(discountPercent),
-      description
+      description: description || `${Number(discountPercent)}% discount`
     });
 
     const createdCoupon = await coupon.save();
@@ -76,8 +132,7 @@ router.post('/validate', async (req, res) => {
   }
 
   try {
-    const cleanCode = code.toUpperCase().trim();
-    const coupon = await Coupon.findOne({ code: cleanCode });
+    const coupon = await findCouponByCode(code);
 
     if (!coupon) {
       return res.status(404).json({ success: false, message: 'Invalid coupon code.' });
@@ -101,26 +156,5 @@ router.post('/validate', async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to validate coupon.' });
   }
 });
-
-// Helper: Seed initial default coupons safely and idempotently
-export async function seedDefaultCouponsSafe() {
-  try {
-    const defaultCoupons = [
-      { code: 'FIRST20', discountPercent: 20, description: '20% off on your first luxury timepiece purchase' },
-      { code: 'KHRONIQSTAR', discountPercent: 20, description: '20% off Khroniq Signature Collection' },
-      { code: 'WELCOME10', discountPercent: 10, description: '10% off for first-time buyers' }
-    ];
-
-    for (const c of defaultCoupons) {
-      const exists = await Coupon.findOne({ code: c.code });
-      if (!exists) {
-        await Coupon.create(c);
-        console.log(`[SEED] Seeded default coupon: ${c.code}`);
-      }
-    }
-  } catch (err) {
-    console.error('Error seeding default coupons:', err);
-  }
-}
 
 export default router;

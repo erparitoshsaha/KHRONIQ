@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import Product from '../_models/Product.js';
 import Order from '../_models/Order.js';
 import Coupon from '../_models/Coupon.js';
+import { findCouponByCode } from './coupons.js';
 import { protect } from '../_middleware/auth.js';
 import { paymentLimiter } from '../_middleware/rateLimiter.js';
 import sendEmail from '../utils/sendEmail.js';
@@ -77,8 +78,7 @@ async function calculateAuthoritativeCart(items, couponCode, packagingCost = 0) 
   let appliedCouponDoc = null;
 
   if (couponCode && typeof couponCode === 'string' && couponCode.trim() !== '') {
-    const cleanCode = couponCode.toUpperCase().trim();
-    const coupon = await Coupon.findOne({ code: cleanCode });
+    const coupon = await findCouponByCode(couponCode);
     if (coupon && coupon.discountPercent > 0) {
       discount = Math.round(subtotal * (coupon.discountPercent / 100));
       appliedCouponDoc = coupon;
@@ -117,8 +117,7 @@ router.post('/validate-coupon', async (req, res, next) => {
   }
 
   try {
-    const cleanCode = code.toUpperCase().trim();
-    const coupon = await Coupon.findOne({ code: cleanCode });
+    const coupon = await findCouponByCode(code);
 
     if (!coupon) {
       return res.status(404).json({ success: false, message: 'Invalid coupon code.' });

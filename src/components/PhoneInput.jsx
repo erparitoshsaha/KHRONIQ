@@ -30,8 +30,11 @@ export default function PhoneInput({
         return { code: matched.code, number: rest };
       }
     }
-    // Clean digits if no leading +
-    const cleanNumber = trimmed.replace(/^[+]?\d{1,4}\s*/, '').replace(/\D/g, '') || trimmed.replace(/\D/g, '');
+    // Clean digits if no leading + (do not strip first 4 digits of a normal 10-digit national number)
+    const rawDigits = trimmed.replace(/\D/g, '');
+    const cleanNumber = (defaultCode === '+91' && rawDigits.length === 12 && rawDigits.startsWith('91'))
+      ? rawDigits.slice(2)
+      : rawDigits;
     return { code: defaultCode, number: cleanNumber };
   };
 
@@ -47,7 +50,7 @@ export default function PhoneInput({
   useEffect(() => {
     if (country) {
       const code = getCountryDialCode(country);
-      if (code) {
+      if (code && code !== dialCode) {
         setDialCode(code);
         // If there is an existing phone number, re-emit combined value with new code
         if (phoneNumber) {
@@ -70,6 +73,7 @@ export default function PhoneInput({
 
   // Close dropdown on click outside
   useEffect(() => {
+    if (!isDropdownOpen) return;
     function handleClickOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsDropdownOpen(false);
@@ -78,7 +82,7 @@ export default function PhoneInput({
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isDropdownOpen]);
 
   // Filter countries for the code dropdown
   const filteredCountries = useMemo(() => {

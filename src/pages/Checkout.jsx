@@ -18,12 +18,14 @@ export default function Checkout({ params, onPageChange }) {
   const cart = useSelector(state => state.watch.cart);
   const products = useSelector(state => state.watch.products);
   const currentUser = useSelector(state => state.watch.currentUser);
+  const availableCoupons = useSelector(state => state.watch.coupons);
   const currentCurrency = useSelector(selectCurrentCurrency);
 
   const [appliedCoupon, setAppliedCoupon] = useState(params?.appliedCoupon || null);
   const [couponInput, setCouponInput] = useState('');
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
+  const [shippingError, setShippingError] = useState('');
 
   const isGiftingJourney = localStorage.getItem('khroniq_is_gifting_journey') === 'true';
   const giftRelation = localStorage.getItem('khroniq_gift_relation') || '';
@@ -167,72 +169,23 @@ export default function Checkout({ params, onPageChange }) {
   const gst = Math.round(((finalSellingPrice * 18) / 118) * 100) / 100;
   const total = finalSellingPrice + totalGiftingCost;
 
-  const handleShippingSubmit = (e) => {
-    if (e) e.preventDefault();
-    if (cartItemsWithDetails.length === 0) {
-      alert('Your cart is empty.');
-      return;
-    }
-    if (!shippingForm.fullName?.trim() || !shippingForm.streetAddress?.trim() || !shippingForm.city?.trim() || !shippingForm.zipCode?.trim() || !shippingForm.phone?.trim() || !shippingForm.state?.trim()) {
-      alert('Please fill out all required shipping details.');
-      return;
-    }
-
-    // If customer entered text in GST field but forgot to click Apply
-    if (gstInput.trim() && !appliedGst) {
-      const clean = gstInput.trim().toUpperCase();
-      if (!validateGstNumber(clean)) {
-        setGstError('Please enter a valid 15-character GSTIN or clear the field to continue.');
-        return;
-      } else {
-        setAppliedGst(clean);
-        setShippingForm(prev => ({ ...prev, gstNumber: clean }));
-      }
-    }
-
-    if (saveAddress && typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('khroniq_saved_shipping', JSON.stringify({
-          ...shippingForm,
-          gstNumber: appliedGst || shippingForm.gstNumber || ''
-        }));
-      } catch (err) {
-        console.warn('Could not save address to localStorage', err);
-      }
-
-      if (currentUser?.email) {
-        dispatch(updateUserProfile(currentUser.name || shippingForm.fullName, currentUser.email, {
-          ...(currentUser.shippingAddress || {}),
-          houseNumber: shippingForm.houseNumber,
-          streetAddress: shippingForm.streetAddress,
-          landmark: shippingForm.landmark,
-          city: shippingForm.city,
-          state: shippingForm.state,
-          postalCode: shippingForm.zipCode,
-          country: shippingForm.country,
-          phone: shippingForm.phone
-        })).catch(() => { });
-      }
-    }
-
-    setStep(3);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleApplyCoupon = async () => {
-    if (!couponInput.trim()) {
+  const handleApplyCoupon = async (codeOverride) => {
+    const rawCode = typeof codeOverride === 'string' ? codeOverride : couponInput;
+    if (!rawCode || !rawCode.trim()) {
       setCouponError('Please enter a coupon code.');
-      return;
+      return null;
     }
     setCouponLoading(true);
     setCouponError('');
-    const res = await dispatch(validateCoupon(couponInput.trim(), subtotal));
+    const res = await dispatch(validateCoupon(rawCode.trim(), subtotal));
     setCouponLoading(false);
-    if (res.success) {
+    if (res && res.success && res.coupon) {
       setAppliedCoupon(res.coupon);
       setCouponInput('');
+      return res.coupon;
     } else {
-      setCouponError(res.message || 'Invalid coupon code.');
+      setCouponError(res?.message || 'Invalid coupon code.');
+      return null;
     }
   };
 
@@ -241,11 +194,135 @@ export default function Checkout({ params, onPageChange }) {
     setCouponError('');
   };
 
-  const handleRazorpayPayment = async () => {
-    if (cartItemsWithDetails.length === 0) {
-      alert('Your cart is empty.');
+  const ensureRazorpayScript = () => new Promise((resolve) => {
+    if (typeof window !== 'undefined' && window.Razorpay) {
+      resolve(true);
       return;
     }
+    const existing = document.querySelector('script[src*="checkout.razorpay.com"]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(Boolean(window.Razorpay)), { once: true });
+      existing.addEventListener('error', () => resolve(false), { once: true });
+      setTimeout(() => resolve(Boolean(window.Razorpay)), 3500);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+
+  const handleShippingSubmit = async (e) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    setShippingError('');
+
+    if (cartItemsWithDetails.length === 0) {
+      setShippingError('Your cart is empty.');
+      return;
+    }
+
+    // Read any browser-autofilled DOM values as fallback in case synthetic onChange did not fire
+    const domFullName = document.getElementById('shipping-fullname')?.value?.trim();
+    const domPhone = document.getElementById('shipping-phone')?.value?.trim();
+    const domZip = document.getElementById('shipping-zip')?.value?.trim();
+    const domHouse = document.getElementById('shipping-house')?.value?.trim();
+    const domStreet = document.getElementById('shipping-street')?.value?.trim();
+    const domLandmark = document.getElementById('shipping-landmark')?.value?.trim();
+    const domCity = document.getElementById('shipping-city')?.value?.trim();
+    const domState = document.getElementById('shipping-state')?.value?.trim();
+    const domCountry = document.getElementById('shipping-country')?.value?.trim();
+
+    const resolvedForm = {
+      ...shippingForm,
+      fullName: shippingForm.fullName?.trim() || domFullName || '',
+      phone: shippingForm.phone?.trim() || (domPhone ? `+91 ${domPhone}` : ''),
+      zipCode: shippingForm.zipCode?.trim() || domZip || '',
+      houseNumber: shippingForm.houseNumber?.trim() || domHouse || '',
+      streetAddress: shippingForm.streetAddress?.trim() || domStreet || domHouse || '',
+      landmark: shippingForm.landmark?.trim() || domLandmark || '',
+      city: shippingForm.city?.trim() || domCity || '',
+      state: shippingForm.state?.trim() || domState || (isIndia ? 'Uttar Pradesh' : ''),
+      country: shippingForm.country?.trim() || domCountry || 'India'
+    };
+
+    setShippingForm(resolvedForm);
+
+    const missingFields = [];
+    if (!resolvedForm.fullName) missingFields.push('Full Name');
+    if (!resolvedForm.phone) missingFields.push('Mobile Number');
+    if (!resolvedForm.zipCode) missingFields.push(isIndia ? 'Pincode' : 'Postal Code');
+    if (!resolvedForm.streetAddress) missingFields.push('Area / Street / House Address');
+    if (!resolvedForm.city) missingFields.push('Town / City');
+    if (!resolvedForm.state) missingFields.push('State');
+
+    if (missingFields.length > 0) {
+      const msg = `Please complete required fields: ${missingFields.join(', ')}.`;
+      setShippingError(msg);
+      return;
+    }
+
+    // If customer entered text in GST field but forgot to click Apply
+    let finalGst = appliedGst || resolvedForm.gstNumber || '';
+    if (gstInput.trim() && !appliedGst) {
+      const clean = gstInput.trim().toUpperCase();
+      if (!validateGstNumber(clean)) {
+        setGstError('Please enter a valid 15-character GSTIN or clear the field to continue.');
+        setShippingError('Please fix or clear the GSTIN field before proceeding.');
+        return;
+      } else {
+        setAppliedGst(clean);
+        finalGst = clean;
+        setShippingForm(prev => ({ ...prev, gstNumber: clean }));
+      }
+    }
+
+    // If customer typed a coupon code in the input box and forgot to click Apply, auto-apply it
+    let activeCoupon = appliedCoupon;
+    if (couponInput.trim() && !appliedCoupon) {
+      const validated = await handleApplyCoupon(couponInput.trim());
+      if (validated) {
+        activeCoupon = validated;
+      }
+    }
+
+    if (saveAddress && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('khroniq_saved_shipping', JSON.stringify({
+          ...resolvedForm,
+          gstNumber: finalGst
+        }));
+      } catch (err) {
+        console.warn('Could not save address to localStorage', err);
+      }
+
+      if (currentUser?.email) {
+        dispatch(updateUserProfile(currentUser.name || resolvedForm.fullName, currentUser.email, {
+          ...(currentUser.shippingAddress || {}),
+          houseNumber: resolvedForm.houseNumber,
+          streetAddress: resolvedForm.streetAddress,
+          landmark: resolvedForm.landmark,
+          city: resolvedForm.city,
+          state: resolvedForm.state,
+          postalCode: resolvedForm.zipCode,
+          country: resolvedForm.country,
+          phone: resolvedForm.phone
+        })).catch(() => { });
+      }
+    }
+
+    setStep(3);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    await handleRazorpayPayment(resolvedForm, finalGst, activeCoupon);
+  };
+
+  const handleRazorpayPayment = async (overrideShipping, overrideGst, overrideCoupon) => {
+    if (cartItemsWithDetails.length === 0) {
+      setShippingError('Your cart is empty.');
+      return;
+    }
+    setShippingError('');
     setProcessingPayment(true);
 
     const items = cartItemsWithDetails.map(item => ({
@@ -256,15 +333,30 @@ export default function Checkout({ params, onPageChange }) {
       image: item.product.image
     }));
 
+    const activeCouponObj = overrideCoupon !== undefined ? overrideCoupon : appliedCoupon;
+    const activeShipping = overrideShipping || shippingForm;
+    const activeGst = overrideGst !== undefined ? overrideGst : (appliedGst || shippingForm.gstNumber || '');
+
     // 1. Create Razorpay order via backend with full items payload
     const orderRes = await dispatch(createRazorpayOrder({
       items,
-      couponCode: appliedCoupon?.code || null,
+      couponCode: activeCouponObj?.code || null,
       packagingCost: isGiftingJourney ? totalGiftingCost : 0
     }));
 
-    if (!orderRes.success) {
-      alert(orderRes.message || 'Could not initiate payment.');
+    if (!orderRes || !orderRes.success) {
+      const errMsg = orderRes?.message || 'Could not initiate payment. Please make sure you are logged in and try again.';
+      setShippingError(errMsg);
+      alert(errMsg);
+      setProcessingPayment(false);
+      return;
+    }
+
+    const sdkReady = await ensureRazorpayScript();
+    if (!sdkReady || !window.Razorpay) {
+      const sdkMsg = 'Unable to load Razorpay payment gateway. Please check your internet connection and try again.';
+      setShippingError(sdkMsg);
+      alert(sdkMsg);
       setProcessingPayment(false);
       return;
     }
@@ -301,11 +393,11 @@ export default function Checkout({ params, onPageChange }) {
           discount,
           total,
           shippingDetails: {
-            ...shippingForm,
-            gstNumber: appliedGst || shippingForm.gstNumber || ''
+            ...activeShipping,
+            gstNumber: activeGst
           },
           giftingOptions,
-          couponCode: appliedCoupon?.code || null
+          couponCode: activeCouponObj?.code || null
         }));
 
         setProcessingPayment(false);
@@ -332,8 +424,9 @@ export default function Checkout({ params, onPageChange }) {
         }
       },
       prefill: {
-        name: shippingForm.fullName,
-        email: currentUser?.email || ''
+        name: activeShipping.fullName,
+        email: currentUser?.email || '',
+        contact: (activeShipping.phone || '').replace(/\s+/g, '')
       },
       theme: {
         color: '#c5a880'
@@ -835,14 +928,15 @@ export default function Checkout({ params, onPageChange }) {
 
                 {/* Full Name (First and Last Name) */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
+                  <label htmlFor="shipping-fullname" className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
                     FULL NAME (FIRST AND LAST NAME)
                   </label>
                   <input
+                    id="shipping-fullname"
                     type="text"
                     required
                     value={shippingForm.fullName}
-                    onChange={(e) => setShippingForm({ ...shippingForm, fullName: e.target.value })}
+                    onChange={(e) => { setShippingForm({ ...shippingForm, fullName: e.target.value }); setShippingError(''); }}
                     placeholder="Paritosh"
                     className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
                   />
@@ -859,7 +953,7 @@ export default function Checkout({ params, onPageChange }) {
                     required
                     country={shippingForm.country}
                     value={shippingForm.phone}
-                    onChange={(phone) => setShippingForm({ ...shippingForm, phone })}
+                    onChange={(phone) => { setShippingForm(prev => ({ ...prev, phone })); setShippingError(''); }}
                     placeholder="98765 43210"
                     theme="light"
                   />
@@ -875,7 +969,7 @@ export default function Checkout({ params, onPageChange }) {
                     type="text"
                     required
                     value={shippingForm.zipCode}
-                    onChange={(e) => setShippingForm({ ...shippingForm, zipCode: e.target.value })}
+                    onChange={(e) => { setShippingForm({ ...shippingForm, zipCode: e.target.value }); setShippingError(''); }}
                     placeholder={isIndia ? '6 digits [0-9] PIN code' : 'Enter postal or ZIP code'}
                     className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
                   />
@@ -883,13 +977,14 @@ export default function Checkout({ params, onPageChange }) {
 
                 {/* Flat / House / Building / Company / Apartment */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
+                  <label htmlFor="shipping-house" className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
                     FLAT / HOUSE / BUILDING / COMPANY / APARTMENT
                   </label>
                   <input
+                    id="shipping-house"
                     type="text"
                     value={shippingForm.houseNumber}
-                    onChange={(e) => setShippingForm({ ...shippingForm, houseNumber: e.target.value })}
+                    onChange={(e) => { setShippingForm({ ...shippingForm, houseNumber: e.target.value }); setShippingError(''); }}
                     placeholder="Enter flat, house, company, or apartment details"
                     className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
                   />
@@ -897,14 +992,15 @@ export default function Checkout({ params, onPageChange }) {
 
                 {/* Area / Street / Sector / Village */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
+                  <label htmlFor="shipping-street" className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
                     AREA / STREET / SECTOR / VILLAGE
                   </label>
                   <input
+                    id="shipping-street"
                     type="text"
                     required
                     value={shippingForm.streetAddress}
-                    onChange={(e) => setShippingForm({ ...shippingForm, streetAddress: e.target.value })}
+                    onChange={(e) => { setShippingForm({ ...shippingForm, streetAddress: e.target.value }); setShippingError(''); }}
                     placeholder="Area, street, sector, village"
                     className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
                   />
@@ -912,10 +1008,11 @@ export default function Checkout({ params, onPageChange }) {
 
                 {/* Landmark */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
+                  <label htmlFor="shipping-landmark" className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
                     LANDMARK
                   </label>
                   <input
+                    id="shipping-landmark"
                     type="text"
                     value={shippingForm.landmark}
                     onChange={(e) => setShippingForm({ ...shippingForm, landmark: e.target.value })}
@@ -927,14 +1024,15 @@ export default function Checkout({ params, onPageChange }) {
                 {/* Town / City and State */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
+                    <label htmlFor="shipping-city" className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider block">
                       TOWN / CITY
                     </label>
                     <input
+                      id="shipping-city"
                       type="text"
                       required
                       value={shippingForm.city}
-                      onChange={(e) => setShippingForm({ ...shippingForm, city: e.target.value })}
+                      onChange={(e) => { setShippingForm({ ...shippingForm, city: e.target.value }); setShippingError(''); }}
                       placeholder="Gorakhpur"
                       className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black transition shipping-input"
                     />
@@ -1025,6 +1123,12 @@ export default function Checkout({ params, onPageChange }) {
                           setGstInput(e.target.value.toUpperCase());
                           setGstError('');
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleApplyGst();
+                          }
+                        }}
                         placeholder="Enter GSTIN (e.g. 27ABCDE1234F1Z5)"
                         className="flex-1 bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black uppercase transition shipping-input"
                       />
@@ -1076,23 +1180,47 @@ export default function Checkout({ params, onPageChange }) {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={couponInput}
-                        onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError(''); }}
-                        placeholder="Enter coupon code"
-                        className="flex-1 bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black uppercase transition shipping-input"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleApplyCoupon}
-                        disabled={couponLoading}
-                        className="px-6 py-2.5 bg-black hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider rounded-md transition flex items-center justify-center cursor-pointer disabled:opacity-50"
-                      >
-                        {couponLoading ? <Loader2 size={14} className="animate-spin" /> : 'Apply'}
-                      </button>
-                    </div>
+                    <>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={couponInput}
+                          onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError(''); }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleApplyCoupon();
+                            }
+                          }}
+                          placeholder="Enter coupon code"
+                          className="flex-1 bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black uppercase transition shipping-input"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleApplyCoupon()}
+                          disabled={couponLoading}
+                          className="px-6 py-2.5 bg-black hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider rounded-md transition flex items-center justify-center cursor-pointer disabled:opacity-50"
+                        >
+                          {couponLoading ? <Loader2 size={14} className="animate-spin" /> : 'Apply'}
+                        </button>
+                      </div>
+                      {Array.isArray(availableCoupons) && availableCoupons.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Available:</span>
+                          {availableCoupons.map((c) => (
+                            <button
+                              key={c.code}
+                              type="button"
+                              onClick={() => handleApplyCoupon(c.code)}
+                              className="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded border border-dashed border-neutral-400 text-neutral-800 hover:border-black hover:bg-neutral-100 transition cursor-pointer"
+                              title={c.description || `${c.discountPercent}% OFF`}
+                            >
+                              {c.code} ({c.discountPercent}% OFF)
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                   {couponError && (
                     <p className="text-xs text-red-600 pt-0.5">{couponError}</p>
@@ -1117,6 +1245,7 @@ export default function Checkout({ params, onPageChange }) {
                 isShippingStep={true}
                 onProceedToPayment={handleShippingSubmit}
                 processing={processingPayment}
+                shippingError={shippingError}
               />
             </div>
           </div>
@@ -1196,7 +1325,7 @@ export default function Checkout({ params, onPageChange }) {
               </button>
               <button
                 type="button"
-                onClick={handleRazorpayPayment}
+                onClick={() => handleRazorpayPayment()}
                 disabled={processingPayment}
                 className="flex-1 py-3.5 bg-black hover:bg-neutral-800 text-white font-bold text-xs tracking-widest uppercase transition flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50 rounded-md shadow-xs"
               >
@@ -1297,190 +1426,196 @@ export default function Checkout({ params, onPageChange }) {
 
     </div>
   );
+}
 
-  // Sub-component for Order Summary
-  function CheckoutSummary({
-    cartItems,
-    subtotal,
-    discount,
-    gst,
-    packagingCost = 0,
-    packagingType = 'single',
-    includeGiftCard = false,
-    giftCardCost = 0,
-    total,
-    appliedGst,
-    isShippingStep = false,
-    onProceedToPayment,
-    processing = false
-  }) {
-    const currentCurrency = useSelector(selectCurrentCurrency);
-    const totalItemQty = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+// Sub-component for Order Summary (defined at module scope so it never unmounts on parent state updates)
+function CheckoutSummary({
+  cartItems,
+  subtotal,
+  discount,
+  gst,
+  packagingCost = 0,
+  packagingType = 'single',
+  includeGiftCard = false,
+  giftCardCost = 0,
+  total,
+  appliedGst,
+  isShippingStep = false,
+  onProceedToPayment,
+  processing = false,
+  shippingError = ''
+}) {
+  const dispatch = useDispatch();
+  const currentCurrency = useSelector(selectCurrentCurrency);
+  const totalItemQty = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-    return (
-      <div className="bg-white border border-neutral-200 rounded-lg p-6 sm:p-7 shadow-xs space-y-5">
-        <div className="flex items-baseline gap-1.5 pb-1">
-          <h3 className="text-xs sm:text-sm font-bold tracking-wider text-neutral-900 uppercase">
-            ORDER SUMMARY
-          </h3>
-          <span className="text-xs text-neutral-400 uppercase font-normal">
-            ({totalItemQty} {totalItemQty === 1 ? 'ITEM' : 'ITEMS'})
-          </span>
-        </div>
+  return (
+    <div className="bg-white border border-neutral-200 rounded-lg p-6 sm:p-7 shadow-xs space-y-5">
+      <div className="flex items-baseline gap-1.5 pb-1">
+        <h3 className="text-xs sm:text-sm font-bold tracking-wider text-neutral-900 uppercase">
+          ORDER SUMMARY
+        </h3>
+        <span className="text-xs text-neutral-400 uppercase font-normal">
+          ({totalItemQty} {totalItemQty === 1 ? 'ITEM' : 'ITEMS'})
+        </span>
+      </div>
 
-        {/* Items list */}
-        <div className="space-y-3.5 max-h-72 overflow-y-auto pr-1.5">
-          {cartItems.map((item) => {
-            const itemPrice = item.price !== undefined ? item.price : getSellingPrice(item.product);
-            const itemKey = `${item.productId}-${item.customization ? JSON.stringify(item.customization) : 'std'}`;
-            return (
-              <div
-                key={itemKey}
-                className="flex items-center justify-between gap-3 pb-3 border-b border-neutral-100 last:border-b-0 last:pb-0"
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-14 h-14 bg-neutral-50 rounded border border-neutral-200 flex-shrink-0 flex items-center justify-center overflow-hidden p-1">
-                    <img
-                      src={item.product.image}
-                      alt={item.product.name}
-                      onError={(e) => handleImageError(e)}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-neutral-900 uppercase tracking-wide truncate">
-                      {item.product.name}
-                    </h4>
-                    <p className="text-[11px] text-neutral-500 mt-0.5">
-                      Qty: {item.quantity}
-                    </p>
-                  </div>
+      {/* Items list */}
+      <div className="space-y-3.5 max-h-72 overflow-y-auto pr-1.5">
+        {cartItems.map((item) => {
+          const itemPrice = item.price !== undefined ? item.price : getSellingPrice(item.product);
+          const itemKey = `${item.productId}-${item.customization ? JSON.stringify(item.customization) : 'std'}`;
+          return (
+            <div
+              key={itemKey}
+              className="flex items-center justify-between gap-3 pb-3 border-b border-neutral-100 last:border-b-0 last:pb-0"
+            >
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-14 h-14 bg-neutral-50 rounded border border-neutral-200 flex-shrink-0 flex items-center justify-center overflow-hidden p-1">
+                  <img
+                    src={item.product.image}
+                    alt={item.product.name}
+                    onError={(e) => handleImageError(e)}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
-                <div className="flex items-center gap-2.5 flex-shrink-0">
-                  <span className="text-xs font-bold text-neutral-900">
-                    {formatPrice(itemPrice * item.quantity, currentCurrency)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => dispatch(removeFromCart(item.productId, item.customization))}
-                    className="w-6 h-6 flex items-center justify-center rounded text-neutral-500 hover:text-black hover:bg-neutral-100 transition cursor-pointer flex-shrink-0"
-                    title={`Remove ${item.product.name} from order`}
-                    aria-label={`Remove ${item.product.name} from order`}
-                  >
-                    <X size={14} className="stroke-[2.2]" />
-                  </button>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-bold text-neutral-900 uppercase tracking-wide truncate">
+                    {item.product.name}
+                  </h4>
+                  <p className="text-[11px] text-neutral-500 mt-0.5">
+                    Qty: {item.quantity}
+                  </p>
                 </div>
               </div>
-            );
-          })}
+              <div className="flex items-center gap-2.5 flex-shrink-0">
+                <span className="text-xs font-bold text-neutral-900">
+                  {formatPrice(itemPrice * item.quantity, currentCurrency)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => dispatch(removeFromCart(item.productId, item.customization))}
+                  className="w-6 h-6 flex items-center justify-center rounded text-neutral-500 hover:text-black hover:bg-neutral-100 transition cursor-pointer flex-shrink-0"
+                  title={`Remove ${item.product.name} from order`}
+                  aria-label={`Remove ${item.product.name} from order`}
+                >
+                  <X size={14} className="stroke-[2.2]" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Pricing rows */}
+      <div className="space-y-2.5 pt-4 border-t border-neutral-100 text-xs">
+        <div className="flex justify-between text-neutral-600">
+          <span>Order Value</span>
+          <span className="font-medium text-neutral-900">{formatPrice(subtotal, currentCurrency)}</span>
         </div>
 
-        {/* Pricing rows */}
-        <div className="space-y-2.5 pt-4 border-t border-neutral-100 text-xs">
-          <div className="flex justify-between text-neutral-600">
-            <span>Order Value</span>
-            <span className="font-medium text-neutral-900">{formatPrice(subtotal, currentCurrency)}</span>
+        {discount > 0 && (
+          <div className="flex justify-between text-emerald-600">
+            <span>Coupon Discount</span>
+            <span className="font-medium">-{formatPrice(discount, currentCurrency)}</span>
           </div>
+        )}
 
-          {discount > 0 && (
-            <div className="flex justify-between text-emerald-600">
-              <span>Coupon Discount</span>
-              <span className="font-medium">-{formatPrice(discount, currentCurrency)}</span>
-            </div>
-          )}
-
-          {packagingCost > 0 && (
-            <div className="flex justify-between text-neutral-600 items-center">
-              <span className="flex items-center gap-1.5">
-                <span>Gift Packaging</span>
-                <span className="text-[10px] uppercase font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded">
-                  {packagingType === 'couple' ? 'Couple' : 'Single'}
-                </span>
-              </span>
-              <span className="font-medium text-neutral-900">{formatPrice(packagingCost, currentCurrency)}</span>
-            </div>
-          )}
-
-          {includeGiftCard && giftCardCost > 0 && (
-            <div className="flex justify-between text-neutral-600 items-center">
-              <span className="flex items-center gap-1.5">
-                <span>Custom Gift Card</span>
-                <span className="text-[10px] uppercase font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded">
-                  Personalized
-                </span>
-              </span>
-              <span className="font-medium text-neutral-900">{formatPrice(giftCardCost, currentCurrency)}</span>
-            </div>
-          )}
-
+        {packagingCost > 0 && (
           <div className="flex justify-between text-neutral-600 items-center">
-            <span className="flex items-center gap-1">
-              GST (18% included)
-              <span title="Goods and Services Tax (18%) is already included in the selling price">
-                <Info size={13} className="text-neutral-400 cursor-pointer" />
+            <span className="flex items-center gap-1.5">
+              <span>Gift Packaging</span>
+              <span className="text-[10px] uppercase font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded">
+                {packagingType === 'couple' ? 'Couple' : 'Single'}
               </span>
             </span>
-            <span className="font-medium text-neutral-900">{formatPrice(gst, currentCurrency, 2)}</span>
+            <span className="font-medium text-neutral-900">{formatPrice(packagingCost, currentCurrency)}</span>
           </div>
-
-          <div className="flex justify-between text-neutral-600 items-center">
-            <span>Shipping</span>
-            <span className="text-emerald-600 font-bold uppercase tracking-wider text-xs">FREE</span>
-          </div>
-        </div>
-
-        {/* GST Callout Banner */}
-        <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-md flex items-start gap-2.5">
-          <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-xs font-semibold text-neutral-900">
-              {appliedGst ? 'GSTIN added for tax invoice.' : 'Add GSTIN to claim ITC(Input Tax Credit).'}
-            </p>
-            {appliedGst && (
-              <p className="text-[11px] text-neutral-500 mt-0.5">
-                GSTIN: {appliedGst}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* TOTAL row */}
-        <div className="border-t border-neutral-200 pt-4 flex justify-between items-baseline">
-          <div>
-            <span className="text-sm font-bold uppercase tracking-wider text-neutral-900 block">TOTAL</span>
-            <span className="text-[11px] text-neutral-500 font-normal">(Inclusive of all taxes)</span>
-          </div>
-          <span className="text-xl font-bold text-neutral-900">
-            {formatPrice(total, currentCurrency)}
-          </span>
-        </div>
-
-        {/* Primary CTA button on Shipping Step */}
-        {isShippingStep && (
-          <>
-            <button
-              type="submit"
-              form="shipping-form"
-              onClick={onProceedToPayment}
-              disabled={processing}
-              className="w-full py-3.5 bg-black hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-widest rounded-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
-            >
-              <Lock size={14} />
-              <span>{processing ? 'Processing...' : 'Proceed to Payment'}</span>
-            </button>
-
-            <div className="text-center pt-1 space-y-0.5">
-              <div className="flex items-center justify-center gap-1.5 text-emerald-600 text-xs font-semibold">
-                <ShieldCheck size={15} />
-                <span>100% Secure Checkout</span>
-              </div>
-              <p className="text-[11px] text-neutral-400">
-                Your information is encrypted and safe with us.
-              </p>
-            </div>
-          </>
         )}
+
+        {includeGiftCard && giftCardCost > 0 && (
+          <div className="flex justify-between text-neutral-600 items-center">
+            <span className="flex items-center gap-1.5">
+              <span>Custom Gift Card</span>
+              <span className="text-[10px] uppercase font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded">
+                Personalized
+              </span>
+            </span>
+            <span className="font-medium text-neutral-900">{formatPrice(giftCardCost, currentCurrency)}</span>
+          </div>
+        )}
+
+        <div className="flex justify-between text-neutral-600 items-center">
+          <span className="flex items-center gap-1">
+            GST (18% included)
+            <span title="Goods and Services Tax (18%) is already included in the selling price">
+              <Info size={13} className="text-neutral-400 cursor-pointer" />
+            </span>
+          </span>
+          <span className="font-medium text-neutral-900">{formatPrice(gst, currentCurrency, 2)}</span>
+        </div>
+
+        <div className="flex justify-between text-neutral-600 items-center">
+          <span>Shipping</span>
+          <span className="text-emerald-600 font-bold uppercase tracking-wider text-xs">FREE</span>
+        </div>
       </div>
-    );
-  }
+
+      {/* GST Callout Banner */}
+      <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-md flex items-start gap-2.5">
+        <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-xs font-semibold text-neutral-900">
+            {appliedGst ? 'GSTIN added for tax invoice.' : 'Add GSTIN to claim ITC(Input Tax Credit).'}
+          </p>
+          {appliedGst && (
+            <p className="text-[11px] text-neutral-500 mt-0.5">
+              GSTIN: {appliedGst}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* TOTAL row */}
+      <div className="border-t border-neutral-200 pt-4 flex justify-between items-baseline">
+        <div>
+          <span className="text-sm font-bold uppercase tracking-wider text-neutral-900 block">TOTAL</span>
+          <span className="text-[11px] text-neutral-500 font-normal">(Inclusive of all taxes)</span>
+        </div>
+        <span className="text-xl font-bold text-neutral-900">
+          {formatPrice(total, currentCurrency)}
+        </span>
+      </div>
+
+      {/* Primary CTA button on Shipping Step */}
+      {isShippingStep && (
+        <>
+          {shippingError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-xs text-red-700 font-medium">
+              {shippingError}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={onProceedToPayment}
+            disabled={processing}
+            className="w-full py-3.5 bg-black hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-widest rounded-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
+          >
+            <Lock size={14} />
+            <span>{processing ? 'Processing...' : 'Proceed to Payment'}</span>
+          </button>
+
+          <div className="text-center pt-1 space-y-0.5">
+            <div className="flex items-center justify-center gap-1.5 text-emerald-600 text-xs font-semibold">
+              <ShieldCheck size={15} />
+              <span>100% Secure Checkout</span>
+            </div>
+            <p className="text-[11px] text-neutral-400">
+              Your information is encrypted and safe with us.
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
