@@ -8,6 +8,7 @@ import confetti from 'canvas-confetti';
 import { CheckCircle2, CreditCard, Landmark, ArrowRight, ArrowLeft, ShieldCheck, Gift, Check, Tag, X, Loader2, Info, Lock, Truck, RotateCcw, Headphones } from 'lucide-react';
 import BackButton from '../components/BackButton';
 import { useSEO } from '../utils/seo';
+import { showToast } from '../utils/toast';
 
 import CountrySelect from '../components/CountrySelect';
 import PhoneInput from '../components/PhoneInput';
@@ -182,6 +183,7 @@ export default function Checkout({ params, onPageChange }) {
     if (res && res.success && res.coupon) {
       setAppliedCoupon(res.coupon);
       setCouponInput('');
+      showToast(`Coupon ${res.coupon.code} (${res.coupon.discountPercent}% OFF) applied!`, 'success');
       return res.coupon;
     } else {
       setCouponError(res?.message || 'Invalid coupon code.');
@@ -260,6 +262,7 @@ export default function Checkout({ params, onPageChange }) {
     if (missingFields.length > 0) {
       const msg = `Please complete required fields: ${missingFields.join(', ')}.`;
       setShippingError(msg);
+      showToast(msg, 'error');
       return;
     }
 
@@ -347,7 +350,7 @@ export default function Checkout({ params, onPageChange }) {
     if (!orderRes || !orderRes.success) {
       const errMsg = orderRes?.message || 'Could not initiate payment. Please make sure you are logged in and try again.';
       setShippingError(errMsg);
-      alert(errMsg);
+      showToast(errMsg, 'error');
       setProcessingPayment(false);
       return;
     }
@@ -356,7 +359,7 @@ export default function Checkout({ params, onPageChange }) {
     if (!sdkReady || !window.Razorpay) {
       const sdkMsg = 'Unable to load Razorpay payment gateway. Please check your internet connection and try again.';
       setShippingError(sdkMsg);
-      alert(sdkMsg);
+      showToast(sdkMsg, 'error');
       setProcessingPayment(false);
       return;
     }
@@ -415,7 +418,7 @@ export default function Checkout({ params, onPageChange }) {
             colors: ['#c5a880', '#e10600', '#ffffff', '#1e293b']
           });
         } else {
-          alert(verifyRes.message || 'Payment verification failed.');
+          showToast(verifyRes.message || 'Payment verification failed.', 'error');
         }
       },
       modal: {
@@ -435,7 +438,7 @@ export default function Checkout({ params, onPageChange }) {
 
     const rzp = new window.Razorpay(options);
     rzp.on('payment.failed', function () {
-      alert('Payment failed. Please try again.');
+      showToast('Payment failed. Please try again.', 'error');
       setProcessingPayment(false);
     });
     rzp.open();

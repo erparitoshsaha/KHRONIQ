@@ -10,6 +10,7 @@ import Breadcrumbs from '../components/Breadcrumbs';
 import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2, Zap, Share2, Edit2, Trash2, X } from 'lucide-react';
 import { getExpectedDeliveryDate, calculateDeliveryEstimate } from '../utils/deliveryUtils';
 import { useSEO, buildProductSchema } from '../utils/seo';
+import { showToast } from '../utils/toast';
 
 export default function ProductDetail({ params, onPageChange }) {
   const dispatch = useDispatch();
@@ -239,9 +240,9 @@ export default function ProductDetail({ params, onPageChange }) {
     const targetId = product.id || product._id;
     const result = await dispatch(addToCart(targetId, qty));
     if (result && result.success) {
-      alert("ADDED TO CART");
+      showToast('Added to Shopping Bag', 'success');
     } else {
-      alert(result?.message || "Failed to add to cart");
+      showToast(result?.message || 'Failed to add to cart', 'error');
     }
   };
 
@@ -255,7 +256,7 @@ export default function ProductDetail({ params, onPageChange }) {
         onPageChange('login', { redirect: 'checkout' });
       }
     } else {
-      alert(result?.message || "Failed to proceed to checkout");
+      showToast(result?.message || 'Failed to proceed to checkout', 'error');
     }
   };
 
@@ -321,11 +322,11 @@ export default function ProductDetail({ params, onPageChange }) {
         setReviewMessage(res.message || 'Review removed successfully.');
         setTimeout(() => setReviewMessage(''), 5000);
       } else {
-        alert(res?.message || 'Failed to delete review.');
+        showToast(res?.message || 'Failed to delete review.', 'error');
       }
     } catch (err) {
       console.error('Delete review error:', err);
-      alert('An error occurred while deleting the review.');
+      showToast('An error occurred while deleting the review.', 'error');
     } finally {
       setDeletingReviewId(null);
     }
@@ -334,11 +335,11 @@ export default function ProductDetail({ params, onPageChange }) {
   const handleSaveInlineEdit = async (e, revId) => {
     e.preventDefault();
     if (!editRating || editRating < 1) {
-      alert('Please select a star rating (1 to 5 stars).');
+      showToast('Please select a star rating (1 to 5 stars).', 'info');
       return;
     }
     if (!editComment.trim()) {
-      alert('Please enter your review comment.');
+      showToast('Please enter your review comment.', 'info');
       return;
     }
 
@@ -354,11 +355,11 @@ export default function ProductDetail({ params, onPageChange }) {
         handleCancelEdit();
         setTimeout(() => setReviewMessage(''), 5000);
       } else {
-        alert(res?.message || 'Failed to update review.');
+        showToast(res?.message || 'Failed to update review.', 'error');
       }
     } catch (err) {
       console.error('Update review error:', err);
-      alert('An error occurred while updating the review.');
+      showToast('An error occurred while updating the review.', 'error');
     } finally {
       setIsUpdatingReview(false);
     }
@@ -367,17 +368,17 @@ export default function ProductDetail({ params, onPageChange }) {
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (!currentUser) {
-      alert('Please log in first to write a review.');
+      showToast('Please log in first to write a review.', 'info');
       return;
     }
 
     if (!ratingInput || ratingInput < 1) {
-      alert('Please select a star rating score (1 to 5 stars).');
+      showToast('Please select a star rating score (1 to 5 stars).', 'info');
       return;
     }
 
     if (!commentInput.trim()) {
-      alert('Please enter a review comment.');
+      showToast('Please enter a review comment.', 'info');
       return;
     }
 
@@ -395,11 +396,11 @@ export default function ProductDetail({ params, onPageChange }) {
           handleCancelEdit();
           setTimeout(() => setReviewMessage(''), 6000);
         } else {
-          alert(res?.message || 'Failed to update review.');
+          showToast(res?.message || 'Failed to update review.', 'error');
         }
       } catch (err) {
         console.error('Update review error:', err);
-        alert('An error occurred while updating the review.');
+        showToast('An error occurred while updating the review.', 'error');
       } finally {
         setIsUpdatingReview(false);
       }
@@ -417,7 +418,7 @@ export default function ProductDetail({ params, onPageChange }) {
       setHoverRating(0);
       setTimeout(() => setReviewMessage(''), 6000);
     } else {
-      alert(res?.message || 'Failed to submit review.');
+      showToast(res?.message || 'Failed to submit review.', 'error');
     }
   };
 

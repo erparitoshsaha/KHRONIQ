@@ -7,6 +7,7 @@ import { Heart, User, Package, LogOut } from 'lucide-react';
 import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
 import PhoneInput from '../components/PhoneInput';
 import { useSEO } from '../utils/seo';
+import { showToast } from '../utils/toast';
 
 
 
@@ -226,9 +227,9 @@ export default function Profile({ params, onPageChange }) {
     if (window.confirm(`Are you sure you want to cancel order ${orderId}?`)) {
       const res = await dispatch(cancelOrder(orderId));
       if (res && res.success) {
-        alert('Order cancelled and stock restored successfully.');
+        showToast('Order cancelled and stock restored successfully.', 'success');
       } else {
-        alert(res?.message || 'Failed to cancel order.');
+        showToast(res?.message || 'Failed to cancel order.', 'error');
       }
     }
   };
@@ -237,16 +238,16 @@ export default function Profile({ params, onPageChange }) {
     if (window.confirm(`Are you sure you want to request an Exchange/Refund for order ${orderId}?`)) {
       const res = await dispatch(requestExchangeRefund(orderId));
       if (res && res.success) {
-        alert('Your Exchange/Refund request has been submitted successfully.');
+        showToast('Your Exchange/Refund request has been submitted successfully.', 'success');
       } else {
-        alert(res?.message || 'Failed to submit Exchange/Refund request.');
+        showToast(res?.message || 'Failed to submit Exchange/Refund request.', 'error');
       }
     }
   };
 
   const handleExchangeRefundClick = (order) => {
     if (order.status !== 'Delivered') {
-      alert('Exchange/Refund requests can only be made after the order has been delivered.');
+      showToast('Exchange/Refund requests can only be made after the order has been delivered.', 'info');
       return;
     }
     handleExchangeRefund(order.id);

@@ -4,6 +4,7 @@ import { store } from './store';
 import { parseRouteFromPath, getProductIdentifier, findProductInList, incrementNavCount } from './utils/productRouting';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
+import ToastContainer from './components/ToastContainer';
 import { fetchProducts, fetchCoupons, fetchUserProfile, fetchFilters, fetchFooterSections, fetchContentSections } from './store/slices/watchSlice';
 
 // Lazy-load routes to split bundles cleanly and minimize initial bundle size
@@ -317,6 +318,7 @@ function AppContent() {
 export default function App() {
   return (
     <Provider store={store}>
+      <ToastContainer />
       <AppContent />
     </Provider>
   );

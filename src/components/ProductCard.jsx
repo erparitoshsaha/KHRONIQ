@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { addToCart, toggleWishlist, selectCurrentCurrency, formatPrice, getProductMrp, getSellingPrice, getDiscountPercent } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
+import { showToast } from '../utils/toast';
 import { ShoppingBag, Heart, Star } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 
@@ -45,9 +46,9 @@ export default function ProductCard({ product, onPageChange, showRemove = false 
     const targetId = product.id || product._id;
     const result = await dispatch(addToCart(targetId, 1));
     if (result && result.success) {
-      alert("ADDED TO CART");
+      showToast('Added to Shopping Bag', 'success');
     } else {
-      alert(result?.message || "Failed to add to cart");
+      showToast(result?.message || 'Failed to add to cart', 'error');
     }
   };
 

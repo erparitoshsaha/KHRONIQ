@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { updateCartQty, removeFromCart, selectCurrentCurrency, formatPrice, getDiscountedPrice, getProductMrp, getSellingPrice } from '../store/slices/watchSlice';
 import { X, Trash2, ShoppingBag, Plus, Minus, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { showToast } from '../utils/toast';
 
 export default function CartDrawer({ isOpen, onClose, onPageChange }) {
   const dispatch = useDispatch();
@@ -50,7 +51,7 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
     if (currentUser) {
       onPageChange('checkout');
     } else {
-      alert('Please log in or register an account before proceeding to checkout.');
+      showToast('Please log in or register an account before proceeding to checkout.', 'info');
       onPageChange('login', { redirect: 'checkout' });
     }
   };

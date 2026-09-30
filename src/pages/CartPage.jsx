@@ -5,6 +5,7 @@ import { handleImageError } from '../utils/imageUtils';
 import { ShoppingBag, Trash2, Plus, Minus, Tag, ArrowRight, ShieldCheck } from 'lucide-react';
 import BackButton from '../components/BackButton';
 import { useSEO } from '../utils/seo';
+import { showToast } from '../utils/toast';
 
 export default function CartPage({ onPageChange }) {
   const dispatch = useDispatch();
@@ -92,7 +93,7 @@ export default function CartPage({ onPageChange }) {
       // Pass coupon details if any to the checkout screen
       onPageChange('checkout', { appliedCoupon });
     } else {
-      alert('Please log in or register before checking out.');
+      showToast('Please log in or register before checking out.', 'info');
       onPageChange('login', { redirect: 'checkout', appliedCoupon });
     }
   };
