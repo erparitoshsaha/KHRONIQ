@@ -14,10 +14,10 @@ export default function ToastContainer() {
       setToasts((prev) => [...prev.slice(-3), newToast]);
       setTimeout(() => {
         removeToast(newToast.id);
-      }, newToast.duration || 3200);
+      }, newToast.duration || 3000);
     });
 
-    // Globally intercept native window.alert so no ugly browser alert dialog ever pops up
+    // Globally intercept native window.alert so no browser alert dialog ever pops up
     const originalAlert = window.alert;
     window.alert = (message) => {
       showToast(message);
@@ -33,13 +33,17 @@ export default function ToastContainer() {
 
   return (
     <div
-      className="fixed top-20 right-4 sm:right-6 z-[9999] flex flex-col gap-2.5 max-w-sm w-[calc(100vw-2rem)] pointer-events-none"
+      className="fixed top-20 right-4 sm:right-6 z-[9999] flex flex-col gap-2.5 max-w-xs sm:max-w-sm w-auto min-w-[260px] pointer-events-none"
       aria-live="polite"
     >
       {toasts.map((toast) => {
-        const isBag = toast.message.toLowerCase().includes('shopping bag') || toast.message.toLowerCase().includes('cart');
+        const isBag =
+          toast.message.toLowerCase().includes('shopping bag') ||
+          toast.message.toLowerCase().includes('cart');
         const isError = toast.type === 'error';
         const isInfo = toast.type === 'info';
+
+        const accentColor = isError ? '#ef4444' : isInfo ? '#c5a880' : '#10b981';
 
         return (
           <div
@@ -47,39 +51,39 @@ export default function ToastContainer() {
             style={{
               backgroundColor: '#111111',
               color: '#ffffff',
-              borderColor: isError ? '#ef4444' : isInfo ? '#c5a880' : '#10b981'
+              borderLeft: `4px solid ${accentColor}`,
+              boxShadow: '0 12px 30px rgba(0, 0, 0, 0.28)'
             }}
-            className="pointer-events-auto flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg border-l-4 shadow-2xl border border-white/10 backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-top-2"
+            className="pointer-events-auto flex items-center justify-between gap-3 px-4 py-3 rounded-md border border-neutral-800 transition-all duration-300"
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="shrink-0 flex items-center justify-center">
                 {isError ? (
-                  <AlertCircle size={18} className="text-red-400" />
+                  <AlertCircle size={18} style={{ color: '#f87171' }} />
                 ) : isBag ? (
-                  <ShoppingBag size={18} className="text-emerald-400" />
+                  <ShoppingBag size={18} style={{ color: '#34d399' }} />
                 ) : isInfo ? (
-                  <Info size={18} className="text-amber-300" />
+                  <Info size={18} style={{ color: '#fbbf24' }} />
                 ) : (
-                  <CheckCircle2 size={18} className="text-emerald-400" />
+                  <CheckCircle2 size={18} style={{ color: '#34d399' }} />
                 )}
               </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400">
-                  {isError ? 'KHRONIQ Notice' : isBag ? 'Atelier Bag' : 'KHRONIQ'}
-                </p>
-                <p className="text-xs sm:text-sm font-semibold text-white leading-snug break-words mt-0.5">
-                  {toast.message}
-                </p>
-              </div>
+              <span
+                style={{ color: '#ffffff' }}
+                className="text-xs sm:text-sm font-semibold tracking-wide leading-snug break-words"
+              >
+                {toast.message}
+              </span>
             </div>
 
             <button
               type="button"
               onClick={() => removeToast(toast.id)}
-              className="shrink-0 p-1 rounded text-neutral-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              style={{ color: '#a3a3a3' }}
+              className="shrink-0 p-1 rounded hover:bg-white/10 transition cursor-pointer"
               aria-label="Close notification"
             >
-              <X size={14} />
+              <X size={14} style={{ color: '#d4d4d4' }} />
             </button>
           </div>
         );
