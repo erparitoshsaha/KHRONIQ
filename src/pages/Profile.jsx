@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { logoutUser, cancelOrder, updateUserProfile, requestExchangeRefund } from '../store/slices/watchSlice';
+import { logoutUser, cancelOrder, updateUserProfile, requestExchangeRefund, setShippingCountryAction } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import ProductCard from '../components/ProductCard';
 import { Heart, User, Package, LogOut } from 'lucide-react';
@@ -151,7 +151,11 @@ export default function Profile({ params, onPageChange }) {
   const [city, setCity] = useState(currentUser?.shippingAddress?.city || '');
   const [stateVal, setStateVal] = useState(currentUser?.shippingAddress?.state || '');
   const [postalCode, setPostalCode] = useState(currentUser?.shippingAddress?.postalCode || '');
-  const [country, setCountry] = useState(currentUser?.shippingAddress?.country || '');
+  const [country, setCountry] = useState(
+    currentUser?.shippingAddress?.country ||
+    (typeof window !== 'undefined' ? localStorage.getItem('khroniq_shipping_country') : '') ||
+    'India'
+  );
   const [phone, setPhone] = useState(currentUser?.shippingAddress?.phone || '');
   const [settingsMessage, setSettingsMessage] = useState('');
   useSEO({
@@ -176,7 +180,11 @@ export default function Profile({ params, onPageChange }) {
       setCity(currentUser.shippingAddress?.city || '');
       setStateVal(currentUser.shippingAddress?.state || '');
       setPostalCode(currentUser.shippingAddress?.postalCode || '');
-      setCountry(currentUser.shippingAddress?.country || '');
+      setCountry(
+        currentUser.shippingAddress?.country ||
+        (typeof window !== 'undefined' ? localStorage.getItem('khroniq_shipping_country') : '') ||
+        'India'
+      );
       setPhone(currentUser.shippingAddress?.phone || '');
     }
   }, [currentUser]);
@@ -213,6 +221,15 @@ export default function Profile({ params, onPageChange }) {
       country,
       phone
     };
+
+    if (country) {
+      dispatch(setShippingCountryAction(country));
+      try {
+        localStorage.setItem('khroniq_shipping_country', country);
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('khroniq_shipping_country_changed', { detail: country }));
+      } catch {}
+    }
 
     const res = await dispatch(updateUserProfile(profileName, currentUser.email, shippingAddress));
     if (res.success) {

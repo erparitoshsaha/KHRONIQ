@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { createRazorpayOrder, verifyRazorpayPayment, validateCoupon, selectCurrentCurrency, formatPrice, getDiscountedPrice, getProductMrp, getSellingPrice, updateUserProfile, removeFromCart } from '../store/slices/watchSlice';
+import { 
+  createRazorpayOrder, 
+  verifyRazorpayPayment, 
+  validateCoupon, 
+  selectCurrentCurrency, 
+  selectShippingCountry,
+  setShippingCountryAction,
+  setCurrencyAction,
+  formatPrice, 
+  getDiscountedPrice, 
+  getProductMrp, 
+  getSellingPrice, 
+  updateUserProfile, 
+  removeFromCart 
+} from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
 
@@ -12,7 +26,7 @@ import { showToast } from '../utils/toast';
 
 import CountrySelect from '../components/CountrySelect';
 import PhoneInput from '../components/PhoneInput';
-import { INDIAN_STATES } from '../constants/countries';
+import { INDIAN_STATES, getCountryDialCode } from '../constants/countries';
 
 export default function Checkout({ params, onPageChange }) {
   const dispatch = useDispatch();
@@ -21,6 +35,7 @@ export default function Checkout({ params, onPageChange }) {
   const currentUser = useSelector(state => state.watch.currentUser);
   const availableCoupons = useSelector(state => state.watch.coupons);
   const currentCurrency = useSelector(selectCurrentCurrency);
+  const reduxShippingCountry = useSelector(selectShippingCountry);
 
   const [appliedCoupon, setAppliedCoupon] = useState(params?.appliedCoupon || null);
   const [couponInput, setCouponInput] = useState('');
@@ -33,11 +48,18 @@ export default function Checkout({ params, onPageChange }) {
   const [step, setStep] = useState(isGiftingJourney ? 1 : 2); // 1: Gifting, 2: Shipping, 3: Payment, 4: Success
   const [shippingForm, setShippingForm] = useState(() => {
     let saved = null;
+    let storedShippingCountry = '';
     if (typeof window !== 'undefined') {
       try {
         saved = JSON.parse(localStorage.getItem('khroniq_saved_shipping') || 'null');
       } catch (e) { }
+      try {
+        storedShippingCountry = localStorage.getItem('khroniq_shipping_country') || '';
+      } catch (e) { }
     }
+    const resolvedCountry = storedShippingCountry || currentUser?.shippingAddress?.country || saved?.country || 'India';
+    const isInitIndia = (resolvedCountry || '').trim().toLowerCase() === 'india';
+
     return {
       fullName: currentUser?.name || saved?.fullName || '',
       phone: currentUser?.phone || currentUser?.shippingAddress?.phone || saved?.phone || '',
@@ -45,10 +67,10 @@ export default function Checkout({ params, onPageChange }) {
       streetAddress: currentUser?.shippingAddress?.streetAddress || saved?.streetAddress || '',
       landmark: currentUser?.shippingAddress?.landmark || saved?.landmark || '',
       city: currentUser?.shippingAddress?.city || saved?.city || '',
-      state: currentUser?.shippingAddress?.state || saved?.state || 'Uttar Pradesh',
+      state: currentUser?.shippingAddress?.state || saved?.state || (isInitIndia ? 'Uttar Pradesh' : ''),
       zipCode: currentUser?.shippingAddress?.postalCode || saved?.zipCode || '',
-      country: currentUser?.shippingAddress?.country || saved?.country || 'India',
-      gstNumber: saved?.gstNumber || ''
+      country: resolvedCountry,
+      gstNumber: isInitIndia ? (saved?.gstNumber || '') : ''
     };
   });
   const isIndia = (shippingForm.country || '').trim().toLowerCase() === 'india';
@@ -99,22 +121,82 @@ export default function Checkout({ params, onPageChange }) {
   // Sync shipping details once current user profile is fetched/loaded
   useEffect(() => {
     if (currentUser) {
-      setShippingForm(prev => ({
-        ...prev,
-        fullName: prev.fullName || currentUser.name || '',
-        phone: prev.phone || currentUser.phone || currentUser.shippingAddress?.phone || '',
-        houseNumber: prev.houseNumber || currentUser.shippingAddress?.houseNumber || '',
-        streetAddress: prev.streetAddress || currentUser.shippingAddress?.streetAddress || '',
-        landmark: prev.landmark || currentUser.shippingAddress?.landmark || '',
-        city: prev.city || currentUser.shippingAddress?.city || '',
-        state: prev.state || currentUser.shippingAddress?.state || 'Uttar Pradesh',
-        zipCode: prev.zipCode || currentUser.shippingAddress?.postalCode || '',
-        country: (prev.country === 'India' || !prev.country) && currentUser.shippingAddress?.country
-          ? currentUser.shippingAddress.country
-          : (prev.country || 'India')
-      }));
+      setShippingForm(prev => {
+        const storedCountry = typeof window !== 'undefined' ? localStorage.getItem('khroniq_shipping_country') : '';
+        const targetCountry = prev.country || storedCountry || reduxShippingCountry || currentUser.shippingAddress?.country || 'India';
+        const isTargetIndia = (targetCountry || '').trim().toLowerCase() === 'india';
+        const userState = currentUser.shippingAddress?.state;
+        const validState = isTargetIndia
+          ? (userState || 'Uttar Pradesh')
+          : (!INDIAN_STATES.includes(userState) ? (userState || '') : '');
+
+        return {
+          ...prev,
+          fullName: prev.fullName || currentUser.name || '',
+          phone: prev.phone || currentUser.phone || currentUser.shippingAddress?.phone || '',
+          houseNumber: prev.houseNumber || currentUser.shippingAddress?.houseNumber || '',
+          streetAddress: prev.streetAddress || currentUser.shippingAddress?.streetAddress || '',
+          landmark: prev.landmark || currentUser.shippingAddress?.landmark || '',
+          city: prev.city || currentUser.shippingAddress?.city || '',
+          state: prev.state || validState,
+          zipCode: prev.zipCode || currentUser.shippingAddress?.postalCode || '',
+          country: targetCountry
+        };
+      });
     }
-  }, [currentUser]);
+  }, [currentUser, reduxShippingCountry]);
+
+  // Synchronize country whenever Redux shippingCountry or storage event updates (e.g. from navbar modal)
+  useEffect(() => {
+    const handleCountrySync = (newCountry) => {
+      const targetCountry = newCountry || (typeof window !== 'undefined' ? localStorage.getItem('khroniq_shipping_country') : '') || reduxShippingCountry;
+      if (!targetCountry) return;
+
+      setShippingForm(prev => {
+        if (prev.country === targetCountry) return prev;
+        const isNewIndia = targetCountry.trim().toLowerCase() === 'india';
+        const wasIndia = (prev.country || '').trim().toLowerCase() === 'india';
+        let newState = prev.state;
+        if (isNewIndia && !wasIndia) {
+          if (!INDIAN_STATES.includes(prev.state)) {
+            newState = 'Uttar Pradesh';
+          }
+        } else if (!isNewIndia && wasIndia) {
+          if (INDIAN_STATES.includes(prev.state)) {
+            newState = '';
+          }
+        }
+        return {
+          ...prev,
+          country: targetCountry,
+          state: newState,
+          gstNumber: isNewIndia ? prev.gstNumber : ''
+        };
+      });
+    };
+
+    if (reduxShippingCountry) {
+      handleCountrySync(reduxShippingCountry);
+    }
+
+    const onCustomCountryChange = (e) => {
+      if (e.detail) {
+        handleCountrySync(e.detail);
+      }
+    };
+    const onStorageChange = () => {
+      const c = localStorage.getItem('khroniq_shipping_country');
+      if (c) handleCountrySync(c);
+    };
+
+    window.addEventListener('khroniq_shipping_country_changed', onCustomCountryChange);
+    window.addEventListener('storage', onStorageChange);
+
+    return () => {
+      window.removeEventListener('khroniq_shipping_country_changed', onCustomCountryChange);
+      window.removeEventListener('storage', onStorageChange);
+    };
+  }, [reduxShippingCountry]);
 
   // Indian GSTIN validation (15 characters: 2 state digits + 10 PAN alphanumeric + 1 entity + 1 'Z' + 1 check digit)
   const validateGstNumber = (gst) => {
@@ -236,17 +318,20 @@ export default function Checkout({ params, onPageChange }) {
     const domState = document.getElementById('shipping-state')?.value?.trim();
     const domCountry = document.getElementById('shipping-country')?.value?.trim();
 
+    const resolvedCountry = shippingForm.country?.trim() || domCountry || (typeof window !== 'undefined' ? localStorage.getItem('khroniq_shipping_country') : '') || 'India';
+    const countryDialCode = getCountryDialCode(resolvedCountry, '+91');
+
     const resolvedForm = {
       ...shippingForm,
       fullName: shippingForm.fullName?.trim() || domFullName || '',
-      phone: shippingForm.phone?.trim() || (domPhone ? `+91 ${domPhone}` : ''),
+      phone: shippingForm.phone?.trim() || (domPhone ? (domPhone.startsWith('+') ? domPhone : `${countryDialCode} ${domPhone}`) : ''),
       zipCode: shippingForm.zipCode?.trim() || domZip || '',
       houseNumber: shippingForm.houseNumber?.trim() || domHouse || '',
       streetAddress: shippingForm.streetAddress?.trim() || domStreet || domHouse || '',
       landmark: shippingForm.landmark?.trim() || domLandmark || '',
       city: shippingForm.city?.trim() || domCity || '',
       state: shippingForm.state?.trim() || domState || (isIndia ? 'Uttar Pradesh' : ''),
-      country: shippingForm.country?.trim() || domCountry || 'India'
+      country: resolvedCountry
     };
 
     setShippingForm(resolvedForm);
@@ -296,9 +381,12 @@ export default function Checkout({ params, onPageChange }) {
           ...resolvedForm,
           gstNumber: finalGst
         }));
+        localStorage.setItem('khroniq_shipping_country', resolvedForm.country);
       } catch (err) {
         console.warn('Could not save address to localStorage', err);
       }
+
+      dispatch(setShippingCountryAction(resolvedForm.country));
 
       if (currentUser?.email) {
         dispatch(updateUserProfile(currentUser.name || resolvedForm.fullName, currentUser.email, {
@@ -865,6 +953,8 @@ export default function Checkout({ params, onPageChange }) {
               total={total}
               appliedGst={appliedGst}
               isShippingStep={false}
+              isIndia={isIndia}
+              country={shippingForm.country}
             />
           </div>
         </div>
@@ -923,7 +1013,31 @@ export default function Checkout({ params, onPageChange }) {
                           newState = '';
                         }
                       }
-                      setShippingForm(prev => ({ ...prev, country, state: newState }));
+                      setShippingForm(prev => ({ 
+                        ...prev, 
+                        country, 
+                        state: newState,
+                        gstNumber: isNewIndia ? prev.gstNumber : ''
+                      }));
+
+                      // Synchronize globally with Redux and LocalStorage
+                      dispatch(setShippingCountryAction(country));
+                      try {
+                        localStorage.setItem('khroniq_shipping_country', country);
+                        window.dispatchEvent(new Event('storage'));
+                        window.dispatchEvent(new CustomEvent('khroniq_shipping_country_changed', { detail: country }));
+                      } catch {}
+
+                      // Auto-map appropriate currency
+                      if (country === 'India') {
+                        dispatch(setCurrencyAction('INR'));
+                      } else if (
+                        ['United Kingdom', 'Germany', 'France', 'Italy', 'Spain', 'Netherlands', 'Belgium', 'Austria', 'Ireland', 'Portugal', 'Greece', 'Finland'].includes(country)
+                      ) {
+                        dispatch(setCurrencyAction('EUR'));
+                      } else {
+                        dispatch(setCurrencyAction('USD'));
+                      }
                     }}
                     className="w-full bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 focus:outline-none focus:border-black transition shipping-input"
                   />
@@ -1086,74 +1200,76 @@ export default function Checkout({ params, onPageChange }) {
                 {/* Divider */}
                 <div className="border-t border-neutral-200 pt-3" />
 
-                {/* GST Details (Optional) */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider">
-                      GST DETAILS (OPTIONAL)
-                    </label>
-                    <span title="Goods and Services Tax Identification Number for claiming eligible input tax credit">
-                      <Info size={13} className="text-neutral-400 cursor-pointer" />
-                    </span>
-                  </div>
-                  <p className="text-xs text-neutral-500">
-                    Add your GSTIN to claim ITC(Input Tax Credit).
-                  </p>
+                {/* GST Details (Optional for Indian Orders) */}
+                {isIndia && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-[11px] font-bold text-neutral-800 uppercase tracking-wider">
+                        GST DETAILS (OPTIONAL)
+                      </label>
+                      <span title="Goods and Services Tax Identification Number for claiming eligible input tax credit">
+                        <Info size={13} className="text-neutral-400 cursor-pointer" />
+                      </span>
+                    </div>
+                    <p className="text-xs text-neutral-500">
+                      Add your GSTIN to claim ITC(Input Tax Credit).
+                    </p>
 
-                  {appliedGst ? (
-                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-md p-3">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 size={16} className="text-emerald-600" />
-                        <div>
-                          <p className="text-xs font-bold text-neutral-900 tracking-wide">{appliedGst}</p>
-                          <p className="text-[10px] text-emerald-700 font-medium">GSTIN added for tax invoice.</p>
+                    {appliedGst ? (
+                      <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-md p-3">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 size={16} className="text-emerald-600" />
+                          <div>
+                            <p className="text-xs font-bold text-neutral-900 tracking-wide">{appliedGst}</p>
+                            <p className="text-[10px] text-emerald-700 font-medium">GSTIN added for tax invoice.</p>
+                          </div>
                         </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveGst}
+                          className="text-xs font-semibold text-neutral-500 hover:text-black transition cursor-pointer underline"
+                        >
+                          Remove
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleRemoveGst}
-                        className="text-xs font-semibold text-neutral-500 hover:text-black transition cursor-pointer underline"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={gstInput}
-                        onChange={(e) => {
-                          setGstInput(e.target.value.toUpperCase());
-                          setGstError('');
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleApplyGst();
-                          }
-                        }}
-                        placeholder="Enter GSTIN (e.g. 27ABCDE1234F1Z5)"
-                        className="flex-1 bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black uppercase transition shipping-input"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleApplyGst}
-                        className="px-6 py-2.5 bg-white border border-neutral-300 hover:border-black text-neutral-900 text-xs font-bold uppercase tracking-wider rounded-md transition cursor-pointer"
-                      >
-                        Apply
-                      </button>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={gstInput}
+                          onChange={(e) => {
+                            setGstInput(e.target.value.toUpperCase());
+                            setGstError('');
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleApplyGst();
+                            }
+                          }}
+                          placeholder="Enter GSTIN (e.g. 27ABCDE1234F1Z5)"
+                          className="flex-1 bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black uppercase transition shipping-input"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplyGst}
+                          className="px-6 py-2.5 bg-white border border-neutral-300 hover:border-black text-neutral-900 text-xs font-bold uppercase tracking-wider rounded-md transition cursor-pointer"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    )}
 
-                  {gstError && (
-                    <p className="text-xs text-red-600 pt-0.5">{gstError}</p>
-                  )}
+                    {gstError && (
+                      <p className="text-xs text-red-600 pt-0.5">{gstError}</p>
+                    )}
 
-                  <div className="flex items-center gap-1 text-[11px] text-neutral-400 pt-1">
-                    <Info size={12} />
-                    <span>Your invoice will be generated with the provided GST number.</span>
+                    <div className="flex items-center gap-1 text-[11px] text-neutral-400 pt-1">
+                      <Info size={12} />
+                      <span>Your invoice will be generated with the provided GST number.</span>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Divider */}
                 <div className="border-t border-neutral-200 pt-3" />
@@ -1246,6 +1362,8 @@ export default function Checkout({ params, onPageChange }) {
                 total={total}
                 appliedGst={appliedGst}
                 isShippingStep={true}
+                isIndia={isIndia}
+                country={shippingForm.country}
                 onProceedToPayment={handleShippingSubmit}
                 processing={processingPayment}
                 shippingError={shippingError}
@@ -1352,6 +1470,8 @@ export default function Checkout({ params, onPageChange }) {
               total={total}
               appliedGst={appliedGst}
               isShippingStep={false}
+              isIndia={isIndia}
+              country={shippingForm.country}
             />
           </div>
         </div>
@@ -1444,6 +1564,8 @@ function CheckoutSummary({
   total,
   appliedGst,
   isShippingStep = false,
+  isIndia = true,
+  country = 'India',
   onProceedToPayment,
   processing = false,
   shippingError = ''
@@ -1550,8 +1672,8 @@ function CheckoutSummary({
 
         <div className="flex justify-between text-neutral-600 items-center">
           <span className="flex items-center gap-1">
-            GST (18% included)
-            <span title="Goods and Services Tax (18%) is already included in the selling price">
+            {isIndia ? 'GST (18% included)' : 'Taxes & Duties (included)'}
+            <span title={isIndia ? "Goods and Services Tax (18%) is already included in the selling price" : "Estimated local taxes and customs duties included"}>
               <Info size={13} className="text-neutral-400 cursor-pointer" />
             </span>
           </span>
@@ -1564,20 +1686,34 @@ function CheckoutSummary({
         </div>
       </div>
 
-      {/* GST Callout Banner */}
-      <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-md flex items-start gap-2.5">
-        <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-xs font-semibold text-neutral-900">
-            {appliedGst ? 'GSTIN added for tax invoice.' : 'Add GSTIN to claim ITC(Input Tax Credit).'}
-          </p>
-          {appliedGst && (
-            <p className="text-[11px] text-neutral-500 mt-0.5">
-              GSTIN: {appliedGst}
+      {/* GST or International Delivery Callout Banner */}
+      {isIndia ? (
+        <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-md flex items-start gap-2.5">
+          <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-semibold text-neutral-900">
+              {appliedGst ? 'GSTIN added for tax invoice.' : 'Add GSTIN to claim ITC(Input Tax Credit).'}
             </p>
-          )}
+            {appliedGst && (
+              <p className="text-[11px] text-neutral-500 mt-0.5">
+                GSTIN: {appliedGst}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-md flex items-start gap-2.5">
+          <ShieldCheck size={16} className="text-neutral-700 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-semibold text-neutral-900">
+              Express International Delivery
+            </p>
+            <p className="text-[11px] text-neutral-500 mt-0.5">
+              Insured courier dispatch to {country || 'your destination'}.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* TOTAL row */}
       <div className="border-t border-neutral-200 pt-4 flex justify-between items-baseline">

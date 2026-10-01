@@ -2,11 +2,16 @@ import { createSlice } from '@reduxjs/toolkit';
 import { DEFAULT_CONTENT_SECTIONS } from '../../constants/defaultContent.js';
 export { DEFAULT_CONTENT_SECTIONS };
 
-// Helper to safe-parse localStorage items
+// Helper to safe-parse localStorage items (supports JSON arrays/objects and plain strings)
 const loadSaved = (key, fallback) => {
   try {
     const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : fallback;
+    if (saved === null || saved === undefined || saved === '') return fallback;
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return saved;
+    }
   } catch {
     return fallback;
   }
