@@ -412,7 +412,7 @@ export default function Login({ params, onPageChange }) {
                   value={phone}
                   onChange={(val) => setPhone(val)}
                   placeholder="98765 43210"
-                  theme="dark"
+                  theme="light"
                 />
               </div>
             </>

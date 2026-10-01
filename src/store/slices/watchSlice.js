@@ -457,6 +457,7 @@ const initialState = {
   ],
   currentUser: null,
   currentCurrency: loadSaved('khroniq_currency', 'INR'),
+  shippingCountry: loadSaved('khroniq_shipping_country', 'India'),
   blogs: [],
   featuredReviews: [],
   filters: DEFAULT_FILTER_CATEGORIES,
@@ -567,6 +568,12 @@ const watchSlice = createSlice({
       state.currentCurrency = action.payload;
       localStorage.setItem('khroniq_currency', action.payload);
     },
+    setShippingCountryAction: (state, action) => {
+      state.shippingCountry = action.payload;
+      try {
+        localStorage.setItem('khroniq_shipping_country', action.payload);
+      } catch {}
+    },
     setBlogsAction: (state, action) => {
       state.blogs = action.payload;
     },
@@ -636,10 +643,12 @@ export const {
   setCurrentSessionIdAction,
   setAdminUsersAction,
   setAdminUsersLoadingAction,
-  setFeaturedReviewsAction
+  setFeaturedReviewsAction,
+  setShippingCountryAction
 } = watchSlice.actions;
 
 export const selectCurrentCurrency = state => state.watch.currentCurrency || 'INR';
+export const selectShippingCountry = state => state.watch.shippingCountry || 'India';
 
 const clampDiscountPercent = (value) => {
   const percent = Number(value);

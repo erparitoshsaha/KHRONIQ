@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { X, ChevronDown, Check, Globe, Search } from 'lucide-react';
 import { ALL_COUNTRY_NAMES } from '../constants/countries';
-import { setCurrencyAction, selectCurrentCurrency } from '../store/slices/watchSlice';
+import { setCurrencyAction, selectCurrentCurrency, setShippingCountryAction } from '../store/slices/watchSlice';
 
 const LANGUAGES = [
   { code: 'en', name: 'English' },
@@ -103,12 +103,41 @@ export default function CountryLocationModal({ isOpen, onClose }) {
     onClose();
   };
 
+  const handleSelectCountry = (c) => {
+    setSelectedCountry(c);
+    setCountryDropdownOpen(false);
+    setCountrySearch('');
+
+    // Instant Redux store + LocalStorage update
+    dispatch(setShippingCountryAction(c));
+    try {
+      localStorage.setItem('khroniq_shipping_country', c);
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('khroniq_shipping_country_changed', { detail: c }));
+    } catch {}
+
+    // Auto-map appropriate currency
+    if (c === 'India') {
+      dispatch(setCurrencyAction('INR'));
+    } else if (
+      ['United Kingdom', 'Germany', 'France', 'Italy', 'Spain', 'Netherlands', 'Belgium', 'Austria', 'Ireland', 'Portugal', 'Greece', 'Finland'].includes(c)
+    ) {
+      dispatch(setCurrencyAction('EUR'));
+    } else {
+      dispatch(setCurrencyAction('USD'));
+    }
+  };
+
   const handleSaveAndShop = () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('khroniq_country_modal_seen', 'true');
       localStorage.setItem('khroniq_shipping_country', selectedCountry);
       localStorage.setItem('khroniq_shipping_language', selectedLanguage);
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('khroniq_shipping_country_changed', { detail: selectedCountry }));
     }
+
+    dispatch(setShippingCountryAction(selectedCountry));
 
     // Auto-map appropriate currency if available
     if (selectedCountry === 'India') {
@@ -224,11 +253,7 @@ export default function CountryLocationModal({ isOpen, onClose }) {
                         <button
                           key={c}
                           type="button"
-                          onClick={() => {
-                            setSelectedCountry(c);
-                            setCountryDropdownOpen(false);
-                            setCountrySearch('');
-                          }}
+                          onClick={() => handleSelectCountry(c)}
                           className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between hover:bg-gray-100 transition cursor-pointer ${
                             isSelected ? 'bg-gray-50 text-black font-bold' : 'text-gray-700'
                           }`}

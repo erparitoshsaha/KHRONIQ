@@ -142,16 +142,37 @@ export default function PhoneInput({
             setTimeout(() => searchInputRef.current?.focus(), 50);
           }
         }}
-        className={`flex items-center gap-1.5 px-3 py-2.5 rounded-l-md font-mono text-xs sm:text-sm border transition shrink-0 cursor-pointer select-none ${
+        className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-l-md text-xs sm:text-sm border transition shrink-0 cursor-pointer select-none ${
           isDark
-            ? 'bg-luxury-dark border-white/10 text-white hover:border-luxury-gold/50 focus:border-luxury-gold'
-            : 'bg-neutral-50 border-neutral-300 text-neutral-800 hover:bg-neutral-100 border-r-0 focus:border-black'
+            ? 'bg-neutral-900 border-neutral-700 text-white hover:border-luxury-gold/50 focus:border-luxury-gold'
+            : 'bg-neutral-100 border-neutral-300 text-neutral-900 hover:bg-neutral-200 border-r-0 focus:border-black'
         }`}
+        style={{
+          backgroundColor: isDark ? '#171717' : '#f5f5f5',
+          borderColor: isDark ? '#404040' : '#d4d4d4',
+          minWidth: '64px'
+        }}
         aria-haspopup="listbox"
         aria-expanded={isDropdownOpen}
       >
-        <span className="font-semibold">{dialCode}</span>
-        <ChevronDown size={13} className={`text-neutral-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+        <span
+          className="font-bold tracking-tight inline-block select-none"
+          style={{
+            color: isDark ? '#ffffff' : '#000000',
+            fontWeight: 700,
+            fontSize: '13px'
+          }}
+        >
+          {dialCode || '+91'}
+        </span>
+        <ChevronDown
+          size={14}
+          className={`transition-transform shrink-0 ${isDropdownOpen ? 'rotate-180' : ''}`}
+          style={{
+            color: isDark ? '#a3a3a3' : '#404040',
+            strokeWidth: 2.5
+          }}
+        />
       </button>
 
       {/* Number Input Field */}
@@ -166,9 +187,10 @@ export default function PhoneInput({
         placeholder={placeholder}
         className={`flex-1 min-w-0 rounded-r-md px-3.5 py-2.5 text-xs sm:text-sm transition focus:outline-none ${
           isDark
-            ? 'bg-luxury-dark border border-white/10 text-white placeholder-gray-500 focus:border-luxury-gold'
+            ? 'bg-neutral-900 border border-neutral-700 text-white placeholder-gray-500 focus:border-luxury-gold'
             : 'bg-white border border-neutral-300 text-neutral-900 placeholder:text-neutral-400 focus:border-black shipping-input'
         }`}
+        style={{ color: isDark ? '#ffffff' : '#171717' }}
       />
 
       {/* Searchable Country Code Dropdown */}

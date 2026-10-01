@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { logoutUser, setCurrencyAction, selectCurrentCurrency, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
+import { logoutUser, setCurrencyAction, selectCurrentCurrency, selectShippingCountry, setShippingCountryAction, formatPrice, getDiscountedPrice } from '../store/slices/watchSlice';
 import {
   ShoppingBag, Search, Menu, X, User, Heart, Star, Sparkles, Tag, ShieldAlert,
   ArrowRight, Shield, RefreshCw, Truck, Check, Trash2, Clock, CheckCircle2, ChevronRight, XCircle, Globe, Bell
@@ -33,25 +33,22 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
   const lastScrollYRef = useRef(typeof window !== 'undefined' ? window.scrollY : 0);
   const currentCurrency = useSelector(selectCurrentCurrency);
   const [currencyOpen, setCurrencyOpen] = useState(false);
-  const [shippingCountry, setShippingCountry] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('khroniq_shipping_country') || 'India';
-    }
-    return 'India';
-  });
+  const shippingCountry = useSelector(selectShippingCountry);
 
   useEffect(() => {
     const updateShippingCountry = () => {
       const c = localStorage.getItem('khroniq_shipping_country');
-      if (c) setShippingCountry(c);
+      if (c && c !== shippingCountry) dispatch(setShippingCountryAction(c));
     };
     window.addEventListener('storage', updateShippingCountry);
     window.addEventListener('focus', updateShippingCountry);
+    window.addEventListener('khroniq_shipping_country_changed', updateShippingCountry);
     return () => {
       window.removeEventListener('storage', updateShippingCountry);
       window.removeEventListener('focus', updateShippingCountry);
+      window.removeEventListener('khroniq_shipping_country_changed', updateShippingCountry);
     };
-  }, []);
+  }, [shippingCountry, dispatch]);
   const [activeSubMenu, setActiveSubMenu] = useState('collections');
   const [megaMenuForceClosed, setMegaMenuForceClosed] = useState(false);
 

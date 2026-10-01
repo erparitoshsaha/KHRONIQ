@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { ShieldCheck, ArrowRight, Clock, Award, Gem, Globe } from 'lucide-react';
 import LogoMark from './LogoMark';
-import { DEFAULT_FOOTER_SECTIONS } from '../store/slices/watchSlice';
+import { DEFAULT_FOOTER_SECTIONS, selectShippingCountry } from '../store/slices/watchSlice';
 
 /* ─── tiny hook: fires once when element enters viewport ─── */
 function useInView(threshold = 0.15) {
@@ -116,22 +116,7 @@ export default function Footer({ onPageChange, onWarrantyOpen, onOpenCountryModa
   const [heroRef, heroVisible] = useInView(0.1);
   const [bodyRef, bodyVisible] = useInView(0.05);
 
-  const [shippingCountry, setShippingCountry] = useState(() => {
-    return localStorage.getItem('khroniq_shipping_country') || 'India';
-  });
-
-  useEffect(() => {
-    const updateCountry = () => {
-      const saved = localStorage.getItem('khroniq_shipping_country') || 'India';
-      setShippingCountry(saved);
-    };
-    window.addEventListener('storage', updateCountry);
-    window.addEventListener('focus', updateCountry);
-    return () => {
-      window.removeEventListener('storage', updateCountry);
-      window.removeEventListener('focus', updateCountry);
-    };
-  }, []);
+  const shippingCountry = useSelector(selectShippingCountry);
 
   const filters = useSelector(state => state.watch.filters || []);
   const footerSections = useSelector(state => state.watch.footerSections || DEFAULT_FOOTER_SECTIONS);

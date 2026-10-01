@@ -557,9 +557,9 @@ export default function Profile({ params, onPageChange }) {
                   <PhoneInput
                     value={phone}
                     onChange={(val) => setPhone(val)}
-                    country={country}
+                    country={country || 'India'}
                     placeholder="98765 43210"
-                    theme="dark"
+                    theme="light"
                   />
                 </div>
 
