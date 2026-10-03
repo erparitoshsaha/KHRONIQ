@@ -136,7 +136,7 @@ router.get('/:identifier', async (req, res) => {
 // @desc    Create a product
 // @access  Private/Admin
 router.post('/', protect, requirePermission('products'), async (req, res) => {
-  const { name, modelNo, serialNo, uniqueCode, price, stock, category, gender, description, image, images, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths, customizationOptions, badge, discountPercent } = req.body;
+  const { name, modelNo, serialNo, uniqueCode, price, stock, category, gender, description, image, images, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths, customizationOptions, badge, discountPercent, shippingFee } = req.body;
   try {
     const rawSerial = typeof serialNo === 'string' ? serialNo.trim() : '';
     const rawCode = typeof uniqueCode === 'string' ? uniqueCode.trim() : '';
@@ -190,6 +190,7 @@ router.post('/', protect, requirePermission('products'), async (req, res) => {
       description,
       badge: typeof badge === 'string' ? badge.trim() : (req.body.badge ? String(req.body.badge).trim() : ''),
       discountPercent: discountPercent !== undefined ? Number(discountPercent) : (req.body.discountPercent !== undefined ? Number(req.body.discountPercent) : 0),
+      shippingFee: shippingFee !== undefined ? Math.max(0, Number(shippingFee) || 0) : (req.body.shippingFee !== undefined ? Math.max(0, Number(req.body.shippingFee) || 0) : 0),
       image: cleanImage,
       images: finalImages,
       specs: {
@@ -226,7 +227,7 @@ router.post('/', protect, requirePermission('products'), async (req, res) => {
 // @desc    Update a product
 // @access  Private/Admin
 router.put('/:id', protect, requirePermission('products'), async (req, res) => {
-  const { name, modelNo, serialNo, uniqueCode, price, stock, category, gender, description, image, images, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths, customizationOptions, badge, discountPercent } = req.body;
+  const { name, modelNo, serialNo, uniqueCode, price, stock, category, gender, description, image, images, specs, customizable, allowStrapCustomization, allowCaseCustomization, allowDialCustomization, warrantyMonths, customizationOptions, badge, discountPercent, shippingFee } = req.body;
   try {
     const product = await Product.findById(req.params.id);
 
@@ -341,6 +342,11 @@ router.put('/:id', protect, requirePermission('products'), async (req, res) => {
     if (discountPercent !== undefined || req.body.discountPercent !== undefined) {
       const d = discountPercent !== undefined ? discountPercent : req.body.discountPercent;
       product.discountPercent = Number(d) || 0;
+    }
+
+    if (shippingFee !== undefined || req.body.shippingFee !== undefined) {
+      const s = shippingFee !== undefined ? shippingFee : req.body.shippingFee;
+      product.shippingFee = Math.max(0, Number(s) || 0);
     }
 
     const updatedProduct = await product.save();

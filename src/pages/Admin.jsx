@@ -53,7 +53,7 @@ import { useSEO } from '../utils/seo';
 import { showToast } from '../utils/toast';
 import { calculateDeliveryEstimate } from '../utils/deliveryUtils';
 
-import { defaultHomeImages, HOMEPAGE_SECTION_LABELS, HOMEPAGE_MEDIA_SECTIONS } from './Home';
+import { defaultHomeImages, defaultHomeTitles, HOMEPAGE_SECTION_LABELS, HOMEPAGE_MEDIA_SECTIONS } from './Home';
 import {
   Menu, BarChart3, Plus, Edit, Trash2, Check, X, Tag, Star,
   Package, AlertTriangle, ShieldAlert, ArrowLeft, ArrowUpRight,
@@ -570,6 +570,7 @@ export default function Admin({ onPageChange }) {
     price: '',
     stock: '',
     discountPercent: 0,
+    shippingFee: 0,
     badge: '',
     unitCodes: [],
     badgeMode: 'none',
@@ -865,8 +866,10 @@ export default function Admin({ onPageChange }) {
   const [mediaSection, setMediaSection] = useState('');
   const [mediaFiles, setMediaFiles] = useState([]);
   const [mediaList, setMediaList] = useState({});
+  const [mediaTitles, setMediaTitles] = useState({});
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [mediaUploadStatus, setMediaUploadStatus] = useState({});
+  const [mediaTitleSaveStatus, setMediaTitleSaveStatus] = useState({});
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('khroniq_token');
@@ -883,12 +886,11 @@ export default function Admin({ onPageChange }) {
           .split('_')
           .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
           .join(' '),
-      slots: [{ key, label: (HOMEPAGE_SECTION_LABELS && HOMEPAGE_SECTION_LABELS[key]) || key, default: defaultHomeImages[key] || '' }]
+      slots: [{ key, label: (HOMEPAGE_SECTION_LABELS && HOMEPAGE_SECTION_LABELS[key]) || key, default: defaultHomeImages[key] || '', defaultTitle: (defaultHomeTitles && defaultHomeTitles[key]) || '' }]
     }));
 
   useEffect(() => {
     if (isAdminRole(currentUser?.role) && activeTab === 'media') {
-      const token = localStorage.getItem('khroniq_token');
       fetch('/api/admin/media', {
         headers: { ...getAuthHeaders() }
       })
@@ -896,15 +898,49 @@ export default function Admin({ onPageChange }) {
         .then(data => {
           if (data.success) {
             const lookup = {};
+            const titles = {};
             data.media.forEach(doc => {
-              if (!lookup[doc.section]) lookup[doc.section] = doc.url; // newest first, already sorted server-side
+              if (doc.section) {
+                if (!lookup[doc.section] && doc.url) lookup[doc.section] = doc.url; // newest first, already sorted server-side
+                if (!titles[doc.section] && doc.title) titles[doc.section] = doc.title;
+              }
             });
             setMediaList(lookup);
+            setMediaTitles(titles);
           }
         })
         .catch(err => console.error('Failed to fetch media:', err));
     }
   }, [currentUser, activeTab]);
+
+  const handleSaveMediaTitle = async (title, sectionKey) => {
+    if (!sectionKey) return;
+    setMediaTitleSaveStatus(prev => ({ ...prev, [sectionKey]: 'saving' }));
+    try {
+      const token = localStorage.getItem('khroniq_token');
+      const res = await fetch('/api/admin/media/title', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ section: sectionKey, title: title || '' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMediaTitles(prev => ({ ...prev, [sectionKey]: title }));
+        setMediaTitleSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
+        setTimeout(() => {
+          setMediaTitleSaveStatus(prev => ({ ...prev, [sectionKey]: null }));
+        }, 2000);
+      } else {
+        setMediaTitleSaveStatus(prev => ({ ...prev, [sectionKey]: 'failed' }));
+      }
+    } catch (e) {
+      console.error('Failed to save media title:', e);
+      setMediaTitleSaveStatus(prev => ({ ...prev, [sectionKey]: 'failed' }));
+    }
+  };
 
   const handleSectionImageUpload = async (fileOrEvent, sectionKey) => {
     const file = fileOrEvent?.target?.files ? fileOrEvent.target.files[0] : fileOrEvent;
@@ -916,6 +952,9 @@ export default function Admin({ onPageChange }) {
       const formData = new FormData();
       formData.append('files', file);
       formData.append('section', sectionKey);
+      if (mediaTitles[sectionKey]) {
+        formData.append('title', mediaTitles[sectionKey]);
+      }
       const token = localStorage.getItem('khroniq_token');
       const res = await fetch('/api/admin/media', {
         method: 'POST',
@@ -948,6 +987,9 @@ export default function Admin({ onPageChange }) {
       const formData = new FormData();
       formData.append('url', url);
       formData.append('section', sectionKey);
+      if (mediaTitles[sectionKey]) {
+        formData.append('title', mediaTitles[sectionKey]);
+      }
       const res = await fetch('/api/admin/media', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -1514,6 +1556,7 @@ export default function Admin({ onPageChange }) {
       image: cleanPrimary,
       images: cleanAdditional,
       discountPercent: Number(newProduct.discountPercent) || 0,
+      shippingFee: Math.max(0, Number(newProduct.shippingFee) || 0),
       customizationOptions: customOpts,
       specs: {
         ...newProduct.specs,
@@ -1525,7 +1568,7 @@ export default function Admin({ onPageChange }) {
       alert('Product created successfully!');
       setShowAddForm(false);
       setNewProduct({
-        name: '', modelNo: '', serialNo: '', uniqueCode: '', price: '', stock: '', discountPercent: 0, badge: '', badgeMode: 'none', unitCodes: [], warrantyMonths: 12, category: 'Classic', description: '',
+        name: '', modelNo: '', serialNo: '', uniqueCode: '', price: '', stock: '', discountPercent: 0, shippingFee: 0, badge: '', badgeMode: 'none', unitCodes: [], warrantyMonths: 12, category: 'Classic', description: '',
         image: '',
         images: [],
         specs: { movement: 'Automatic', case: '40mm', strap: 'Leather strap', waterResistance: '50m', glass: 'Mineral Glass', dialColor: 'Black', caseMaterial: 'Stainless Steel', watchFunction: 'Hours, Minutes, Seconds', warrantyDetails: 'Manufacturer Warranty', collection: 'Classic', warrantyPeriod: '1 Year', origin: 'Designed & Crafted in India' },
@@ -1569,6 +1612,7 @@ export default function Admin({ onPageChange }) {
       serialNo: product.serialNo || '',
       uniqueCode: product.uniqueCode || '',
       discountPercent: product.discountPercent ?? 0,
+      shippingFee: product.shippingFee ?? 0,
       badge: product.badge ?? '',
       badgeMode: (() => {
         const standardBadges = ['New', 'Limited Edition', 'Bestseller'];
@@ -1624,6 +1668,8 @@ export default function Admin({ onPageChange }) {
       ...editForm,
       image: cleanPrimary,
       images: cleanAdditional,
+      discountPercent: Number(editForm.discountPercent) || 0,
+      shippingFee: Math.max(0, Number(editForm.shippingFee) || 0),
       unitCodes: editForm.newUnitCodes || [],
       customizationOptions: customOpts,
       specs: {
@@ -5783,7 +5829,7 @@ export default function Admin({ onPageChange }) {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
                       <div className="space-y-1.5">
                         <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Price (₹)</label>
                         <input
@@ -5870,6 +5916,17 @@ export default function Admin({ onPageChange }) {
                           onChange={(e) => setNewProduct({ ...newProduct, discountPercent: Number(e.target.value) })}
                           className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
                           placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Shipping Fee (₹)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={newProduct.shippingFee}
+                          onChange={(e) => setNewProduct({ ...newProduct, shippingFee: Math.max(0, Number(e.target.value) || 0) })}
+                          className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
+                          placeholder="0 (Free Delivery)"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -6476,7 +6533,7 @@ export default function Admin({ onPageChange }) {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
                         <div className="space-y-1.5">
                           <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Price (₹)</label>
                           <input
@@ -6586,6 +6643,17 @@ export default function Admin({ onPageChange }) {
                             value={editForm.discountPercent}
                             onChange={(e) => setEditForm({ ...editForm, discountPercent: Number(e.target.value) })}
                             className="w-full bg-luxury-dark border border-white/10 rounded text-white p-2.5"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Shipping Fee (₹)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={editForm.shippingFee ?? 0}
+                            onChange={(e) => setEditForm({ ...editForm, shippingFee: Math.max(0, Number(e.target.value) || 0) })}
+                            className="w-full bg-luxury-dark border border-white/10 rounded text-white p-2.5"
+                            placeholder="0 (Free Delivery)"
                           />
                         </div>
                         <div className="space-y-1.5">
@@ -7158,6 +7226,7 @@ export default function Admin({ onPageChange }) {
                       <th className="p-4">Collection</th>
                       <th className="p-4">Price</th>
                       <th className="p-4">Discount</th>
+                      <th className="p-4">Shipping</th>
                       <th className="p-4">Stock</th>
                       <th className="p-4 text-right">Actions</th>
                     </tr>
@@ -7191,6 +7260,17 @@ export default function Admin({ onPageChange }) {
                         </td>
                         <td className="p-4 text-[11px] text-red-500 font-semibold uppercase tracking-widest">
                           {p.discountPercent > 0 ? `${p.discountPercent}%` : '—'}
+                        </td>
+                        <td className="p-4">
+                          {p.shippingFee > 0 ? (
+                            <span className="inline-block bg-luxury-dark font-bold px-2 py-0.5 rounded border border-white/20 text-white text-[10px] tracking-wider">
+                              ₹{p.shippingFee}
+                            </span>
+                          ) : (
+                            <span className="inline-block bg-emerald-500/10 font-bold px-2 py-0.5 rounded border border-emerald-500/30 text-emerald-400 text-[10px] tracking-wider uppercase">
+                              FREE
+                            </span>
+                          )}
                         </td>
                         <td className="p-4">
                           <span className="inline-block bg-black font-black px-2.5 py-1 rounded border border-white/10 text-[10px] tracking-wider uppercase" style={{ color: '#ffffff' }}>
@@ -8009,12 +8089,21 @@ export default function Admin({ onPageChange }) {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {section.slots.map((slot) => {
                             const status = mediaUploadStatus[slot.key];
+                            const titleStatus = mediaTitleSaveStatus[slot.key];
                             const isUploading = status === 'uploading';
                             return (
                               <div key={slot.key} className="bg-black/30 border border-white/5 rounded p-3 space-y-3">
                                 <AdminMediaField
                                   label={slot.label}
                                   value={mediaList[slot.key] || ''}
+                                  title={mediaTitles[slot.key] !== undefined ? mediaTitles[slot.key] : (defaultHomeTitles[slot.key] || '')}
+                                  onTitleChange={(newTitle) => {
+                                    setMediaTitles(prev => ({ ...prev, [slot.key]: newTitle }));
+                                  }}
+                                  onTitleBlur={() => handleSaveMediaTitle(mediaTitles[slot.key] !== undefined ? mediaTitles[slot.key] : (defaultHomeTitles[slot.key] || ''), slot.key)}
+                                  titlePlaceholder={slot.defaultTitle || defaultHomeTitles[slot.key] || slot.label || 'e.g. CRIMSON RED / Slide Name'}
+                                  allowTitleEdit={true}
+                                  titleStatus={titleStatus}
                                   onChange={(newUrl) => {
                                     setMediaList(prev => ({ ...prev, [slot.key]: newUrl }));
                                     if (mediaUploadStatus[slot.key]) {
@@ -8078,12 +8167,21 @@ export default function Admin({ onPageChange }) {
                   const slotKey = slot.key || section.key;
                   const slotLabel = section.title || section.label;
                   const status = mediaUploadStatus[slotKey];
+                  const titleStatus = mediaTitleSaveStatus[slotKey];
                   const isUploading = status === 'uploading';
                   return (
                     <div key={slotKey} className="bg-luxury-gray border border-white/10 rounded p-4 space-y-3 shadow-sm">
                       <AdminMediaField
                         label={slotLabel}
                         value={mediaList[slotKey] || ''}
+                        title={mediaTitles[slotKey] !== undefined ? mediaTitles[slotKey] : (defaultHomeTitles[slotKey] || '')}
+                        onTitleChange={(newTitle) => {
+                          setMediaTitles(prev => ({ ...prev, [slotKey]: newTitle }));
+                        }}
+                        onTitleBlur={() => handleSaveMediaTitle(mediaTitles[slotKey] !== undefined ? mediaTitles[slotKey] : (defaultHomeTitles[slotKey] || ''), slotKey)}
+                        titlePlaceholder={slot.defaultTitle || defaultHomeTitles[slotKey] || slotLabel || 'e.g. Section Name'}
+                        allowTitleEdit={true}
+                        titleStatus={titleStatus}
                         onChange={(newUrl) => {
                           setMediaList(prev => ({ ...prev, [slotKey]: newUrl }));
                           if (mediaUploadStatus[slotKey]) {

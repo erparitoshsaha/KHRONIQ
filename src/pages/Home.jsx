@@ -646,39 +646,39 @@ function HeroVideoCycler() {
 /* ─────────────────────────────────────────────────────────────────────
    LIFESTYLE SHOWCASE SLIDER
 ───────────────────────────────────────────────────────────────────── */
-function LifestyleShowcaseSlider({ products, onPageChange, homeImages }) {
+function LifestyleShowcaseSlider({ products, onPageChange, homeImages, homeTitles = {} }) {
   const slides = [
     {
-      name: 'CRIMSON RED',
-      fullName: 'Khroniq Crimson Red',
+      name: (homeTitles.hero_slide1_product || homeTitles.hero_slide1_lifestyle || 'CRIMSON RED').toUpperCase(),
+      fullName: homeTitles.hero_slide1_product || homeTitles.hero_slide1_lifestyle || 'Khroniq Crimson Red',
       lifestyleImg: homeImages.hero_slide1_lifestyle || '/assets/lifestyle_red.jpg',
       productImg: homeImages.hero_slide1_product || '/assets/watch_red.jpg',
       lifestyleStyle: { filter: 'brightness(0.82) contrast(1.1) saturate(1.05)', backgroundPosition: 'center 40%' },
     },
     {
-      name: 'EMERALD GREEN',
-      fullName: 'Khroniq Emerald Green',
+      name: (homeTitles.hero_slide2_product || homeTitles.hero_slide2_lifestyle || 'EMERALD GREEN').toUpperCase(),
+      fullName: homeTitles.hero_slide2_product || homeTitles.hero_slide2_lifestyle || 'Khroniq Emerald Green',
       lifestyleImg: homeImages.hero_slide2_lifestyle || '/assets/slide_green_lifestyle.jpg',
       productImg: homeImages.hero_slide2_product || '/assets/watch_green.jpg',
       lifestyleStyle: { filter: 'brightness(0.78) contrast(1.12) saturate(1.08)', backgroundPosition: 'center 35%' },
     },
     {
-      name: 'MIDNIGHT BLACK',
-      fullName: 'Khroniq Midnight Black',
+      name: (homeTitles.hero_slide3_product || homeTitles.hero_slide3_lifestyle || 'MIDNIGHT BLACK').toUpperCase(),
+      fullName: homeTitles.hero_slide3_product || homeTitles.hero_slide3_lifestyle || 'Khroniq Midnight Black',
       lifestyleImg: homeImages.hero_slide3_lifestyle || '/assets/lifestyle_black_cafe.jpg',
       productImg: homeImages.hero_slide3_product || '/assets/watch_black_steel.png',
       lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
     },
     {
-      name: 'COBALT BLUE',
-      fullName: 'Khroniq Cobalt Blue',
+      name: (homeTitles.hero_slide4_product || homeTitles.hero_slide4_lifestyle || 'COBALT BLUE').toUpperCase(),
+      fullName: homeTitles.hero_slide4_product || homeTitles.hero_slide4_lifestyle || 'Khroniq Cobalt Blue',
       lifestyleImg: homeImages.hero_slide4_lifestyle || '/assets/lifestyle_blue_window.jpg',
       productImg: homeImages.hero_slide4_product || '/assets/watch_blue_brown.png',
       lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
     },
     {
-      name: 'STERLING SILVER',
-      fullName: 'Khroniq Sterling Silver',
+      name: (homeTitles.hero_slide5_product || homeTitles.hero_slide5_lifestyle || 'STERLING SILVER').toUpperCase(),
+      fullName: homeTitles.hero_slide5_product || homeTitles.hero_slide5_lifestyle || 'Khroniq Sterling Silver',
       lifestyleImg: homeImages.hero_slide5_lifestyle || '/assets/lifestyle_pink_cafe.jpg',
       productImg: homeImages.hero_slide5_product || '/assets/slide_white_product.png',
       lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
@@ -713,7 +713,11 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages }) {
   const currentSlide = slides[activeIndex];
 
   const handleDetailsClick = () => {
-    const matched = products.find(p => p.name === currentSlide.fullName);
+    const matched = products.find(p => 
+      p.name?.toLowerCase() === currentSlide.fullName?.toLowerCase() ||
+      p.name?.toLowerCase() === currentSlide.name?.toLowerCase() ||
+      (currentSlide.name && p.name?.toLowerCase().includes(currentSlide.name.toLowerCase()))
+    );
     if (matched) {
       onPageChange('product-detail', { id: matched.id || matched._id });
     } else {
@@ -875,94 +879,98 @@ export const HOMEPAGE_MEDIA_SECTIONS = [
   {
     key: 'gender_men',
     title: "Shop by Gender — Men's Banner",
-    slots: [{ key: 'gender_men', label: "Banner Image", default: '/assets/men_watches.jpg' }]
+    slots: [{ key: 'gender_men', label: "Banner Image", default: '/assets/men_watches.jpg', defaultTitle: "Men's Collection" }]
   },
   {
     key: 'gender_women',
     title: "Shop by Gender — Women's Banner",
-    slots: [{ key: 'gender_women', label: "Banner Image", default: '/assets/women_watches_beach.jpeg' }]
+    slots: [{ key: 'gender_women', label: "Banner Image", default: '/assets/women_watches_beach.jpeg', defaultTitle: "Women's Collection" }]
   },
   {
     key: 'khronomaster_professional',
     title: 'Classic Professional — Hero Image',
     description: '5-slide carousel for the homepage Classic Professional spotlight.',
     slots: [
-      { key: 'khronomaster_professional', label: 'Slide 1', default: '/assets/spotlight_red_angled.png' },
-      { key: 'khronomaster_professional_slide2', label: 'Slide 2', default: '/assets/spotlight_green_side.jpeg' },
-      { key: 'khronomaster_professional_slide3', label: 'Slide 3', default: '/assets/spotlight_red_overhead.png' },
-      { key: 'khronomaster_professional_slide4', label: 'Slide 4', default: '/assets/watch_green.jpg' },
-      { key: 'khronomaster_professional_slide5', label: 'Slide 5', default: '/assets/watch_red.jpg' }
+      { key: 'khronomaster_professional', label: 'Slide 1', default: '/assets/spotlight_red_angled.png', defaultTitle: 'Classic Professional' },
+      { key: 'khronomaster_professional_slide2', label: 'Slide 2', default: '/assets/spotlight_green_side.jpeg', defaultTitle: 'Classic Professional Emerald' },
+      { key: 'khronomaster_professional_slide3', label: 'Slide 3', default: '/assets/spotlight_red_overhead.png', defaultTitle: 'Classic Professional Crimson' },
+      { key: 'khronomaster_professional_slide4', label: 'Slide 4', default: '/assets/watch_green.jpg', defaultTitle: 'Emerald Green Steel' },
+      { key: 'khronomaster_professional_slide5', label: 'Slide 5', default: '/assets/watch_red.jpg', defaultTitle: 'Crimson Red Steel' }
     ]
   },
   {
     key: 'dive_deeper_tile1',
     title: 'Classic Professional — Tile 1 (Emerald Green)',
-    slots: [{ key: 'dive_deeper_tile1', label: 'Tile Image', default: '/assets/spotlight_green_side.jpeg' }]
+    slots: [{ key: 'dive_deeper_tile1', label: 'Tile Image', default: '/assets/spotlight_green_side.jpeg', defaultTitle: 'Khroniq Emerald Green' }]
   },
   {
     key: 'dive_deeper_tile2',
     title: 'Classic Professional — Tile 2 (Crimson Red)',
-    slots: [{ key: 'dive_deeper_tile2', label: 'Tile Image', default: '/assets/spotlight_red_overhead.png' }]
+    slots: [{ key: 'dive_deeper_tile2', label: 'Tile Image', default: '/assets/spotlight_red_overhead.png', defaultTitle: 'Khroniq Crimson Red' }]
   },
   {
     key: 'hero_slide1_lifestyle',
     title: 'Hero Slide 1 (Lifestyle)',
-    slots: [{ key: 'hero_slide1_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_red.jpg' }]
+    slots: [{ key: 'hero_slide1_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_red.jpg', defaultTitle: 'CRIMSON RED' }]
   },
   {
     key: 'hero_slide1_product',
     title: 'Hero Slide 1 (Watch)',
-    slots: [{ key: 'hero_slide1_product', label: 'Watch Image', default: '/assets/watch_red.jpg' }]
+    slots: [{ key: 'hero_slide1_product', label: 'Watch Image', default: '/assets/watch_red.jpg', defaultTitle: 'CRIMSON RED' }]
   },
   {
     key: 'hero_slide2_lifestyle',
     title: 'Hero Slide 2 (Lifestyle)',
-    slots: [{ key: 'hero_slide2_lifestyle', label: 'Lifestyle Image', default: '/assets/slide_green_lifestyle.jpg' }]
+    slots: [{ key: 'hero_slide2_lifestyle', label: 'Lifestyle Image', default: '/assets/slide_green_lifestyle.jpg', defaultTitle: 'EMERALD GREEN' }]
   },
   {
     key: 'hero_slide2_product',
     title: 'Hero Slide 2 (Watch)',
-    slots: [{ key: 'hero_slide2_product', label: 'Watch Image', default: '/assets/watch_green.jpg' }]
+    slots: [{ key: 'hero_slide2_product', label: 'Watch Image', default: '/assets/watch_green.jpg', defaultTitle: 'EMERALD GREEN' }]
   },
   {
     key: 'hero_slide3_lifestyle',
     title: 'Hero Slide 3 (Lifestyle)',
-    slots: [{ key: 'hero_slide3_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_black_cafe.jpg' }]
+    slots: [{ key: 'hero_slide3_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_black_cafe.jpg', defaultTitle: 'MIDNIGHT BLACK' }]
   },
   {
     key: 'hero_slide3_product',
     title: 'Hero Slide 3 (Watch)',
-    slots: [{ key: 'hero_slide3_product', label: 'Watch Image', default: '/assets/watch_black_steel.png' }]
+    slots: [{ key: 'hero_slide3_product', label: 'Watch Image', default: '/assets/watch_black_steel.png', defaultTitle: 'MIDNIGHT BLACK' }]
   },
   {
     key: 'hero_slide4_lifestyle',
     title: 'Hero Slide 4 (Lifestyle)',
-    slots: [{ key: 'hero_slide4_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_blue_window.jpg' }]
+    slots: [{ key: 'hero_slide4_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_blue_window.jpg', defaultTitle: 'COBALT BLUE' }]
   },
   {
     key: 'hero_slide4_product',
     title: 'Hero Slide 4 (Watch)',
-    slots: [{ key: 'hero_slide4_product', label: 'Watch Image', default: '/assets/watch_blue_brown.png' }]
+    slots: [{ key: 'hero_slide4_product', label: 'Watch Image', default: '/assets/watch_blue_brown.png', defaultTitle: 'COBALT BLUE' }]
   },
   {
     key: 'hero_slide5_lifestyle',
     title: 'Hero Slide 5 (Lifestyle)',
-    slots: [{ key: 'hero_slide5_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_pink_cafe.jpg' }]
+    slots: [{ key: 'hero_slide5_lifestyle', label: 'Lifestyle Image', default: '/assets/lifestyle_pink_cafe.jpg', defaultTitle: 'STERLING SILVER' }]
   },
   {
     key: 'hero_slide5_product',
     title: 'Hero Slide 5 (Watch)',
-    slots: [{ key: 'hero_slide5_product', label: 'Watch Image', default: '/assets/slide_white_product.png' }]
+    slots: [{ key: 'hero_slide5_product', label: 'Watch Image', default: '/assets/slide_white_product.png', defaultTitle: 'STERLING SILVER' }]
   },
   {
     key: 'khroniq_updates',
     title: 'Khroniq Updates — Drawer / Header Banner',
-    slots: [{ key: 'khroniq_updates', label: 'Banner Image', default: '/assets/khroniq_updates_bg.jpg' }]
+    slots: [{ key: 'khroniq_updates', label: 'Banner Image', default: '/assets/khroniq_updates_bg.jpg', defaultTitle: 'Khroniq Updates' }]
   }
 ];
 
 export const defaultHomeImages = Object.fromEntries(
   HOMEPAGE_MEDIA_SECTIONS.flatMap(sec => sec.slots.map(slot => [slot.key, slot.default]))
+);
+
+export const defaultHomeTitles = Object.fromEntries(
+  HOMEPAGE_MEDIA_SECTIONS.flatMap(sec => sec.slots.map(slot => [slot.key, slot.defaultTitle || '']))
 );
 
 export const HOMEPAGE_SECTION_LABELS = Object.fromEntries(
@@ -990,6 +998,7 @@ const updateSlideVariants = {
 };
 
 let publicMediaCache = null;
+let publicTitlesCache = null;
 let publicMediaPromise = null;
 
 export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, updatesOpen }) {
@@ -997,6 +1006,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   const products = useSelector(state => state.watch.products);
   const featuredReviews = useSelector(state => state.watch.featuredReviews || []);
   const [homeImages, setHomeImages] = useState(defaultHomeImages);
+  const [homeTitles, setHomeTitles] = useState(defaultHomeTitles);
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
   const spotlightImages = [
     homeImages.khronomaster_professional || "/assets/spotlight_red_angled.png",
@@ -1036,15 +1046,18 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   useEffect(() => {
     if (publicMediaCache) {
       setHomeImages(prev => ({ ...prev, ...publicMediaCache }));
-      return;
+    }
+    if (publicTitlesCache) {
+      setHomeTitles(prev => ({ ...prev, ...publicTitlesCache }));
     }
     if (!publicMediaPromise) {
       publicMediaPromise = fetch('/api/admin/media/public')
         .then(res => res.json())
         .then(data => {
-          if (data && data.success && data.media) {
-            publicMediaCache = data.media;
-            return data.media;
+          if (data && data.success) {
+            if (data.media) publicMediaCache = data.media;
+            if (data.titles) publicTitlesCache = data.titles;
+            return data;
           }
           return null;
         })
@@ -1054,8 +1067,11 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           return null;
         });
     }
-    publicMediaPromise.then(media => {
-      if (media) setHomeImages(prev => ({ ...prev, ...media }));
+    publicMediaPromise.then(data => {
+      if (data) {
+        if (data.media) setHomeImages(prev => ({ ...prev, ...data.media }));
+        if (data.titles) setHomeTitles(prev => ({ ...prev, ...data.titles }));
+      }
     });
   }, []);
 
@@ -1443,8 +1459,8 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
         {/* Bottom half — 2-up product mini grid */}
         <div className="grid grid-cols-2 border-t border-luxury-text/8">
           {[
-            { img: homeImages.dive_deeper_tile1 || '/assets/spotlight_green_side.jpeg', label: 'Khroniq Emerald Green', sub: 'Khroniq - femina green', style: { backgroundPosition: 'center center' } },
-            { img: homeImages.dive_deeper_tile2 || '/assets/spotlight_red_overhead.png', label: 'Khroniq Crimson Red', sub: 'Khroniq - femina red', style: { backgroundPosition: 'center center' } },
+            { img: homeImages.dive_deeper_tile1 || '/assets/spotlight_green_side.jpeg', label: homeTitles.dive_deeper_tile1 || 'Khroniq Emerald Green', sub: 'Khroniq - femina green', style: { backgroundPosition: 'center center' } },
+            { img: homeImages.dive_deeper_tile2 || '/assets/spotlight_red_overhead.png', label: homeTitles.dive_deeper_tile2 || 'Khroniq Crimson Red', sub: 'Khroniq - femina red', style: { backgroundPosition: 'center center' } },
           ].map(({ img, label, sub, style }, i) => (
             <motion.div
               key={i}
@@ -1549,7 +1565,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
       </div>
 
       {/* ══════════ LIFESTYLE SHOWCASE SLIDER ══════════ */}
-      <LifestyleShowcaseSlider products={products} onPageChange={onPageChange} homeImages={homeImages} />
+      <LifestyleShowcaseSlider products={products} onPageChange={onPageChange} homeImages={homeImages} homeTitles={homeTitles} />
 
 
       {/* ══════════ FEATURED PRODUCTS ══════════ */}

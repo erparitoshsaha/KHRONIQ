@@ -619,7 +619,9 @@ export default function ProductDetail({ params, onPageChange }) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white p-4 border border-luxury-text/5 rounded shadow-sm mt-4">
             <div className="flex flex-col items-center text-center p-2 space-y-1">
               <Truck size={18} className="text-luxury-gold-dark" />
-              <span className="text-[9px] font-bold text-gray-800 tracking-widest uppercase">FREE SHIPPING</span>
+              <span className="text-[9px] font-bold text-gray-800 tracking-widest uppercase">
+                {product.shippingFee > 0 ? `SHIPPING: ${formatPrice(product.shippingFee, currentCurrency)}` : 'FREE SHIPPING'}
+              </span>
               <p className="text-[9px] text-gray-500">2-4 Working Days Express</p>
             </div>
             <div className="flex flex-col items-center text-center p-2 space-y-1 border-t sm:border-t-0 sm:border-l sm:border-r border-luxury-text/10">
@@ -720,7 +722,9 @@ export default function ProductDetail({ params, onPageChange }) {
                     <CheckCircle2 size={12} />
                     <span>{product.stock < 5 ? `Hurry, only ${product.stock} left!` : 'In Stock'}</span>
                   </span>
-                  <p className="text-[10px] text-gray-500 mt-0.5">Complementary Express Shipping & Returns</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">
+                    {product.shippingFee > 0 ? `Express Shipping: ${formatPrice(product.shippingFee, currentCurrency)}` : 'Complementary Express Shipping & Returns'}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -817,8 +821,8 @@ export default function ProductDetail({ params, onPageChange }) {
                       Estimated transit: <strong className="text-gray-900">{deliveryResult.daysText}</strong> ({deliveryResult.zone})
                     </p>
                   </div>
-                  <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded shrink-0">
-                    Free Shipping
+                  <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shrink-0 ${product.shippingFee > 0 ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+                    {product.shippingFee > 0 ? `${formatPrice(product.shippingFee, currentCurrency)} Shipping` : 'Free Shipping'}
                   </span>
                 </div>
 

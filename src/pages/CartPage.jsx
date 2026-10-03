@@ -40,7 +40,7 @@ export default function CartPage({ onPageChange }) {
       itemPrice
     };
   }).filter(item => item.product !== undefined);
- 
+
   // Permanently prune stale cart entries and auto-clamp invalid quantities exceeding current stock
   useEffect(() => {
     if (products.length === 0) return; // don't prune before products have loaded
@@ -63,13 +63,14 @@ export default function CartPage({ onPageChange }) {
   }, [cart, products, dispatch]);
 
   // Compute prices
+  const totalMrp = cartItemsWithDetails.reduce((sum, item) => sum + (item.itemMrp * item.quantity), 0);
   const subtotal = cartItemsWithDetails.reduce((sum, item) => sum + (item.itemPrice * item.quantity), 0);
   const totalSavings = cartItemsWithDetails.reduce((sum, item) => sum + (item.itemMrp > item.itemPrice ? (item.itemMrp - item.itemPrice) * item.quantity : 0), 0);
-   
+
   const handleApplyCoupon = (e) => {
     e.preventDefault();
     setCouponError('');
-    
+
     if (!couponInput.trim()) return;
 
     const matchedCoupon = coupons.find(c => c.code.toUpperCase() === couponInput.toUpperCase().trim());
@@ -85,8 +86,9 @@ export default function CartPage({ onPageChange }) {
     setAppliedCoupon(null);
   };
 
+  const shippingCost = cartItemsWithDetails.reduce((sum, item) => sum + ((item.product?.shippingFee || 0) * item.quantity), 0);
   const discount = appliedCoupon ? Math.round(subtotal * (appliedCoupon.discountPercent / 100)) : 0;
-  const total = subtotal - discount;
+  const total = subtotal - discount + shippingCost;
 
   const handleCheckoutClick = () => {
     if (currentUser) {
@@ -148,13 +150,13 @@ export default function CartPage({ onPageChange }) {
 
           <div className="space-y-6">
             {cartItemsWithDetails.map((item) => (
-              <div 
+              <div
                 key={item.productId + '-' + JSON.stringify(item.customization || {})}
                 className="flex flex-col md:grid md:grid-cols-12 items-center gap-4 bg-white border border-luxury-text/10 p-4 rounded-md shadow-sm"
               >
                 {/* Info (Column 6) */}
                 <div className="col-span-6 flex items-center space-x-4 w-full">
-                  <div 
+                  <div
                     onClick={() => onPageChange('product-detail', { id: item.productId })}
                     className="w-20 h-20 bg-luxury-gray/40 border border-luxury-text/5 rounded flex-shrink-0 flex items-center justify-center p-0 overflow-hidden cursor-pointer"
                   >
@@ -166,7 +168,7 @@ export default function CartPage({ onPageChange }) {
                     />
                   </div>
                   <div>
-                    <h3 
+                    <h3
                       onClick={() => onPageChange('product-detail', { id: item.productId })}
                       className="text-luxury-text text-xs sm:text-sm font-semibold hover:text-luxury-gold-dark transition cursor-pointer line-clamp-1"
                     >
@@ -248,17 +250,27 @@ export default function CartPage({ onPageChange }) {
           {/* Summary Box */}
           <div className="bg-white border border-luxury-text/10 rounded-md p-6 space-y-6 shadow-sm">
             <h3 className="text-xs font-bold tracking-widest text-luxury-text uppercase border-b border-luxury-text/10 pb-3">Order Summary</h3>
-            
+
             <div className="space-y-4 text-xs">
-              <div className="flex justify-between text-luxury-muted">
-                <span className="tracking-wide">Bag Subtotal</span>
-                <span className="font-semibold text-luxury-text">{formatPrice(subtotal, currentCurrency)}</span>
-              </div>
-              
-              {totalSavings > 0 && (
-                <div className="flex justify-between text-emerald-600">
-                  <span className="tracking-wide">Total Savings</span>
-                  <span className="font-semibold">-{formatPrice(totalSavings, currentCurrency)}</span>
+              {totalSavings > 0 ? (
+                <>
+                  <div className="flex justify-between text-luxury-muted">
+                    <span className="tracking-wide">Total MRP</span>
+                    <span className="line-through font-medium">{formatPrice(totalMrp, currentCurrency)}</span>
+                  </div>
+                  <div className="flex justify-between text-emerald-600">
+                    <span className="tracking-wide">Discount on MRP</span>
+                    <span className="font-semibold">-{formatPrice(totalSavings, currentCurrency)}</span>
+                  </div>
+                  <div className="flex justify-between text-luxury-text border-t border-luxury-text/10 pt-2 font-medium">
+                    <span className="tracking-wide">Bag Subtotal</span>
+                    <span className="font-semibold">{formatPrice(subtotal, currentCurrency)}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between text-luxury-muted">
+                  <span className="tracking-wide">Bag Subtotal</span>
+                  <span className="font-semibold text-luxury-text">{formatPrice(subtotal, currentCurrency)}</span>
                 </div>
               )}
 
@@ -270,8 +282,8 @@ export default function CartPage({ onPageChange }) {
                   </div>
                   <div className="flex items-center space-x-2">
                     <span>-{formatPrice(discount, currentCurrency)}</span>
-                    <button 
-                      onClick={handleRemoveCoupon} 
+                    <button
+                      onClick={handleRemoveCoupon}
                       className="text-luxury-muted hover:text-luxury-text text-[10px] uppercase font-bold cursor-pointer"
                     >
                       (Remove)
@@ -282,13 +294,24 @@ export default function CartPage({ onPageChange }) {
 
               <div className="flex justify-between text-luxury-muted border-b border-luxury-text/10 pb-4">
                 <span className="tracking-wide">Secure Courier Delivery</span>
-                <span className="text-emerald-600 font-semibold uppercase tracking-wider">Complementary</span>
+                {shippingCost > 0 ? (
+                  <span className="font-semibold text-luxury-text">{formatPrice(shippingCost, currentCurrency)}</span>
+                ) : (
+                  <span className="text-emerald-600 font-semibold tracking-wider">Complementary</span>
+                )}
               </div>
 
               <div className="flex justify-between items-center text-sm font-bold text-luxury-text pt-2">
                 <span className="uppercase tracking-widest text-xs">Total Order Value</span>
                 <span className="text-lg font-extrabold text-luxury-gold-dark">{formatPrice(total, currentCurrency)}</span>
               </div>
+
+              {totalSavings > 0 && (
+                <div className="py-2.5 px-3 bg-emerald-50 rounded border border-emerald-200/60 text-emerald-700 text-xs font-semibold flex items-center justify-between">
+                  <span>Total Savings on this order</span>
+                  <span>{formatPrice(totalSavings, currentCurrency)}</span>
+                </div>
+              )}
             </div>
 
             <button

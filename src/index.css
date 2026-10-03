@@ -386,3 +386,8 @@ html, body, #root {
   opacity: 0.6 !important;
 }
 
+select option {
+  color: #171717 !important;
+  background-color: #ffffff !important;
+}
+

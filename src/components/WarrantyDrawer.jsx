@@ -347,11 +347,11 @@ export default function WarrantyDrawer({ isOpen, onClose }) {
                       required
                       value={stateName}
                       onChange={(e) => setStateName(e.target.value)}
-                      className="w-full bg-neutral-900 border border-white/15 rounded text-white p-2.5 focus:outline-none focus:border-luxury-gold transition max-h-40 overflow-y-auto scrollbar-thin"
-                      style={{ colorScheme: 'dark' }}
+                      className="w-full !bg-white border border-neutral-300 rounded !text-neutral-950 p-2.5 focus:outline-none focus:border-luxury-gold transition max-h-40 overflow-y-auto scrollbar-thin text-xs sm:text-sm font-medium cursor-pointer"
+                      style={{ colorScheme: 'light', color: '#171717', backgroundColor: '#ffffff' }}
                     >
                       {INDIAN_STATES.map((s) => (
-                        <option key={s} value={s} style={{ background: '#171717', color: '#fff' }}>{s}</option>
+                        <option key={s} value={s} style={{ background: '#ffffff', color: '#171717' }}>{s}</option>
                       ))}
                     </select>
                   ) : (
@@ -361,7 +361,8 @@ export default function WarrantyDrawer({ isOpen, onClose }) {
                       placeholder="Enter state..."
                       value={stateName}
                       onChange={(e) => setStateName(e.target.value)}
-                      className="w-full bg-neutral-900 border border-white/15 rounded text-white placeholder-gray-400 p-2.5 focus:outline-none focus:border-luxury-gold transition"
+                      className="w-full !bg-white border border-neutral-300 rounded !text-neutral-950 placeholder-gray-500 p-2.5 focus:outline-none focus:border-luxury-gold transition text-xs sm:text-sm font-medium"
+                      style={{ color: '#171717', backgroundColor: '#ffffff' }}
                     />
                   )}
                 </div>

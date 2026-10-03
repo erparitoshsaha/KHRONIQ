@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Image as ImageIcon, Film, Upload, X, ExternalLink, AlertCircle, Eye } from 'lucide-react';
+import { Image as ImageIcon, Film, Upload, X, ExternalLink, AlertCircle, Eye, Check, Edit3 } from 'lucide-react';
 
 /**
  * AdminMediaField
@@ -16,7 +16,13 @@ export default function AdminMediaField({
   placeholder = 'https://... or /assets/...',
   helperText,
   required = false,
-  onBlur
+  onBlur,
+  title = '',
+  onTitleChange,
+  onTitleBlur,
+  titlePlaceholder = '',
+  allowTitleEdit = false,
+  titleStatus = null
 }) {
   const [hasError, setHasError] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -43,11 +49,18 @@ export default function AdminMediaField({
   return (
     <div className="space-y-2 text-xs">
       <div className="flex items-center justify-between">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-300 block">
-          {label} {required && <span className="text-red-400">*</span>}
-        </label>
+        <div className="flex items-center space-x-2 min-w-0">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-300 block truncate">
+            {label} {required && <span className="text-red-400">*</span>}
+          </label>
+          {title && (
+            <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-luxury-gold/15 text-luxury-gold rounded border border-luxury-gold/30 shrink-0">
+              {title}
+            </span>
+          )}
+        </div>
         {cleanVal && (
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 shrink-0">
             <button
               type="button"
               onClick={() => setShowModal(true)}
@@ -101,7 +114,7 @@ export default function AdminMediaField({
             ) : (
               <img
                 src={cleanVal}
-                alt={label}
+                alt={title || label}
                 className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
                 onError={() => setHasError(true)}
               />
@@ -126,6 +139,36 @@ export default function AdminMediaField({
 
         {/* Media Inputs & Controls */}
         <div className="flex-1 space-y-2 w-full">
+          {(allowTitleEdit || onTitleChange) && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] text-gray-400 font-mono uppercase tracking-wider flex items-center space-x-1">
+                  <Edit3 size={10} className="text-luxury-gold inline mr-0.5" />
+                  <span>Media Name / Title</span>
+                </span>
+                {titleStatus === 'saving' && (
+                  <span className="text-[9px] text-luxury-gold font-mono animate-pulse">Saving title...</span>
+                )}
+                {titleStatus === 'saved' && (
+                  <span className="text-[9px] text-emerald-400 font-mono flex items-center space-x-0.5">
+                    <Check size={10} className="inline mr-0.5 text-emerald-400" /> Saved
+                  </span>
+                )}
+                {titleStatus === 'failed' && (
+                  <span className="text-[9px] text-red-400 font-mono">Save failed</span>
+                )}
+              </div>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => onTitleChange && onTitleChange(e.target.value)}
+                onBlur={onTitleBlur}
+                placeholder={titlePlaceholder || 'e.g. CRIMSON RED / Custom Title'}
+                className="w-full bg-black/60 border border-white/10 rounded px-2.5 py-1.5 text-white text-xs font-mono focus:outline-none focus:border-luxury-gold transition mb-1"
+              />
+            </div>
+          )}
+
           <div>
             <span className="text-[9px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
               {detectedVideo ? 'Video URL' : 'Image URL'}

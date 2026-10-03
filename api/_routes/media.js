@@ -12,6 +12,7 @@ router.post('/', protect, requirePermission('homepage_media'), (req, res, next) 
     if (err) return next(err);
 
     try {
+      const mediaTitle = (req.body?.title || '').trim();
       if (!req.files || req.files.length === 0) {
         if (req.body && req.body.url && req.body.section) {
           const isVideo = req.body.type === 'video' || /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(req.body.url);
@@ -37,11 +38,23 @@ router.post('/', protect, requirePermission('homepage_media'), (req, res, next) 
             publicId,
             type: isVideo ? 'video' : 'image',
             section: req.body.section,
+            title: mediaTitle,
             uploadedBy: req.user?._id
           });
           return res.json({ success: true, media: [media] });
         }
-        return res.status(400).json({ success: false, message: 'No files uploaded or url provided' });
+        if (req.body && req.body.section && (req.body.title !== undefined)) {
+          const media = await Media.create({
+            url: req.body.url || '',
+            publicId: '',
+            type: 'image',
+            section: req.body.section,
+            title: mediaTitle,
+            uploadedBy: req.user?._id
+          });
+          return res.json({ success: true, media: [media] });
+        }
+        return res.status(400).json({ success: false, message: 'No files uploaded or url/title provided' });
       }
       const section = req.body.section || 'homepage';
       const created = [];
@@ -52,6 +65,7 @@ router.post('/', protect, requirePermission('homepage_media'), (req, res, next) 
           publicId: file.filename || file.public_id || '',
           type: isVideo ? 'video' : 'image',
           section,
+          title: mediaTitle,
           uploadedBy: req.user?._id
         });
         created.push(media);
@@ -62,6 +76,38 @@ router.post('/', protect, requirePermission('homepage_media'), (req, res, next) 
       res.status(500).json({ success: false, message: 'Server error saving uploaded media' });
     }
   });
+});
+
+// PUT /api/admin/media/title - update or set title/display name for a media section
+router.put('/title', protect, requirePermission('homepage_media'), async (req, res) => {
+  try {
+    const { section, title } = req.body;
+    if (!section) {
+      return res.status(400).json({ success: false, message: 'Section is required' });
+    }
+    const cleanTitle = (title || '').trim();
+
+    // Check if a media document exists for this section
+    let doc = await Media.findOne({ section }).sort({ createdAt: -1 });
+    if (doc) {
+      doc.title = cleanTitle;
+      await doc.save();
+      return res.json({ success: true, media: doc });
+    }
+
+    // Otherwise create a document with the title
+    doc = await Media.create({
+      section,
+      title: cleanTitle,
+      url: '',
+      type: 'image',
+      uploadedBy: req.user?._id
+    });
+    return res.json({ success: true, media: doc });
+  } catch (err) {
+    console.error('Media title update error:', err);
+    res.status(500).json({ success: false, message: 'Server error updating media title' });
+  }
 });
 
 // GET /api/admin/media - list, optional ?section=...
@@ -100,21 +146,23 @@ router.delete('/:id', protect, requirePermission('homepage_media'), async (req, 
 });
 
 
-// GET /api/admin/media/public - public, returns the latest image per section as { section: url }
+// GET /api/admin/media/public - public, returns the latest image and title per section
 router.get('/public', async (req, res) => {
   try {
-    const list = await Media.find({
-      type: 'image'
-    })
+    const list = await Media.find({})
       .sort({ createdAt: -1 })
-      .select('section url')
+      .select('section url title')
       .lean();
 
     const lookup = {};
+    const titles = {};
     list.forEach(doc => {
-      if (!lookup[doc.section] && doc.url) lookup[doc.section] = doc.url; // first hit per section = newest
+      if (doc.section) {
+        if (!lookup[doc.section] && doc.url) lookup[doc.section] = doc.url; // first hit per section = newest
+        if (!titles[doc.section] && doc.title) titles[doc.section] = doc.title;
+      }
     });
-    res.json({ success: true, media: lookup });
+    res.json({ success: true, media: lookup, titles });
   } catch (err) {
     console.error('Public media fetch error:', err);
     res.status(500).json({ success: false, message: 'Server error' });

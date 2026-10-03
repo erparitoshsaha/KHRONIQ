@@ -247,10 +247,11 @@ export default function Checkout({ params, onPageChange }) {
   const totalGiftingCost = packagingCost + giftCardCost;
   const mrpTotal = cartItemsWithDetails.reduce((sum, item) => sum + (item.itemMrp * item.quantity), 0);
   const subtotal = cartItemsWithDetails.reduce((sum, item) => sum + (item.itemPrice * item.quantity), 0);
+  const shippingCost = cartItemsWithDetails.reduce((sum, item) => sum + ((item.product?.shippingFee || 0) * item.quantity), 0);
   const discount = appliedCoupon ? Math.round(subtotal * (appliedCoupon.discountPercent / 100)) : 0;
   const finalSellingPrice = Math.max(0, subtotal - discount);
   const gst = Math.round(((finalSellingPrice * 18) / 118) * 100) / 100;
-  const total = finalSellingPrice + totalGiftingCost;
+  const total = finalSellingPrice + totalGiftingCost + shippingCost;
 
   const handleApplyCoupon = async (codeOverride) => {
     const rawCode = typeof codeOverride === 'string' ? codeOverride : couponInput;
@@ -664,6 +665,12 @@ export default function Checkout({ params, onPageChange }) {
       y += 6;
     }
 
+    if (orderReceipt.shippingFee > 0) {
+      doc.text('Shipping Fee', totalsX, y);
+      doc.text(`Rs. ${Number(orderReceipt.shippingFee).toLocaleString('en-IN')}`, pageWidth - marginX, y, { align: 'right' });
+      y += 6;
+    }
+
     const finalSp = Math.max(0, Number(orderReceipt.subtotal) - (Number(orderReceipt.discount) || 0));
     const orderGst = Math.round(((finalSp * 18) / 118) * 100) / 100;
     doc.text('GST (18% included)', totalsX, y);
@@ -945,6 +952,7 @@ export default function Checkout({ params, onPageChange }) {
               cartItems={cartItemsWithDetails}
               subtotal={subtotal}
               discount={discount}
+              shippingCost={shippingCost}
               gst={gst}
               packagingCost={packagingCost}
               packagingType={packagingType}
@@ -965,7 +973,7 @@ export default function Checkout({ params, onPageChange }) {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Delivery Information Form */}
-            <div className="lg:col-span-7 bg-white border border-neutral-200 p-6 sm:p-8 rounded-lg shadow-xs space-y-6">
+            <div className="lg:col-span-7 bg-white border border-neutral-200 p-4 sm:p-6 md:p-8 rounded-lg shadow-xs space-y-6">
               <div className="space-y-1">
                 <h2 className="text-sm sm:text-base font-bold tracking-wide text-neutral-900 uppercase">
                   DELIVERY INFORMATION
@@ -1233,7 +1241,7 @@ export default function Checkout({ params, onPageChange }) {
                         </button>
                       </div>
                     ) : (
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 w-full">
                         <input
                           type="text"
                           value={gstInput}
@@ -1248,12 +1256,12 @@ export default function Checkout({ params, onPageChange }) {
                             }
                           }}
                           placeholder="Enter GSTIN (e.g. 27ABCDE1234F1Z5)"
-                          className="flex-1 bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black uppercase transition shipping-input"
+                          className="flex-1 min-w-0 bg-white border border-neutral-300 rounded-md px-3 sm:px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black uppercase transition shipping-input"
                         />
                         <button
                           type="button"
                           onClick={handleApplyGst}
-                          className="px-6 py-2.5 bg-white border border-neutral-300 hover:border-black text-neutral-900 text-xs font-bold uppercase tracking-wider rounded-md transition cursor-pointer"
+                          className="shrink-0 w-20 sm:w-24 py-2.5 bg-white border border-neutral-300 hover:border-black text-neutral-900 text-xs font-bold uppercase tracking-wider rounded-md transition cursor-pointer flex items-center justify-center"
                         >
                           Apply
                         </button>
@@ -1300,7 +1308,7 @@ export default function Checkout({ params, onPageChange }) {
                     </div>
                   ) : (
                     <>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 w-full">
                         <input
                           type="text"
                           value={couponInput}
@@ -1312,13 +1320,13 @@ export default function Checkout({ params, onPageChange }) {
                             }
                           }}
                           placeholder="Enter coupon code"
-                          className="flex-1 bg-white border border-neutral-300 rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black uppercase transition shipping-input"
+                          className="flex-1 min-w-0 bg-white border border-neutral-300 rounded-md px-3 sm:px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-black uppercase transition shipping-input"
                         />
                         <button
                           type="button"
                           onClick={() => handleApplyCoupon()}
                           disabled={couponLoading}
-                          className="px-6 py-2.5 bg-black hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider rounded-md transition flex items-center justify-center cursor-pointer disabled:opacity-50"
+                          className="shrink-0 w-20 sm:w-24 py-2.5 bg-black hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider rounded-md transition flex items-center justify-center cursor-pointer disabled:opacity-50"
                         >
                           {couponLoading ? <Loader2 size={14} className="animate-spin" /> : 'Apply'}
                         </button>
@@ -1354,6 +1362,7 @@ export default function Checkout({ params, onPageChange }) {
                 cartItems={cartItemsWithDetails}
                 subtotal={subtotal}
                 discount={discount}
+                shippingCost={shippingCost}
                 gst={gst}
                 packagingCost={packagingCost}
                 packagingType={packagingType}
@@ -1462,6 +1471,7 @@ export default function Checkout({ params, onPageChange }) {
               cartItems={cartItemsWithDetails}
               subtotal={subtotal}
               discount={discount}
+              shippingCost={shippingCost}
               gst={gst}
               packagingCost={packagingCost}
               packagingType={packagingType}
@@ -1510,6 +1520,12 @@ export default function Checkout({ params, onPageChange }) {
                   <span className="font-semibold text-white">{formatPrice(item.price * item.quantity, currentCurrency)}</span>
                 </div>
               ))}
+              {orderReceipt.shippingFee > 0 && (
+                <div className="flex justify-between items-center text-gray-300">
+                  <span>Shipping Fee</span>
+                  <span className="font-semibold text-white">{formatPrice(orderReceipt.shippingFee, currentCurrency)}</span>
+                </div>
+              )}
             </div>
 
             <div className="border-t border-white/5 pt-3 flex justify-between items-center font-bold text-white">
@@ -1556,6 +1572,7 @@ function CheckoutSummary({
   cartItems,
   subtotal,
   discount,
+  shippingCost = 0,
   gst,
   packagingCost = 0,
   packagingType = 'single',
@@ -1682,7 +1699,11 @@ function CheckoutSummary({
 
         <div className="flex justify-between text-neutral-600 items-center">
           <span>Shipping</span>
-          <span className="text-emerald-600 font-bold uppercase tracking-wider text-xs">FREE</span>
+          {shippingCost > 0 ? (
+            <span className="font-medium text-neutral-900">{formatPrice(shippingCost, currentCurrency)}</span>
+          ) : (
+            <span className="text-emerald-600 font-bold uppercase tracking-wider text-xs">FREE</span>
+          )}
         </div>
       </div>
 

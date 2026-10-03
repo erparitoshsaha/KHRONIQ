@@ -37,6 +37,10 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
     });
   }, [isOpen, cart, products, dispatch]);
 
+  const totalMrp = cartItemsWithDetails.reduce((sum, item) => {
+    const mrp = item.mrp || getProductMrp(item.product);
+    return sum + (mrp * item.quantity);
+  }, 0);
   const subtotal = cartItemsWithDetails.reduce((sum, item) => {
     const sp = item.price !== undefined ? item.price : getSellingPrice(item.product);
     return sum + (sp * item.quantity);
@@ -46,6 +50,7 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
     const sp = item.price !== undefined ? item.price : getSellingPrice(item.product);
     return sum + (mrp > sp ? (mrp - sp) * item.quantity : 0);
   }, 0);
+  const shippingCost = cartItemsWithDetails.reduce((sum, item) => sum + ((item.product?.shippingFee || 0) * item.quantity), 0);
   const handleCheckoutClick = () => {
     onClose();
     if (currentUser) {
@@ -114,6 +119,7 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
                   const itemMrp = item.mrp || getProductMrp(item.product);
                   const itemSp = item.price !== undefined ? item.price : getSellingPrice(item.product);
                   const isDiscounted = itemMrp > itemSp;
+                  const itemDiscountPercent = isDiscounted ? Math.round(((itemMrp - itemSp) / itemMrp) * 100) : 0;
 
                   return (
                   <div key={item.productId} className="flex space-x-4 border-b border-luxury-text/10 pb-6">
@@ -188,8 +194,8 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
                             {formatPrice(itemSp * item.quantity, currentCurrency)}
                           </p>
                           {isDiscounted && (
-                            <p className="text-[10px] text-green-600 font-medium">
-                              Save {formatPrice((itemMrp - itemSp) * item.quantity, currentCurrency)}
+                            <p className="text-[10px] text-emerald-600 font-medium">
+                              Save {formatPrice((itemMrp - itemSp) * item.quantity, currentCurrency)} {itemDiscountPercent > 0 ? `(${itemDiscountPercent}% off)` : ''}
                             </p>
                           )}
                         </div>
@@ -203,20 +209,43 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
 
             {/* Footer Summary (Only visible if cart has items) */}
             {cartItemsWithDetails.length > 0 && (
-              <div className="p-6 border-t border-luxury-text/10 bg-luxury-bg/30 space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-luxury-muted tracking-wider">Subtotal</span>
+              <div className="p-6 border-t border-luxury-text/10 bg-luxury-bg/30 space-y-3.5">
+                {totalSavings > 0 && (
+                  <div className="flex justify-between items-center text-xs text-luxury-muted">
+                    <span className="tracking-wide">Total MRP</span>
+                    <span className="line-through font-medium">{formatPrice(totalMrp, currentCurrency)}</span>
+                  </div>
+                )}
+                {totalSavings > 0 && (
+                  <div className="flex justify-between items-center text-xs text-emerald-600 font-medium">
+                    <span>Discount on MRP</span>
+                    <span>-{formatPrice(totalSavings, currentCurrency)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center text-sm pt-1 border-t border-luxury-text/10">
+                  <span className="text-luxury-text font-bold tracking-wider">Subtotal</span>
                   <span className="text-luxury-text font-bold text-lg">{formatPrice(subtotal, currentCurrency)}</span>
                 </div>
                 {totalSavings > 0 && (
-                  <div className="flex justify-between items-center text-xs text-green-600 font-medium">
+                  <div className="py-2 px-3 bg-emerald-50 rounded border border-emerald-200/60 text-emerald-700 text-xs font-semibold flex items-center justify-between">
                     <span>Total Savings</span>
                     <span>{formatPrice(totalSavings, currentCurrency)}</span>
                   </div>
                 )}
                 
+                <div className="flex justify-between items-center text-xs text-luxury-muted">
+                  <span className="tracking-wide">Estimated Shipping</span>
+                  {shippingCost > 0 ? (
+                    <span className="font-semibold text-luxury-text">{formatPrice(shippingCost, currentCurrency)}</span>
+                  ) : (
+                    <span className="font-semibold text-emerald-600">FREE</span>
+                  )}
+                </div>
+                
                 <p className="text-luxury-muted text-[10px] leading-relaxed">
-                  Shipping, taxes, and discounts calculated at checkout. Khroniq timepieces feature free secure priority shipping.
+                  {shippingCost > 0
+                    ? 'Shipping, taxes, and discounts calculated at checkout. Specific timepiece delivery fees applied.'
+                    : 'Shipping, taxes, and discounts calculated at checkout. Khroniq timepieces feature free secure priority shipping.'}
                 </p>
 
                 <div className="grid grid-cols-1 gap-2 pt-2">

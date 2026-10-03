@@ -30,6 +30,7 @@ async function calculateAuthoritativeCart(items, couponCode, packagingCost = 0) 
 
   let mrpTotal = 0;
   let subtotal = 0;
+  let shippingFee = 0;
   const validatedItems = [];
 
   for (const item of items) {
@@ -62,6 +63,8 @@ async function calculateAuthoritativeCart(items, couponCode, packagingCost = 0) 
 
     mrpTotal += mrp * qty;
     subtotal += sp * qty;
+    const itemShipping = Math.max(0, Number(product.shippingFee) || 0);
+    shippingFee += itemShipping * qty;
 
     validatedItems.push({
       productId: product._id.toString(),
@@ -90,8 +93,8 @@ async function calculateAuthoritativeCart(items, couponCode, packagingCost = 0) 
   // GST is 18% INCLUDED in the Selling Price: GST = SP * 18 / 118
   const gst = Math.round(((finalSellingPrice * 18) / 118) * 100) / 100;
   const basePrice = Math.round(((finalSellingPrice * 100) / 118) * 100) / 100;
-  // Total customer payment includes final Selling Price + packaging cost
-  const total = finalSellingPrice + validPackagingCost;
+  // Total customer payment includes final Selling Price + packaging cost + shipping fee
+  const total = finalSellingPrice + validPackagingCost + shippingFee;
 
   return {
     mrpTotal,
@@ -100,6 +103,7 @@ async function calculateAuthoritativeCart(items, couponCode, packagingCost = 0) 
     gst,
     basePrice,
     packagingCost: validPackagingCost,
+    shippingFee,
     total,
     validatedItems,
     appliedCoupon: appliedCouponDoc
@@ -152,7 +156,7 @@ router.post('/create-order', protect, paymentLimiter, async (req, res, next) => 
     const razorpay = getRazorpayInstance();
 
     // 1. Authoritative price calculation directly from DB
-    const { subtotal, discount, gst, total, validatedItems } = await calculateAuthoritativeCart(items, couponCode, packagingCost);
+    const { subtotal, discount, gst, shippingFee, total, validatedItems } = await calculateAuthoritativeCart(items, couponCode, packagingCost);
 
     if (total <= 0) {
       return res.status(400).json({ success: false, message: 'Total order amount must be greater than zero.' });
@@ -182,6 +186,7 @@ router.post('/create-order', protect, paymentLimiter, async (req, res, next) => 
         discount,
         gst,
         packagingCost: Number(packagingCost) || 0,
+        shippingFee,
         total
       }
     });
@@ -261,7 +266,7 @@ router.post('/verify', protect, paymentLimiter, async (req, res, next) => {
         totalGiftingCost += 100;
       }
     }
-    const { subtotal, discount, total, validatedItems } = await calculateAuthoritativeCart(items, couponCode, totalGiftingCost);
+    const { subtotal, discount, shippingFee, total, validatedItems } = await calculateAuthoritativeCart(items, couponCode, totalGiftingCost);
 
     // 4. Atomic stock deduction
     const deductedProducts = [];
@@ -332,6 +337,7 @@ router.post('/verify', protect, paymentLimiter, async (req, res, next) => {
       items: dbItems,
       subtotal,
       discount,
+      shippingFee,
       total,
       shippingDetails: {
         fullName: shippingDetails.fullName.trim(),

@@ -33,6 +33,7 @@ const productSchema = new mongoose.Schema({
   description: { type: String, required: true },
   badge: { type: String, default: '' },
   discountPercent: { type: Number, default: 0 },
+  shippingFee: { type: Number, default: 0, min: 0 },
   specs: {
     movement: { type: String, default: '' },
     case: { type: String, default: '' },
