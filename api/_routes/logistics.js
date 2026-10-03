@@ -2,19 +2,26 @@
 import express from 'express';
 import Order from '../_models/Order.js';
 import { protect, requirePermission } from '../_middleware/auth.js';
+import {
+    checkShiprocketHealth,
+    checkShiprocketServiceability,
+    trackShiprocketAwb
+} from '../utils/shiprocket.js';
 
 const router = express.Router();
 
 // 1. Live Courier Partners API Status & Health Check
 router.get('/partners', protect, requirePermission('orders'), async (req, res) => {
     try {
-        // Real logistics APIs (Delhivery, Shiprocket, BlueDart) se health check / webhook status
+        // Query live Shiprocket server health / latency
+        const srHealth = await checkShiprocketHealth();
+
         const partners = [
             {
                 id: 'bluedart',
                 name: 'Blue Dart Air Express',
                 code: 'BLUEDART',
-                status: 'Active', // Active | Degraded | Maintenance | Offline
+                status: 'Active',
                 latencyMs: 142,
                 priority: 1,
                 supportedZones: ['Delhi-NCR', 'Metro Air', 'National'],
@@ -34,10 +41,11 @@ router.get('/partners', protect, requirePermission('orders'), async (req, res) =
                 id: 'shiprocket',
                 name: 'Shiprocket Multi-Carrier',
                 code: 'SHIPROCKET',
-                status: 'Active',
-                latencyMs: 185,
+                status: srHealth.status,
+                latencyMs: srHealth.latencyMs,
                 priority: 3,
-                supportedZones: ['National Express', 'Hyperlocal'],
+                isLive: srHealth.isLive,
+                supportedZones: ['National Express', 'Hyperlocal', 'Air & Surface'],
                 avgWorkingDays: '2-5 Working Days'
             },
             {
@@ -52,7 +60,7 @@ router.get('/partners', protect, requirePermission('orders'), async (req, res) =
             }
         ];
 
-        res.json({ success: true, partners });
+        res.json({ success: true, partners, shiprocketLive: srHealth.isLive });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -65,7 +73,32 @@ router.post('/check-serviceability', protect, async (req, res) => {
         return res.status(400).json({ success: false, message: 'Invalid 6-digit Pincode' });
     }
 
-    // Live Pincode Serviceability Map
+    try {
+        // Attempt live Shiprocket serviceability lookup
+        const srResult = await checkShiprocketServiceability(pincode);
+        if (srResult.success && srResult.data?.couriers?.length > 0) {
+            const mappedPartners = srResult.data.couriers.map(c => ({
+                partner: c.name,
+                serviceable: true,
+                codAvailable: c.codAvailable,
+                estimatedDays: `${c.estimatedDays || c.etd || '2-4'} Days`,
+                carrierRecommended: c.isRecommended,
+                rate: c.rate,
+                rating: c.rating
+            }));
+
+            return res.json({
+                success: true,
+                pincode,
+                isLive: true,
+                partners: mappedPartners
+            });
+        }
+    } catch (e) {
+        console.warn('Shiprocket live serviceability fallback:', e.message);
+    }
+
+    // Resilient Fallback Pincode Serviceability Map
     const availablePartners = [
         {
             partner: 'Blue Dart Air Express',
@@ -90,7 +123,16 @@ router.post('/check-serviceability', protect, async (req, res) => {
         }
     ];
 
-    res.json({ success: true, pincode, partners: availablePartners });
+    res.json({ success: true, pincode, isLive: false, partners: availablePartners });
+});
+
+// 2.5 Live AWB Tracking Endpoint
+router.get('/track/:awb', protect, async (req, res) => {
+    const { awb } = req.params;
+    if (!awb) return res.status(400).json({ success: false, message: 'AWB required' });
+
+    const trackResult = await trackShiprocketAwb(awb);
+    res.json(trackResult);
 });
 
 // 3. Manual Courier Assignment & Delivery Date Override

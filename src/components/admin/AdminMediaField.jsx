@@ -50,7 +50,7 @@ export default function AdminMediaField({
     <div className="space-y-2 text-xs">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2 min-w-0">
-          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-300 block truncate">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-white block truncate">
             {label} {required && <span className="text-red-400">*</span>}
           </label>
           {title && (
@@ -64,7 +64,7 @@ export default function AdminMediaField({
             <button
               type="button"
               onClick={() => setShowModal(true)}
-              className="text-[10px] text-gray-400 hover:text-white flex items-center space-x-1 cursor-pointer transition"
+              className="text-[10px] text-gray-200 hover:text-white flex items-center space-x-1 cursor-pointer transition"
               title="Enlarge preview"
             >
               <Eye size={11} />
@@ -73,7 +73,7 @@ export default function AdminMediaField({
             <button
               type="button"
               onClick={() => onChange && onChange('')}
-              className="text-[10px] text-red-400/80 hover:text-red-300 flex items-center space-x-1 cursor-pointer transition"
+              className="text-[10px] text-red-400 hover:text-red-300 flex items-center space-x-1 cursor-pointer transition"
               title="Clear media"
             >
               <X size={11} />
@@ -120,9 +120,9 @@ export default function AdminMediaField({
               />
             )
           ) : (
-            <div className="flex flex-col items-center justify-center text-gray-500 space-y-1 p-2 text-center">
-              {detectedVideo ? <Film size={18} className="opacity-40" /> : <ImageIcon size={18} className="opacity-40" />}
-              <span className="text-[9px] uppercase tracking-wider text-gray-400 font-mono">No Media</span>
+            <div className="flex flex-col items-center justify-center text-neutral-400 space-y-1 p-2 text-center">
+              {detectedVideo ? <Film size={18} className="opacity-60 text-neutral-400" /> : <ImageIcon size={18} className="opacity-60 text-neutral-400" />}
+              <span className="text-[9px] uppercase tracking-wider text-neutral-300 font-mono font-bold">No Media</span>
             </div>
           )}
 
@@ -142,20 +142,20 @@ export default function AdminMediaField({
           {(allowTitleEdit || onTitleChange) && (
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] text-gray-400 font-mono uppercase tracking-wider flex items-center space-x-1">
-                  <Edit3 size={10} className="text-luxury-gold inline mr-0.5" />
+                <span className="text-[10px] text-neutral-700 font-mono font-bold uppercase tracking-wider flex items-center space-x-1">
+                  <Edit3 size={11} className="text-luxury-gold inline mr-0.5" />
                   <span>Media Name / Title</span>
                 </span>
                 {titleStatus === 'saving' && (
                   <span className="text-[9px] text-luxury-gold font-mono animate-pulse">Saving title...</span>
                 )}
                 {titleStatus === 'saved' && (
-                  <span className="text-[9px] text-emerald-400 font-mono flex items-center space-x-0.5">
-                    <Check size={10} className="inline mr-0.5 text-emerald-400" /> Saved
+                  <span className="text-[9px] text-emerald-600 font-mono font-bold flex items-center space-x-0.5">
+                    <Check size={10} className="inline mr-0.5 text-emerald-600" /> Saved
                   </span>
                 )}
                 {titleStatus === 'failed' && (
-                  <span className="text-[9px] text-red-400 font-mono">Save failed</span>
+                  <span className="text-[9px] text-red-600 font-mono font-bold">Save failed</span>
                 )}
               </div>
               <input
@@ -170,7 +170,7 @@ export default function AdminMediaField({
           )}
 
           <div>
-            <span className="text-[9px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
+            <span className="text-[10px] text-neutral-700 font-mono font-bold uppercase tracking-wider block mb-1">
               {detectedVideo ? 'Video URL' : 'Image URL'}
             </span>
             <input
@@ -186,11 +186,11 @@ export default function AdminMediaField({
           <div className="flex flex-wrap items-center gap-2 pt-1">
             {onUpload && (
               <label
-                className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 !text-white text-white rounded border border-neutral-600 hover:border-white text-[10px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center space-x-1.5"
+                className="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded border border-neutral-700 hover:border-white text-[10px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center space-x-1.5 shadow-sm"
                 style={{ color: '#ffffff' }}
               >
-                <Upload size={12} className="!text-white text-white shrink-0" style={{ color: '#ffffff' }} />
-                <span className="!text-white text-white" style={{ color: '#ffffff' }}>
+                <Upload size={12} className="text-white shrink-0" style={{ color: '#ffffff' }} />
+                <span className="text-white" style={{ color: '#ffffff' }}>
                   {uploading ? 'Uploading...' : 'Upload / Replace'}
                 </span>
                 <input
@@ -208,7 +208,7 @@ export default function AdminMediaField({
                 href={cleanVal}
                 target="_blank"
                 rel="noreferrer"
-                className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded border border-white/10 text-[10px] font-medium transition flex items-center space-x-1"
+                className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 font-semibold rounded border border-neutral-300 text-[10px] transition flex items-center space-x-1"
               >
                 <ExternalLink size={11} />
                 <span>Open Link</span>
@@ -217,7 +217,7 @@ export default function AdminMediaField({
           </div>
 
           {helperText && (
-            <p className="text-[10px] text-gray-400 italic">
+            <p className="text-[10px] text-neutral-600 font-medium italic">
               {helperText}
             </p>
           )}

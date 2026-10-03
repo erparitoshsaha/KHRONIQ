@@ -224,10 +224,10 @@ function AdminAutocompleteInput({
                   handleSelect(item);
                 }}
                 className={`px-3 py-1.5 cursor-pointer flex items-center justify-between transition-colors ${highlightedIndex === idx
-                    ? 'bg-white/20 text-white font-medium'
-                    : isSelected
-                      ? 'bg-white/10 text-white font-medium'
-                      : 'hover:bg-white/10 text-gray-200'
+                  ? 'bg-white/20 text-white font-medium'
+                  : isSelected
+                    ? 'bg-white/10 text-white font-medium'
+                    : 'hover:bg-white/10 text-gray-200'
                   }`}
               >
                 <span>{item}</span>
@@ -1811,8 +1811,8 @@ export default function Admin({ onPageChange }) {
                   setMobileSidebarOpen(false);
                 }}
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer text-left ${isCurrent
-                    ? 'bg-[#18181b] text-white font-semibold shadow-xs border border-white/10'
-                    : 'text-[#9ca3af] hover:text-white hover:bg-white/[0.04]'
+                  ? 'bg-[#18181b] text-white font-semibold shadow-xs border border-white/10'
+                  : 'text-[#9ca3af] hover:text-white hover:bg-white/[0.04]'
                   }`}
               >
                 <div className="flex items-center gap-3.5 min-w-0">
@@ -2357,8 +2357,8 @@ export default function Admin({ onPageChange }) {
               {/* Feedback Message Notification */}
               {filterActionMsg && (
                 <div className={`p-4 rounded border text-xs font-bold flex items-center justify-between transition-all ${filterActionMsg.type === 'success'
-                    ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300'
-                    : 'bg-red-950/90 border-red-500 text-red-300'
+                  ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300'
+                  : 'bg-red-950/90 border-red-500 text-red-300'
                   }`}
                   style={{
                     backgroundColor: filterActionMsg.type === 'success' ? '#022c22' : '#450a0a',
@@ -2683,7 +2683,7 @@ export default function Admin({ onPageChange }) {
               {/* ─── MODAL: ADD NEW FILTER CATEGORY ───────────────────────────── */}
               {showAddCatModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-                  <div className="bg-luxury-gray border border-white/20 p-6 rounded-lg w-full max-w-3xl space-y-5 shadow-2xl my-8">
+                  <div className="bg-[#1a1a1a] border border-white/20 p-6 rounded-lg w-full max-w-3xl space-y-5 shadow-2xl my-8 text-white">
                     <div className="flex justify-between items-start border-b border-white/10 pb-4">
                       <div>
                         <div className="flex items-center space-x-2">
@@ -2692,7 +2692,7 @@ export default function Admin({ onPageChange }) {
                             ADD NEW FILTER CATEGORY
                           </h3>
                         </div>
-                        <p className="text-gray-400 text-xs mt-1">
+                        <p className="text-neutral-300 text-xs mt-1">
                           Configure a new timepiece filter attribute and define its available customer options.
                         </p>
                       </div>
@@ -2703,7 +2703,7 @@ export default function Admin({ onPageChange }) {
                           e.stopPropagation();
                           setShowAddCatModal(false);
                         }}
-                        className="text-gray-400 hover:text-white cursor-pointer p-1"
+                        className="text-neutral-400 hover:text-white cursor-pointer p-1"
                       >
                         <X size={20} />
                       </button>
@@ -2781,13 +2781,13 @@ export default function Admin({ onPageChange }) {
                       }}
                       className="space-y-5 text-xs"
                     >
-                      <div className="bg-black/30 border border-white/5 p-4 rounded-md space-y-4">
+                      <div className="bg-[#111111] border border-white/10 p-4 rounded-md space-y-4">
                         <h4 className="text-xs font-black uppercase tracking-widest text-white border-b border-white/5 pb-2">
                           1. Category Details
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div className="space-y-1.5">
-                            <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">
+                            <label className="text-white uppercase tracking-wider text-[10px] font-bold block">
                               Category Name *
                             </label>
                             <input
@@ -2808,7 +2808,7 @@ export default function Admin({ onPageChange }) {
                           </div>
 
                           <div className="space-y-1.5">
-                            <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">
+                            <label className="text-white uppercase tracking-wider text-[10px] font-bold block">
                               Category Slug / Key
                             </label>
                             <input
@@ -2821,7 +2821,7 @@ export default function Admin({ onPageChange }) {
                           </div>
 
                           <div className="space-y-1.5">
-                            <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">
+                            <label className="text-white uppercase tracking-wider text-[10px] font-bold block">
                               Display Order
                             </label>
                             <input
@@ -2834,7 +2834,7 @@ export default function Admin({ onPageChange }) {
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">
+                          <label className="text-white uppercase tracking-wider text-[10px] font-bold block">
                             Description (Optional)
                           </label>
                           <input
@@ -2854,24 +2854,24 @@ export default function Admin({ onPageChange }) {
                             onChange={(e) => setNewCatForm({ ...newCatForm, isActive: e.target.checked })}
                             className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-white cursor-pointer"
                           />
-                          <label htmlFor="newCatActiveCheckbox" className="text-gray-300 text-xs cursor-pointer select-none font-medium">
+                          <label htmlFor="newCatActiveCheckbox" className="text-white text-xs cursor-pointer select-none font-medium">
                             Active (Visible on Customer Catalog)
                           </label>
                         </div>
                       </div>
 
-                      <div className="bg-black/30 border border-white/5 p-4 rounded-md space-y-4">
+                      <div className="bg-[#111111] border border-white/10 p-4 rounded-md space-y-4">
                         <div className="flex justify-between items-center border-b border-white/5 pb-2">
                           <h4 className="text-xs font-black uppercase tracking-widest text-white">
                             2. Filter Options ({newCatForm.options?.length || 0})
                           </h4>
-                          <span className="text-[10px] text-gray-400">
+                          <span className="text-[10px] text-neutral-300">
                             At least 1 option required
                           </span>
                         </div>
 
                         <div className="p-3 bg-white/[0.02] border border-white/10 rounded space-y-2">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 block">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-white block">
                             Add an Option
                           </span>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -2935,7 +2935,7 @@ export default function Admin({ onPageChange }) {
 
                         <div className="border border-white/10 rounded overflow-hidden">
                           {(!newCatForm.options || newCatForm.options.length === 0) ? (
-                            <div className="p-4 text-center text-gray-500 italic text-xs">
+                            <div className="p-4 text-center text-neutral-400 italic text-xs">
                               No options added yet. Type an option name above and click "+ Add Option".
                             </div>
                           ) : (
@@ -2943,9 +2943,9 @@ export default function Admin({ onPageChange }) {
                               {newCatForm.options.map((opt, idx) => (
                                 <div key={idx} className="p-2.5 px-4 flex items-center justify-between hover:bg-white/[0.02]">
                                   <div className="flex items-center space-x-3">
-                                    <span className="font-mono text-xs text-gray-500 w-5">{idx + 1}.</span>
+                                    <span className="font-mono text-xs text-neutral-400 w-5 font-bold">{idx + 1}.</span>
                                     <span className="font-bold text-white text-xs">{opt.name}</span>
-                                    <span className="text-[10px] font-mono text-gray-400 bg-white/5 px-2 py-0.5 rounded">
+                                    <span className="text-[10px] font-mono text-neutral-300 bg-white/10 px-2 py-0.5 rounded border border-white/10">
                                       {opt.value || opt.slug}
                                     </span>
                                   </div>
@@ -2997,7 +2997,7 @@ export default function Admin({ onPageChange }) {
               {/* ─── MODAL: EDIT FILTER CATEGORY ───────────────────────────── */}
               {editingCat && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-                  <div className="bg-luxury-gray border border-white/20 p-6 rounded-lg w-full max-w-4xl space-y-6 shadow-2xl my-8">
+                  <div className="bg-[#1a1a1a] border border-white/20 p-6 rounded-lg w-full max-w-4xl space-y-6 shadow-2xl my-8 text-white">
                     {/* Header */}
                     <div className="flex justify-between items-start border-b border-white/10 pb-4">
                       <div>
@@ -3010,7 +3010,7 @@ export default function Admin({ onPageChange }) {
                             {editingCat.name}
                           </span>
                         </div>
-                        <p className="text-gray-400 text-xs mt-1">
+                        <p className="text-neutral-300 text-xs mt-1">
                           Manage category details, description, display order, and all filter options belonging to this category.
                         </p>
                       </div>
@@ -3021,19 +3021,19 @@ export default function Admin({ onPageChange }) {
                           e.stopPropagation();
                           setEditingCat(null);
                         }}
-                        className="text-gray-400 hover:text-white cursor-pointer p-1"
+                        className="text-neutral-400 hover:text-white cursor-pointer p-1"
                       >
                         <X size={20} />
                       </button>
                     </div>
 
                     {/* Status & Error Banners */}
-                    <div className="bg-emerald-950/40 border border-emerald-500/40 rounded p-3 text-xs text-emerald-300 flex items-center justify-between">
+                    <div className="bg-emerald-950/60 border border-emerald-500/50 rounded p-3 text-xs text-emerald-200 flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
                         <span>Currently saved database values are loaded. All changes synchronize across the catalog.</span>
                       </div>
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-300">
                         Slug: {editingCat.slug}
                       </span>
                     </div>
@@ -3114,14 +3114,14 @@ export default function Admin({ onPageChange }) {
                       className="space-y-6 text-xs"
                     >
                       {/* 1. Category Details Section */}
-                      <div className="bg-black/30 border border-white/5 p-4 rounded-md space-y-4">
+                      <div className="bg-[#111111] border border-white/10 p-4 rounded-md space-y-4">
                         <h4 className="text-xs font-black uppercase tracking-widest text-white border-b border-white/5 pb-2">
                           1. Category Details
                         </h4>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div className="space-y-1.5">
-                            <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">Category Name *</label>
+                            <label className="text-white uppercase tracking-wider text-[10px] font-bold block">Category Name *</label>
                             <input
                               type="text"
                               required
@@ -3133,7 +3133,7 @@ export default function Admin({ onPageChange }) {
                           </div>
 
                           <div className="space-y-1.5">
-                            <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">Category Slug / Key</label>
+                            <label className="text-white uppercase tracking-wider text-[10px] font-bold block">Category Slug / Key</label>
                             <input
                               type="text"
                               value={editingCat.slug}
@@ -3144,7 +3144,7 @@ export default function Admin({ onPageChange }) {
                           </div>
 
                           <div className="space-y-1.5">
-                            <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">Display Order</label>
+                            <label className="text-white uppercase tracking-wider text-[10px] font-bold block">Display Order</label>
                             <input
                               type="number"
                               value={editingCat.order}
@@ -3155,7 +3155,7 @@ export default function Admin({ onPageChange }) {
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-gray-300 uppercase tracking-wider text-[10px] font-bold block">Description</label>
+                          <label className="text-white uppercase tracking-wider text-[10px] font-bold block">Description</label>
                           <input
                             type="text"
                             value={editingCat.description || ''}
@@ -3173,20 +3173,20 @@ export default function Admin({ onPageChange }) {
                             onChange={(e) => setEditingCat({ ...editingCat, isActive: e.target.checked })}
                             className="w-4 h-4 rounded border-gray-700 bg-luxury-gray text-white cursor-pointer"
                           />
-                          <label htmlFor="editCatActiveUnified" className="text-gray-300 text-xs cursor-pointer select-none font-medium">
+                          <label htmlFor="editCatActiveUnified" className="text-white text-xs cursor-pointer select-none font-medium">
                             Active (Visible in client catalog sidebar)
                           </label>
                         </div>
                       </div>
 
                       {/* 2. Options Management Section */}
-                      <div className="bg-black/30 border border-white/5 p-4 rounded-md space-y-4">
+                      <div className="bg-[#111111] border border-white/10 p-4 rounded-md space-y-4">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-white/5 pb-2">
                           <div className="flex items-center space-x-2">
                             <h4 className="text-xs font-black uppercase tracking-widest text-white">
                               2. Filter Options ({editingCat.options?.length || 0})
                             </h4>
-                            <span className="text-[10px] text-gray-400">
+                            <span className="text-[10px] text-neutral-300 font-medium">
                               Options appear in customer filter menus and match product specs
                             </span>
                           </div>
@@ -3194,7 +3194,7 @@ export default function Admin({ onPageChange }) {
 
                         {/* Quick Add Option Input Bar */}
                         <div className="p-3 bg-white/[0.02] border border-white/10 rounded space-y-2">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 block">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-white block">
                             Add New Option to this Category
                           </span>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -3259,8 +3259,8 @@ export default function Admin({ onPageChange }) {
 
                         {/* Options Table */}
                         <div className="border border-white/10 rounded overflow-hidden max-h-72 overflow-y-auto">
-                          <table className="w-full text-left text-xs text-gray-300">
-                            <thead className="bg-black/40 text-[10px] font-bold uppercase tracking-widest text-gray-400 border-b border-white/10 sticky top-0">
+                          <table className="w-full text-left text-xs text-white">
+                            <thead className="bg-neutral-800 text-[10px] font-bold uppercase tracking-widest text-white border-b border-neutral-700 sticky top-0">
                               <tr>
                                 <th className="p-2.5 w-16 text-center">Order</th>
                                 <th className="p-2.5">Option Label</th>
@@ -3272,13 +3272,13 @@ export default function Admin({ onPageChange }) {
                             <tbody className="divide-y divide-white/5">
                               {(!editingCat.options || editingCat.options.length === 0) ? (
                                 <tr>
-                                  <td colSpan={5} className="p-6 text-center text-gray-500 italic">
+                                  <td colSpan={5} className="p-6 text-center text-neutral-400 italic">
                                     No options configured. Add options using the form above.
                                   </td>
                                 </tr>
                               ) : (
                                 editingCat.options.map((opt, idx) => (
-                                  <tr key={opt.id || opt._id || idx} className="hover:bg-white/[0.02]">
+                                  <tr key={opt.id || opt._id || idx} className="hover:bg-white/[0.04]">
                                     {/* Reorder buttons & index */}
                                     <td className="p-2.5 text-center">
                                       <div className="flex items-center justify-center space-x-1">
@@ -3295,12 +3295,12 @@ export default function Admin({ onPageChange }) {
                                             newOpts.forEach((o, i) => o.order = i + 1);
                                             setEditingCat({ ...editingCat, options: newOpts });
                                           }}
-                                          className="p-0.5 text-gray-400 hover:text-white disabled:opacity-20 cursor-pointer"
+                                          className="p-0.5 text-neutral-300 hover:text-white disabled:opacity-20 cursor-pointer font-bold"
                                           title="Move Up"
                                         >
                                           ↑
                                         </button>
-                                        <span className="font-mono text-[11px] text-white w-4">{idx + 1}</span>
+                                        <span className="font-mono text-[11px] text-white font-bold w-4">{idx + 1}</span>
                                         <button
                                           type="button"
                                           disabled={idx === editingCat.options.length - 1}
@@ -3314,7 +3314,7 @@ export default function Admin({ onPageChange }) {
                                             newOpts.forEach((o, i) => o.order = i + 1);
                                             setEditingCat({ ...editingCat, options: newOpts });
                                           }}
-                                          className="p-0.5 text-gray-400 hover:text-white disabled:opacity-20 cursor-pointer"
+                                          className="p-0.5 text-neutral-300 hover:text-white disabled:opacity-20 cursor-pointer font-bold"
                                           title="Move Down"
                                         >
                                           ↓
@@ -3362,8 +3362,8 @@ export default function Admin({ onPageChange }) {
                                           setEditingCat({ ...editingCat, options: newOpts });
                                         }}
                                         className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition cursor-pointer border ${opt.isActive
-                                            ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300'
-                                            : 'bg-neutral-900 border-neutral-600 text-neutral-400'
+                                          ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300'
+                                          : 'bg-neutral-900 border-neutral-600 text-neutral-400'
                                           }`}
                                       >
                                         {opt.isActive ? 'Active' : 'Disabled'}
@@ -3750,8 +3750,8 @@ export default function Admin({ onPageChange }) {
               {/* Feedback Message Notification */}
               {footerActionMsg && (
                 <div className={`p-4 rounded border text-xs font-bold flex items-center justify-between transition-all ${footerActionMsg.type === 'success'
-                    ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300'
-                    : 'bg-red-950/90 border-red-500 text-red-300'
+                  ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300'
+                  : 'bg-red-950/90 border-red-500 text-red-300'
                   }`}
                   style={{
                     backgroundColor: footerActionMsg.type === 'success' ? '#022c22' : '#450a0a',
@@ -4938,8 +4938,8 @@ export default function Admin({ onPageChange }) {
               {sessionActionMsg && (
                 <div
                   className={`p-4 rounded-lg border text-xs font-bold flex items-center justify-between transition-all shadow-sm ${sessionActionMsg.type === 'success'
-                      ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
-                      : 'bg-red-50 border-red-300 text-red-800'
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                    : 'bg-red-50 border-red-300 text-red-800'
                     }`}
                   style={{
                     backgroundColor: sessionActionMsg.type === 'success' ? '#ecfdf5' : '#fef2f2',
@@ -5548,8 +5548,8 @@ export default function Admin({ onPageChange }) {
                           type="button"
                           onClick={() => setAnalyticsViewBy(tab.key)}
                           className={`px-2.5 py-1 rounded transition-colors font-bold tracking-wider uppercase text-[10px] cursor-pointer ${analyticsViewBy === tab.key
-                              ? 'bg-white text-black shadow-xs border border-black/10'
-                              : 'text-gray-500 hover:text-black'
+                            ? 'bg-white text-black shadow-xs border border-black/10'
+                            : 'text-gray-500 hover:text-black'
                             }`}
                         >
                           {tab.label}
@@ -7419,7 +7419,7 @@ export default function Admin({ onPageChange }) {
                                 <p className="text-gray-500">{o.shippingDetails?.country}</p>
                               </td>
                               <td className="p-4 font-bold text-black">{formatPrice(o.total, currentCurrency)}</td>
-                              
+
                               {/* LOGISTICS & COURIER PARTNER COLUMN */}
                               <td className="p-4 min-w-[210px]">
                                 <div className="space-y-1.5">
@@ -7428,11 +7428,10 @@ export default function Admin({ onPageChange }) {
                                       <Truck size={12} className="text-amber-400 flex-shrink-0" />
                                       <span>{partner}</span>
                                     </span>
-                                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                                      isManual 
-                                        ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30' 
-                                        : 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30'
-                                    }`}>
+                                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${isManual
+                                      ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
+                                      : 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30'
+                                      }`}>
                                       {isManual ? 'Manual' : 'Auto'}
                                     </span>
                                   </div>
@@ -7474,14 +7473,14 @@ export default function Admin({ onPageChange }) {
                                   value={o.status}
                                   onChange={(e) => dispatch(updateOrderStatus(o.id, e.target.value))}
                                   className={`bg-luxury-dark text-xs border rounded px-2.5 py-1 font-semibold focus:outline-none ${o.status === 'Delivered'
-                                      ? 'border-emerald-500 text-emerald-400'
-                                      : o.status === 'Cancelled'
-                                        ? 'border-red-500 text-red-400'
-                                        : o.status === 'Shipped'
-                                          ? 'border-sky-500 text-sky-400'
-                                          : o.status === 'Exchange/Refund Requested'
-                                            ? 'border-purple-500 text-purple-450'
-                                            : 'border-yellow-500 text-yellow-450'
+                                    ? 'border-emerald-500 text-emerald-400'
+                                    : o.status === 'Cancelled'
+                                      ? 'border-red-500 text-red-400'
+                                      : o.status === 'Shipped'
+                                        ? 'border-sky-500 text-sky-400'
+                                        : o.status === 'Exchange/Refund Requested'
+                                          ? 'border-purple-500 text-purple-450'
+                                          : 'border-yellow-500 text-yellow-450'
                                     }`}
                                 >
                                   <option value="Paid">Paid</option>
@@ -8029,8 +8028,8 @@ export default function Admin({ onPageChange }) {
                             <button
                               onClick={() => handleToggleUpdateApproval(up._id || up.id, up.approved)}
                               className={`text-[9px] font-bold px-2 py-0.5 rounded border transition cursor-pointer ${up.approved
-                                  ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
-                                  : 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20'
+                                ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
+                                : 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20'
                                 }`}
                             >
                               {up.approved ? 'APPROVED & LIVE' : 'UNAPPROVED / HIDDEN'}
@@ -8079,10 +8078,10 @@ export default function Admin({ onPageChange }) {
                   // Multi-slot section (e.g. Classic Professional — Hero Image with 5 slides)
                   if (section.slots && section.slots.length > 1) {
                     return (
-                      <div key={section.key} className="bg-luxury-gray border border-white/10 rounded p-4 space-y-4 shadow-sm md:col-span-2">
+                      <div key={section.key} className="bg-[#1a1a1a] border border-white/10 rounded-lg p-5 space-y-4 shadow-lg md:col-span-2 text-white">
                         <div className="border-b border-white/10 pb-2">
                           <h4 className="text-xs font-bold uppercase tracking-wider text-white">{section.title}</h4>
-                          <p className="text-gray-400 text-[11px] mt-0.5">
+                          <p className="text-neutral-300 text-[11px] mt-0.5">
                             {section.description || `${section.slots.length}-slide carousel for this section.`}
                           </p>
                         </div>
@@ -8092,7 +8091,7 @@ export default function Admin({ onPageChange }) {
                             const titleStatus = mediaTitleSaveStatus[slot.key];
                             const isUploading = status === 'uploading';
                             return (
-                              <div key={slot.key} className="bg-black/30 border border-white/5 rounded p-3 space-y-3">
+                              <div key={slot.key} className="bg-[#111111] border border-white/10 rounded p-3.5 space-y-3 shadow-md">
                                 <AdminMediaField
                                   label={slot.label}
                                   value={mediaList[slot.key] || ''}
@@ -8134,7 +8133,7 @@ export default function Admin({ onPageChange }) {
                                 />
                                 {status && (
                                   <div className="flex items-center justify-between text-xs pt-2 border-t border-white/10">
-                                    <span className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold">Upload Status</span>
+                                    <span className="text-neutral-300 text-[10px] uppercase tracking-wider font-semibold">Upload Status</span>
                                     {status === 'uploading' && (
                                       <span className="text-luxury-gold font-bold flex items-center space-x-1 text-[11px]">
                                         <span>Uploading...</span>
@@ -8170,7 +8169,7 @@ export default function Admin({ onPageChange }) {
                   const titleStatus = mediaTitleSaveStatus[slotKey];
                   const isUploading = status === 'uploading';
                   return (
-                    <div key={slotKey} className="bg-luxury-gray border border-white/10 rounded p-4 space-y-3 shadow-sm">
+                    <div key={slotKey} className="bg-[#1a1a1a] border border-white/10 rounded-lg p-5 space-y-3 shadow-md text-white">
                       <AdminMediaField
                         label={slotLabel}
                         value={mediaList[slotKey] || ''}
@@ -8212,7 +8211,7 @@ export default function Admin({ onPageChange }) {
                       />
                       {status && (
                         <div className="flex items-center justify-between text-xs pt-2 border-t border-white/10">
-                          <span className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold">Upload Status</span>
+                          <span className="text-neutral-300 text-[10px] uppercase tracking-wider font-semibold">Upload Status</span>
                           {status === 'uploading' && (
                             <span className="text-luxury-gold font-bold flex items-center space-x-1 text-[11px]">
                               <span>Uploading...</span>
@@ -8256,41 +8255,41 @@ export default function Admin({ onPageChange }) {
 
               {/* Add Blog Form */}
               {showAddBlogForm && (
-                <div className="bg-luxury-gray border border-white/5 p-6 rounded-md space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-white border-b border-white/5 pb-2">Publish New Article</h4>
+                <div className="bg-[#1a1a1a] border border-white/20 p-6 rounded-md space-y-4 shadow-xl">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-white border-b border-white/10 pb-2">Publish New Article</h4>
 
                   <form onSubmit={handleCreateBlog} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Article Title</label>
+                      <label className="text-[10px] text-white font-bold uppercase tracking-widest block">Article Title</label>
                       <input
                         type="text"
                         required
                         value={newBlog.title}
                         onChange={(e) => setNewBlog({ ...newBlog, title: e.target.value })}
-                        className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
+                        className="w-full bg-luxury-dark border border-white/10 rounded text-neutral-900 text-xs p-2.5 focus:outline-none"
                         placeholder="The Evolution of Mechanical Movements"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Category</label>
+                        <label className="text-[10px] text-white font-bold uppercase tracking-widest block">Category</label>
                         <input
                           type="text"
                           required
                           value={newBlog.category}
                           onChange={(e) => setNewBlog({ ...newBlog, category: e.target.value })}
-                          className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
+                          className="w-full bg-luxury-dark border border-white/10 rounded text-neutral-900 text-xs p-2.5 focus:outline-none"
                           placeholder="Horology"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Author</label>
+                        <label className="text-[10px] text-white font-bold uppercase tracking-widest block">Author</label>
                         <input
                           type="text"
                           value={newBlog.author}
                           onChange={(e) => setNewBlog({ ...newBlog, author: e.target.value })}
-                          className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
+                          className="w-full bg-luxury-dark border border-white/10 rounded text-neutral-900 text-xs p-2.5 focus:outline-none"
                           placeholder="KHRONIQ Editorial"
                         />
                       </div>
@@ -8323,20 +8322,20 @@ export default function Admin({ onPageChange }) {
                     </div>
 
                     <div className="md:col-span-2 space-y-1.5">
-                      <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Content</label>
+                      <label className="text-[10px] text-white font-bold uppercase tracking-widest block">Content</label>
                       <textarea
                         rows="6"
                         required
                         value={newBlog.content}
                         onChange={(e) => setNewBlog({ ...newBlog, content: e.target.value })}
-                        className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none font-sans"
+                        className="w-full bg-luxury-dark border border-white/10 rounded text-neutral-900 text-xs p-2.5 focus:outline-none font-sans"
                         placeholder="Write article details here..."
                       />
                     </div>
 
                     <button
                       type="submit"
-                      className="md:col-span-2 py-3 bg-white text-black font-bold text-xs tracking-widest uppercase hover:bg-neutral-200 transition"
+                      className="md:col-span-2 py-3 bg-white text-black font-bold text-xs tracking-widest uppercase hover:bg-neutral-200 transition cursor-pointer shadow-sm"
                     >
                       Publish Article
                     </button>
@@ -8346,41 +8345,41 @@ export default function Admin({ onPageChange }) {
 
               {/* Edit Blog Form */}
               {editingBlogId && editBlogForm && (
-                <div className="bg-[#1a1a1a] border border-white/20 p-6 rounded-md space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-white border-b border-white/5 pb-2">Edit Article</h4>
+                <div className="bg-[#1a1a1a] border border-white/20 p-6 rounded-md space-y-4 shadow-xl">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-white border-b border-white/10 pb-2">Edit Article</h4>
 
                   <form onSubmit={handleUpdateBlogSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Article Title</label>
+                      <label className="text-[10px] text-white font-bold uppercase tracking-widest block">Article Title</label>
                       <input
                         type="text"
                         required
                         value={editBlogForm.title}
                         onChange={(e) => setEditBlogForm({ ...editBlogForm, title: e.target.value })}
-                        className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
+                        className="w-full bg-luxury-dark border border-white/10 rounded text-neutral-900 text-xs p-2.5 focus:outline-none"
                         placeholder="Article Title"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Category</label>
+                        <label className="text-[10px] text-white font-bold uppercase tracking-widest block">Category</label>
                         <input
                           type="text"
                           required
                           value={editBlogForm.category}
                           onChange={(e) => setEditBlogForm({ ...editBlogForm, category: e.target.value })}
-                          className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
+                          className="w-full bg-luxury-dark border border-white/10 rounded text-neutral-900 text-xs p-2.5 focus:outline-none"
                           placeholder="Category"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Author</label>
+                        <label className="text-[10px] text-white font-bold uppercase tracking-widest block">Author</label>
                         <input
                           type="text"
                           value={editBlogForm.author}
                           onChange={(e) => setEditBlogForm({ ...editBlogForm, author: e.target.value })}
-                          className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none"
+                          className="w-full bg-luxury-dark border border-white/10 rounded text-neutral-900 text-xs p-2.5 focus:outline-none"
                           placeholder="Author"
                         />
                       </div>
@@ -8413,31 +8412,31 @@ export default function Admin({ onPageChange }) {
                     </div>
 
                     <div className="md:col-span-2 space-y-1.5">
-                      <label className="text-[9px] text-black font-bold uppercase tracking-widest block">Content</label>
+                      <label className="text-[10px] text-white font-bold uppercase tracking-widest block">Content</label>
                       <textarea
                         rows="6"
                         required
                         value={editBlogForm.content}
                         onChange={(e) => setEditBlogForm({ ...editBlogForm, content: e.target.value })}
-                        className="w-full bg-luxury-dark border border-white/10 rounded text-white text-xs p-2.5 focus:outline-none font-sans"
+                        className="w-full bg-luxury-dark border border-white/10 rounded text-neutral-900 text-xs p-2.5 focus:outline-none font-sans"
                         placeholder="Write article details here..."
                       />
                     </div>
 
-                    <div className="md:col-span-2 flex space-x-3">
+                    <div className="md:col-span-2 flex space-x-3 pt-2">
                       <button
                         type="button"
                         onClick={() => {
                           setEditingBlogId(null);
                           setEditBlogForm(null);
                         }}
-                        className="flex-1 py-3 bg-transparent border border-white/10 text-white font-bold text-xs tracking-widest uppercase hover:bg-white/5 transition cursor-pointer"
+                        className="flex-1 py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 hover:border-white text-white font-bold text-xs tracking-widest uppercase transition cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 py-3 bg-white text-black font-bold text-xs tracking-widest uppercase hover:bg-neutral-200 transition cursor-pointer"
+                        className="flex-1 py-3 bg-white hover:bg-neutral-200 text-black font-bold text-xs tracking-widest uppercase transition cursor-pointer shadow-sm"
                       >
                         Save Changes
                       </button>
