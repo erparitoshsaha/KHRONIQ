@@ -204,11 +204,10 @@ function GenderPanel({ label, img, gender, delay, accent, onPageChange }) {
 
       {/* ── Image — follows mouse direction with responsive focal alignment ── */}
       <motion.div
-        className={`absolute inset-[-5%] bg-cover ${
-          gender === 'men'
+        className={`absolute inset-[-5%] bg-cover ${gender === 'men'
             ? 'bg-[position:22%_center] md:bg-center'
             : 'bg-[position:50%_center] md:bg-center'
-        }`}
+          }`}
         style={{
           backgroundImage: `url('${panelImg}')`,
           x: imgX,
@@ -1859,7 +1858,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
       {/* SEO Discovery & Popular Watch Categories Directory */}
       <section className="bg-[#0a0a0a] text-white/80 border-t border-white/10 py-12 md:py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-8">
-          
+
           <div className="border-b border-white/10 pb-6">
             <h2 className="text-base md:text-lg font-bold tracking-widest uppercase font-serif text-white">
               KHRONIQ Watches India — Contemporary Analog Timepieces &amp; Luxury Horology
@@ -1901,7 +1900,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
             </div>
           </div>
 
-          {/* Popular Search Recommendation Pills */}
+          {/* Popular Search Recommendation Pills
           <div className="pt-4 border-t border-white/10 space-y-3">
             <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-300">
               Popular Searches &amp; Watch Categories
@@ -1934,7 +1933,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                 </button>
               ))}
             </div>
-          </div>
+          </div> */}
 
         </div>
       </section>
