@@ -205,8 +205,8 @@ function GenderPanel({ label, img, gender, delay, accent, onPageChange }) {
       {/* ── Image — follows mouse direction with responsive focal alignment ── */}
       <motion.div
         className={`absolute inset-[-5%] bg-cover ${gender === 'men'
-            ? 'bg-[position:22%_center] md:bg-center'
-            : 'bg-[position:50%_center] md:bg-center'
+          ? 'bg-[position:22%_center] md:bg-center'
+          : 'bg-[position:50%_center] md:bg-center'
           }`}
         style={{
           backgroundImage: `url('${panelImg}')`,
@@ -713,7 +713,7 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages, homeTitle
   const currentSlide = slides[activeIndex];
 
   const handleDetailsClick = () => {
-    const matched = products.find(p => 
+    const matched = products.find(p =>
       p.name?.toLowerCase() === currentSlide.fullName?.toLowerCase() ||
       p.name?.toLowerCase() === currentSlide.name?.toLowerCase() ||
       (currentSlide.name && p.name?.toLowerCase().includes(currentSlide.name.toLowerCase()))
@@ -1870,89 +1870,6 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           </div>
         </section>
       )}
-
-      {/* SEO Discovery & Popular Watch Categories Directory */}
-      <section className="bg-[#0a0a0a] text-white/80 border-t border-white/10 py-12 md:py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto space-y-8">
-
-          <div className="border-b border-white/10 pb-6">
-            <h2 className="text-base md:text-lg font-bold tracking-widest uppercase font-serif text-white">
-              KHRONIQ Watches India — Contemporary Analog Timepieces &amp; Luxury Horology
-            </h2>
-            <p className="text-xs md:text-sm text-neutral-400 mt-2 max-w-4xl leading-relaxed font-light">
-              Welcome to KHRONIQ Watches India. We craft precision-engineered men&apos;s analog watches and women&apos;s analog watches that seamlessly bridge architectural luxury with modern style. Discover stylish watches for men and elegant watches for women with complimentary insured express shipping across India.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-xs leading-relaxed text-neutral-400 font-light">
-            {/* Column 1: Men's Analog Watches */}
-            <div className="space-y-2.5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-                Men&apos;s Analog Watches Collection
-              </h3>
-              <p>
-                Explore the definitive collection of <strong className="text-neutral-200 font-medium">men&apos;s analog watches online in India</strong>. Whether you seek <strong className="text-neutral-200 font-medium">stylish watches for men</strong>, <strong className="text-neutral-200 font-medium">classic watches for men</strong>, or <strong className="text-neutral-200 font-medium">formal watches for men</strong>, KHRONIQ delivers unparalleled distinction. Featuring iconic <strong className="text-neutral-200 font-medium">black dial watches for men</strong>, genuine <strong className="text-neutral-200 font-medium">leather strap watches for men</strong>, timeless <strong className="text-neutral-200 font-medium">brown leather strap watches</strong>, and sleek <strong className="text-neutral-200 font-medium">minimalist watches for men</strong>.
-              </p>
-            </div>
-
-            {/* Column 2: Women's Analog Watches */}
-            <div className="space-y-2.5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-                Women&apos;s Analog Watches &amp; Elegance
-              </h3>
-              <p>
-                Discover captivating <strong className="text-neutral-200 font-medium">women&apos;s analog watches</strong> and <strong className="text-neutral-200 font-medium">watches for women India</strong>. From <strong className="text-neutral-200 font-medium">stylish watches for women</strong> and <strong className="text-neutral-200 font-medium">elegant watches for women</strong> to <strong className="text-neutral-200 font-medium">fashionable watches for women</strong>, our <strong className="text-neutral-200 font-medium">ladies analog watches</strong> and <strong className="text-neutral-200 font-medium">women&apos;s leather strap watches</strong> are designed with delicate minimalism and high-grade quartz precision.
-              </p>
-            </div>
-
-            {/* Column 3: Affordable Luxury Price Segments */}
-            <div className="space-y-2.5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-                Affordable Luxury Under ₹1000 to ₹5000
-              </h3>
-              <p>
-                KHRONIQ believes luxury horology should be accessible. Explore our best-selling categories for <strong className="text-neutral-200 font-medium">watches under 1000</strong>, <strong className="text-neutral-200 font-medium">watches under 2000</strong>, <strong className="text-neutral-200 font-medium">watches under 3000</strong>, and <strong className="text-neutral-200 font-medium">watches under 5000</strong>. Every timepiece is water-resistant, shock-inspected, and backed by our comprehensive manufacturer warranty.
-              </p>
-            </div>
-          </div>
-
-          {/* Popular Search Recommendation Pills
-          <div className="pt-4 border-t border-white/10 space-y-3">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-300">
-              Popular Searches &amp; Watch Categories
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: "KHRONIQ Watches India", action: () => onPageChange('shop') },
-                { label: "Men's Analog Watches", action: () => onPageChange('shop', { gender: 'men' }) },
-                { label: "Women's Analog Watches", action: () => onPageChange('shop', { gender: 'women' }) },
-                { label: "Stylish Watches for Men", action: () => onPageChange('shop', { gender: 'men' }) },
-                { label: "Watches for Women India", action: () => onPageChange('shop', { gender: 'women' }) },
-                { label: "Black Dial Watches for Men", action: () => onPageChange('shop', { search: 'black' }) },
-                { label: "Leather Strap Watches for Men", action: () => onPageChange('shop', { search: 'leather' }) },
-                { label: "Brown Leather Strap Watches", action: () => onPageChange('shop', { search: 'brown' }) },
-                { label: "Minimalist Watches for Men", action: () => onPageChange('shop', { search: 'classic' }) },
-                { label: "Fashionable Watches for Women", action: () => onPageChange('shop', { gender: 'women' }) },
-                { label: "Ladies Analog Watches", action: () => onPageChange('shop', { gender: 'women' }) },
-                { label: "Women's Leather Strap Watches", action: () => onPageChange('shop', { search: 'leather', gender: 'women' }) },
-                { label: "Watches Under 1000", action: () => onPageChange('shop', { maxPrice: 1000 }) },
-                { label: "Watches Under 2000", action: () => onPageChange('shop', { maxPrice: 2000 }) },
-                { label: "Watches Under 3000", action: () => onPageChange('shop', { maxPrice: 3000 }) },
-                { label: "Watches Under 5000", action: () => onPageChange('shop', { maxPrice: 5000 }) },
-              ].map((pill, pIdx) => (
-                <button
-                  key={pIdx}
-                  onClick={pill.action}
-                  className="px-3 py-1.5 rounded-full text-[10px] md:text-xs font-medium text-neutral-300 bg-white/5 hover:bg-white/10 hover:text-white border border-white/10 transition-colors cursor-pointer"
-                >
-                  {pill.label}
-                </button>
-              ))}
-            </div>
-          </div> */}
-
-        </div>
-      </section>
 
     </>
   );
