@@ -20,6 +20,18 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
     setMobileMenuOpen(false);
     onPageChange('home');
   };
+
+  const handleAccountClick = () => {
+    setMobileMenuOpen(false);
+    const target = isAdminRole(currentUser?.role) ? '/admin' : '/profile';
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname === target) {
+        window.location.reload();
+      } else {
+        window.location.href = target;
+      }
+    }
+  };
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -604,7 +616,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
               {currentUser ? (
                 <div className="flex items-center space-x-3 text-[11px] font-bold uppercase tracking-widest">
                   <button
-                    onClick={() => onPageChange(isAdminRole(currentUser.role) ? 'admin' : 'profile')}
+                    onClick={handleAccountClick}
                     className="flex items-center space-x-1.5 transition cursor-pointer text-white/90 hover:text-[#dfb76c]"
                     title={isSuperAdminRole(currentUser.role) ? 'Super Admin Dashboard' : isAdminRole(currentUser.role) ? 'Admin Dashboard' : 'My Account'}
                   >
@@ -1030,10 +1042,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
           <div className="pt-2 border-t border-luxury-text/5 flex flex-col space-y-3">
             {currentUser ? (
               <button
-                onClick={() => {
-                  onPageChange(isAdminRole(currentUser.role) ? 'admin' : 'profile');
-                  setMobileMenuOpen(false);
-                }}
+                onClick={handleAccountClick}
                 className="text-left text-sm text-luxury-text font-bold uppercase tracking-wider flex items-center space-x-2"
               >
                 <User size={16} />
