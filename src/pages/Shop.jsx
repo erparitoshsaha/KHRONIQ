@@ -165,29 +165,32 @@ export default function Shop({ onPageChange, filterParams }) {
       });
   }, [baseCategories]);
 
-  // Calculate dynamic price boundaries from available products based on selling price
+  // Calculate dynamic price boundaries: minPrice from minimum selling price, maxPrice from maximum product MRP
   const { minPrice, maxPrice } = useMemo(() => {
     if (!products || products.length === 0) {
       return { minPrice: 0, maxPrice: 1000 };
     }
-    const prices = products
+    const spPrices = products
       .map(p => getDiscountedPrice(p))
       .filter(p => typeof p === 'number' && !isNaN(p) && p > 0);
 
-    if (prices.length === 0) {
+    const mrpPrices = products
+      .map(p => getProductMrp(p))
+      .filter(p => typeof p === 'number' && !isNaN(p) && p > 0);
+
+    if (spPrices.length === 0 && mrpPrices.length === 0) {
       return { minPrice: 0, maxPrice: 1000 };
     }
 
-    const actualMin = Math.min(...prices);
-    const actualMax = Math.max(...prices);
+    const actualMin = spPrices.length > 0 ? Math.min(...spPrices) : 0;
+    const actualMaxMrp = mrpPrices.length > 0
+      ? Math.max(...mrpPrices)
+      : (spPrices.length > 0 ? Math.max(...spPrices) : 1000);
 
     const exactMin = Math.max(0, actualMin);
-    let roundedMax = Math.ceil(actualMax / PRICE_STEP) * PRICE_STEP;
-    if (roundedMax <= exactMin) {
-      roundedMax = exactMin + PRICE_STEP;
-    }
+    const exactMax = Math.max(exactMin + 1, actualMaxMrp);
 
-    return { minPrice: exactMin, maxPrice: roundedMax };
+    return { minPrice: exactMin, maxPrice: exactMax };
   }, [products]);
 
   // Filter States
