@@ -946,7 +946,7 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages, homeTitle
                   onClick={handleDetailsClick}
                   className="text-xs font-bold text-neutral-800 hover:text-neutral-500 transition duration-200 underline underline-offset-4 tracking-widest uppercase cursor-pointer"
                 >
-                  Details
+                  Explore
                 </button>
               </div>
             </div>
@@ -1591,27 +1591,27 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] }}
               >
-              <motion.div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: `url('${img}')`, ...style }}
-                whileHover={{ scale: 1.06 }}
-                transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-7 space-y-1.5">
-                <motion.p
-                  className="font-serif text-xl font-bold"
-                  style={{ color: '#ffffff', textShadow: '0 1px 14px rgba(0,0,0,1), 0 0 32px rgba(0,0,0,0.8)' }}
-                  initial={{ y: 8, opacity: 0.8 }}
-                  whileInView={{ y: 0, opacity: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: 0.2 + i * 0.1 }}
-                >{label}</motion.p>
-                <p className="text-xs tracking-widest uppercase font-semibold" style={{ color: 'rgba(255,255,255,0.92)', textShadow: '0 1px 10px rgba(0,0,0,1)' }}>{sub}</p>
-              </div>
-            </motion.div>
-          );
-        })}
+                <motion.div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: `url('${img}')`, ...style }}
+                  whileHover={{ scale: 1.06 }}
+                  transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+                <div className="absolute bottom-0 left-0 p-7 space-y-1.5">
+                  <motion.p
+                    className="font-serif text-xl font-bold"
+                    style={{ color: '#ffffff', textShadow: '0 1px 14px rgba(0,0,0,1), 0 0 32px rgba(0,0,0,0.8)' }}
+                    initial={{ y: 8, opacity: 0.8 }}
+                    whileInView={{ y: 0, opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.2 + i * 0.1 }}
+                  >{label}</motion.p>
+                  <p className="text-xs tracking-widest uppercase font-semibold" style={{ color: 'rgba(255,255,255,0.92)', textShadow: '0 1px 10px rgba(0,0,0,1)' }}>{sub}</p>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 

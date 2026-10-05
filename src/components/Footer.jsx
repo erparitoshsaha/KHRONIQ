@@ -49,7 +49,7 @@ const STATIC_NAV_COLS = [
   {
     title: 'The Brand',
     links: [
-      { label: 'Our History', page: 'static', args: { view: 'about' } },
+      { label: 'Our Story', page: 'static', args: { view: 'about' } },
       { label: 'The Manufacture', page: 'static', args: { view: 'about' } },
       { label: 'Sustainability', page: 'static', args: { view: 'about' } },
       { label: 'Blogs & Editorial', page: 'static', args: { view: 'blogs' } },
@@ -124,17 +124,17 @@ export default function Footer({ onPageChange, onWarrantyOpen, onOpenCountryModa
   const collectionCat = filters.find(c => c.slug === 'collection');
   const collectionLinks = (collectionCat?.options && collectionCat.options.length > 0)
     ? [...collectionCat.options]
-        .filter(opt => opt.isActive)
-        .reverse()
-        .map(opt => ({
-          label: opt.name,
-          page: 'shop',
-          args: { category: opt.value || opt.slug || opt.name }
-        }))
+      .filter(opt => opt.isActive)
+      .reverse()
+      .map(opt => ({
+        label: opt.name,
+        page: 'shop',
+        args: { category: opt.value || opt.slug || opt.name }
+      }))
     : [
-        { label: 'Deevaaz', page: 'shop', args: { category: 'deevaaz' } },
-        { label: 'Classic', page: 'shop', args: { category: 'classic' } }
-      ];
+      { label: 'Deevaaz', page: 'shop', args: { category: 'deevaaz' } },
+      { label: 'Classic', page: 'shop', args: { category: 'classic' } }
+    ];
 
   const activeSections = (footerSections && footerSections.length > 0)
     ? footerSections.filter(sec => sec.isActive)
