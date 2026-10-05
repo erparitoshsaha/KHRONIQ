@@ -274,6 +274,13 @@ input:not([type="checkbox"]):not([type="radio"]), select, textarea {
   border: 1px solid rgba(32, 30, 27, 0.15) !important;
 }
 
+/* Darker, high-contrast placeholder color for inputs and textareas */
+input::placeholder,
+textarea::placeholder {
+  color: #555555 !important;
+  opacity: 1 !important;
+}
+
 /* Dark-panel override — keep inputs/textareas transparent on dark backgrounds */
 .dark-panel input:not([type="checkbox"]):not([type="radio"]),
 .dark-panel select,
@@ -281,6 +288,12 @@ input:not([type="checkbox"]):not([type="radio"]), select, textarea {
   background-color: transparent !important;
   color: rgba(255, 255, 255, 0.85) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.dark-panel input::placeholder,
+.dark-panel textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+  opacity: 1 !important;
 }
 
 input:focus, select:focus, textarea:focus {
