@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { 
-  createRazorpayOrder, 
-  verifyRazorpayPayment, 
-  validateCoupon, 
-  selectCurrentCurrency, 
+import {
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+  validateCoupon,
+  selectCurrentCurrency,
   selectShippingCountry,
   setShippingCountryAction,
   setCurrencyAction,
-  formatPrice, 
-  getDiscountedPrice, 
-  getProductMrp, 
-  getSellingPrice, 
-  updateUserProfile, 
-  removeFromCart 
+  formatPrice,
+  getDiscountedPrice,
+  getProductMrp,
+  getSellingPrice,
+  updateUserProfile,
+  removeFromCart
 } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import { getExpectedDeliveryDate } from '../utils/deliveryUtils';
@@ -1021,9 +1021,9 @@ export default function Checkout({ params, onPageChange }) {
                           newState = '';
                         }
                       }
-                      setShippingForm(prev => ({ 
-                        ...prev, 
-                        country, 
+                      setShippingForm(prev => ({
+                        ...prev,
+                        country,
                         state: newState,
                         gstNumber: isNewIndia ? prev.gstNumber : ''
                       }));
@@ -1034,7 +1034,7 @@ export default function Checkout({ params, onPageChange }) {
                         localStorage.setItem('khroniq_shipping_country', country);
                         window.dispatchEvent(new Event('storage'));
                         window.dispatchEvent(new CustomEvent('khroniq_shipping_country_changed', { detail: country }));
-                      } catch {}
+                      } catch { }
 
                       // Auto-map appropriate currency
                       if (country === 'India') {
@@ -1220,7 +1220,7 @@ export default function Checkout({ params, onPageChange }) {
                       </span>
                     </div>
                     <p className="text-xs text-neutral-500">
-                      Add your GSTIN to claim ITC(Input Tax Credit).
+                      Add your GSTIN to claim ITC (Input Tax Credit).
                     </p>
 
                     {appliedGst ? (
@@ -1713,7 +1713,7 @@ function CheckoutSummary({
           <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-semibold text-neutral-900">
-              {appliedGst ? 'GSTIN added for tax invoice.' : 'Add GSTIN to claim ITC(Input Tax Credit).'}
+              {appliedGst ? 'GSTIN added for tax invoice.' : 'Add GSTIN to claim ITC (Input Tax Credit).'}
             </p>
             {appliedGst && (
               <p className="text-[11px] text-neutral-500 mt-0.5">

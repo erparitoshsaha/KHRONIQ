@@ -875,6 +875,48 @@ router.put('/profile', protect, async (req, res) => {
     console.error('Profile update error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
+// @route   PUT /api/auth/change-password
+// @desc    Update password for authenticated user
+// @access  Private
+router.put('/change-password', protect, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Please provide both your current and new password.' });
+  }
+
+  if (newPassword.length < 8) {
+    return res.status(400).json({ success: false, message: 'New password must be at least 8 characters long.' });
+  }
+  if (!/[A-Z]/.test(newPassword)) {
+    return res.status(400).json({ success: false, message: 'New password must contain at least one uppercase letter.' });
+  }
+  if (!/[a-z]/.test(newPassword)) {
+    return res.status(400).json({ success: false, message: 'New password must contain at least one lowercase letter.' });
+  }
+  if (!/[!@#$%^&*(),.?":{}|<>-_]/.test(newPassword)) {
+    return res.status(400).json({ success: false, message: 'New password must contain at least one special character.' });
+  }
+
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User account not found.' });
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Current password is incorrect.' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ success: true, message: 'Password has been updated successfully.' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ success: false, message: 'Server error updating password.' });
+  }
 });
 
 // @route   POST /api/auth/forgot-password

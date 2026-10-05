@@ -1557,6 +1557,24 @@ export const resetPassword = (token, password) => async () => {
   }
 };
 
+export const changePassword = (currentPassword, newPassword) => async (dispatch, getState) => {
+  try {
+    const token = getState().watch.token;
+    const res = await fetch('/api/auth/change-password', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    return { success: false, message: 'Password update failed. Server error.' };
+  }
+};
+
 export const validateCoupon = (code, subtotal) => async (dispatch, getState) => {
   const cleanCode = (code || '').toUpperCase().trim();
   if (!cleanCode) {

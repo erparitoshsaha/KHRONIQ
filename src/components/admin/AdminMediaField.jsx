@@ -46,6 +46,44 @@ export default function AdminMediaField({
     }
   };
 
+  const handleOpenLink = (e) => {
+    if (e?.preventDefault) e.preventDefault();
+    if (!cleanVal) return;
+
+    if (cleanVal.startsWith('data:')) {
+      try {
+        const parts = cleanVal.split(',');
+        const mimeMatch = parts[0].match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : (detectedVideo ? 'video/mp4' : 'image/jpeg');
+        const bstr = atob(parts[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      } catch (err) {
+        const newTab = window.open('');
+        if (newTab) {
+          newTab.document.write(`
+            <!DOCTYPE html>
+            <html>
+              <head><title>${title || label || 'Preview'}</title></head>
+              <body style="margin:0;background:#0d0d0d;display:flex;align-items:center;justify-content:center;min-height:100vh;">
+                ${detectedVideo ? `<video src="${cleanVal}" controls style="max-width:90vw;max-height:90vh;"></video>` : `<img src="${cleanVal}" style="max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;" />`}
+              </body>
+            </html>
+          `);
+          newTab.document.close();
+        }
+      }
+    } else {
+      window.open(cleanVal, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <div className="space-y-2 text-xs">
       <div className="flex items-center justify-between">
@@ -204,15 +242,15 @@ export default function AdminMediaField({
             )}
 
             {cleanVal && (
-              <a
-                href={cleanVal}
-                target="_blank"
-                rel="noreferrer"
-                className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 font-semibold rounded border border-neutral-300 text-[10px] transition flex items-center space-x-1"
+              <button
+                type="button"
+                onClick={handleOpenLink}
+                className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 font-semibold rounded border border-neutral-300 text-[10px] transition flex items-center space-x-1 cursor-pointer"
+                title="Open image in new tab"
               >
                 <ExternalLink size={11} />
                 <span>Open Link</span>
-              </a>
+              </button>
             )}
           </div>
 
@@ -233,26 +271,49 @@ export default function AdminMediaField({
                 {detectedVideo ? <Film size={14} className="text-white" /> : <ImageIcon size={14} className="text-white" />}
                 <span>{label} Preview</span>
               </span>
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-white cursor-pointer"
-              >
-                <X size={16} />
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={handleOpenLink}
+                  className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-[11px] font-sans font-medium transition cursor-pointer flex items-center space-x-1"
+                  title="Open full resolution in a new tab"
+                >
+                  <ExternalLink size={12} />
+                  <span>Open Full</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-white cursor-pointer p-1"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
-            <div className="max-h-[60vh] overflow-hidden rounded bg-black/60 flex items-center justify-center p-2 border border-white/5">
+            <div className="max-h-[60vh] overflow-hidden rounded bg-black/60 flex items-center justify-center p-2 border border-white/5 relative">
               {detectedVideo ? (
                 <video src={cleanVal} controls className="max-h-[55vh] max-w-full rounded" />
               ) : (
-                <img src={cleanVal} alt={label} className="max-h-[55vh] max-w-full object-contain rounded" />
+                <img
+                  src={cleanVal}
+                  alt={label}
+                  className="max-h-[55vh] max-w-full object-contain rounded"
+                  onError={() => setHasError(true)}
+                />
               )}
             </div>
 
-            <div className="text-[11px] text-gray-300 font-mono break-all bg-black/40 p-2 rounded border border-white/5">
-              {cleanVal}
-            </div>
+            {cleanVal.startsWith('data:') ? (
+              <div className="flex items-center justify-between text-[11px] text-gray-300 font-mono bg-black/40 p-2.5 rounded border border-white/5">
+                <span className="text-amber-400 font-medium">⚡ Embedded Base64 Image (~{Math.round(cleanVal.length / 1024)} KB)</span>
+                <span className="text-[10px] text-gray-400">Click &ldquo;Open Full&rdquo; to view full resolution</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between text-[11px] text-gray-300 font-mono bg-black/40 p-2 rounded border border-white/5">
+                <span className="truncate flex-1 mr-2">{cleanVal}</span>
+              </div>
+            )}
           </div>
         </div>
       )}

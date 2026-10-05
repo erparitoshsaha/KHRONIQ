@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { logoutUser, cancelOrder, updateUserProfile, requestExchangeRefund, setShippingCountryAction } from '../store/slices/watchSlice';
+import { logoutUser, cancelOrder, updateUserProfile, requestExchangeRefund, setShippingCountryAction, forgotPassword, changePassword } from '../store/slices/watchSlice';
 import { handleImageError } from '../utils/imageUtils';
 import ProductCard from '../components/ProductCard';
-import { Heart, User, Package, LogOut } from 'lucide-react';
+import { Heart, User, Package, LogOut, KeyRound, ShieldCheck, Eye, EyeOff, Mail, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
 import PhoneInput from '../components/PhoneInput';
 import { useSEO } from '../utils/seo';
@@ -158,6 +158,112 @@ export default function Profile({ params, onPageChange }) {
   );
   const [phone, setPhone] = useState(currentUser?.shippingAddress?.phone || '');
   const [settingsMessage, setSettingsMessage] = useState('');
+
+  // Forgot / Reset Password & Direct Password Update states
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSuccessMsg, setForgotSuccessMsg] = useState('');
+  const [forgotErrorMsg, setForgotErrorMsg] = useState('');
+  const [forgotCooldown, setForgotCooldown] = useState(0);
+
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [changePassLoading, setChangePassLoading] = useState(false);
+  const [changePassSuccess, setChangePassSuccess] = useState('');
+  const [changePassError, setChangePassError] = useState('');
+
+  // 60-second cooldown timer for password reset link requests
+  useEffect(() => {
+    let timer;
+    if (forgotCooldown > 0) {
+      timer = setInterval(() => {
+        setForgotCooldown(prev => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [forgotCooldown]);
+
+  const handleSendForgotLink = async () => {
+    if (!currentUser?.email) return;
+    if (forgotCooldown > 0 || forgotLoading) return;
+
+    setForgotLoading(true);
+    setForgotErrorMsg('');
+    setForgotSuccessMsg('');
+
+    try {
+      const res = await dispatch(forgotPassword(currentUser.email));
+      if (res && res.success) {
+        setForgotSuccessMsg(`A secure password reset link has been dispatched to ${currentUser.email}. Please check your inbox or spam folder.`);
+        setForgotCooldown(60);
+        showToast(`Reset link dispatched to ${currentUser.email}`, 'success');
+      } else {
+        setForgotErrorMsg(res?.message || 'Failed to dispatch reset link. Please try again.');
+        showToast(res?.message || 'Failed to send reset link.', 'error');
+      }
+    } catch (err) {
+      setForgotErrorMsg('Something went wrong. Please try again later.');
+      showToast('Failed to send reset link.', 'error');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleChangePasswordSubmit = async (e) => {
+    e?.preventDefault?.();
+    setChangePassError('');
+    setChangePassSuccess('');
+
+    if (!currentPassword) {
+      setChangePassError('Please enter your current password.');
+      return;
+    }
+    if (!newPassword || newPassword.length < 8) {
+      setChangePassError('New password must be at least 8 characters long.');
+      return;
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      setChangePassError('New password must contain at least one uppercase letter.');
+      return;
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      setChangePassError('New password must contain at least one lowercase letter.');
+      return;
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>-_]/.test(newPassword)) {
+      setChangePassError('New password must contain at least one special character.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setChangePassError('New passwords do not match.');
+      return;
+    }
+
+    setChangePassLoading(true);
+    try {
+      const res = await dispatch(changePassword(currentPassword, newPassword));
+      if (res && res.success) {
+        setChangePassSuccess('Password updated successfully!');
+        showToast('Password updated successfully!', 'success');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setTimeout(() => setChangePassSuccess(''), 5000);
+      } else {
+        setChangePassError(res?.message || 'Failed to update password.');
+        showToast(res?.message || 'Failed to update password.', 'error');
+      }
+    } catch (err) {
+      setChangePassError('Something went wrong updating password.');
+      showToast('Error updating password.', 'error');
+    } finally {
+      setChangePassLoading(false);
+    }
+  };
   useSEO({
     title: 'Client Profile & Orders | KHRONIQ',
     description: 'Manage your KHRONIQ client profile, order history, and personal preferences.',
@@ -508,6 +614,192 @@ export default function Profile({ params, onPageChange }) {
                     className="w-full bg-luxury-dark/50 border border-white/10 rounded text-gray-500 text-xs p-3 cursor-not-allowed focus:outline-none"
                   />
                   <span className="text-[9px] text-gray-500 block">Contact support to modify email bindings.</span>
+                </div>
+
+                {/* Account Security & Forgot / Reset Password Section */}
+                <div className="pt-6 border-t border-black/10 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm font-bold uppercase tracking-widest text-black">Account Security &amp; Password</h2>
+                      <p className="text-[11px] text-neutral-500 mt-0.5">Reset your forgotten password or update your login credentials.</p>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center text-neutral-700">
+                      <ShieldCheck size={16} />
+                    </div>
+                  </div>
+
+                  {/* Forgot Password Action Card */}
+                  <div className="p-4 bg-neutral-50 border border-neutral-200/80 rounded-md space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <KeyRound size={15} className="text-[#93744d]" />
+                          <span className="text-xs font-bold text-neutral-900 tracking-wider uppercase">Forgot Password?</span>
+                        </div>
+                        <p className="text-[11px] text-neutral-600 leading-relaxed">
+                          Send a secure password reset link to <strong className="text-neutral-900 font-semibold">{currentUser?.email}</strong>.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleSendForgotLink}
+                        disabled={forgotLoading || forgotCooldown > 0}
+                        className={`px-4 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer ${
+                          forgotCooldown > 0
+                            ? 'bg-neutral-200 text-neutral-500 cursor-not-allowed'
+                            : 'bg-black text-white hover:bg-neutral-800'
+                        }`}
+                      >
+                        {forgotLoading ? (
+                          <>
+                            <Loader2 size={13} className="animate-spin" />
+                            <span>Sending...</span>
+                          </>
+                        ) : forgotCooldown > 0 ? (
+                          <>
+                            <Mail size={13} />
+                            <span>Resend in {forgotCooldown}s</span>
+                          </>
+                        ) : (
+                          <>
+                            <Mail size={13} />
+                            <span>Send Reset Link</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Forgot Password Alerts */}
+                    {forgotSuccessMsg && (
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium rounded flex items-start gap-2 animate-in fade-in">
+                        <CheckCircle2 size={15} className="text-emerald-600 shrink-0 mt-0.5" />
+                        <p>{forgotSuccessMsg}</p>
+                      </div>
+                    )}
+                    {forgotErrorMsg && (
+                      <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-medium rounded flex items-start gap-2 animate-in fade-in">
+                        <AlertCircle size={15} className="text-red-600 shrink-0 mt-0.5" />
+                        <p>{forgotErrorMsg}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Option to change password directly */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowChangePassword(!showChangePassword);
+                        setChangePassError('');
+                        setChangePassSuccess('');
+                      }}
+                      className="text-xs font-bold tracking-wider uppercase text-neutral-800 hover:text-black flex items-center gap-1.5 cursor-pointer underline decoration-dotted underline-offset-4"
+                    >
+                      <KeyRound size={13} />
+                      <span>{showChangePassword ? 'Hide Direct Password Update' : 'Know your current password? Update it here directly'}</span>
+                    </button>
+
+                    {showChangePassword && (
+                      <div className="mt-3 p-4 bg-white border border-neutral-200 rounded-md space-y-4 animate-in fade-in shadow-sm">
+                        {changePassSuccess && (
+                          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium rounded flex items-center gap-2">
+                            <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+                            <span>{changePassSuccess}</span>
+                          </div>
+                        )}
+                        {changePassError && (
+                          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-medium rounded flex items-center gap-2">
+                            <AlertCircle size={14} className="text-red-600 shrink-0" />
+                            <span>{changePassError}</span>
+                          </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Current Password</label>
+                          <div className="relative">
+                            <input
+                              type={showCurrentPass ? 'text' : 'password'}
+                              value={currentPassword}
+                              onChange={(e) => setCurrentPassword(e.target.value)}
+                              placeholder="Enter your current password"
+                              className="w-full bg-luxury-dark border border-white/10 rounded text-xs p-3 pr-10 focus:outline-none focus:border-luxury-gold"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowCurrentPass(!showCurrentPass)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black cursor-pointer"
+                            >
+                              {showCurrentPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] text-black font-bold uppercase tracking-widest block">New Password</label>
+                            <div className="relative">
+                              <input
+                                type={showNewPass ? 'text' : 'password'}
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                placeholder="Min. 8 characters"
+                                className="w-full bg-luxury-dark border border-white/10 rounded text-xs p-3 pr-10 focus:outline-none focus:border-luxury-gold"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowNewPass(!showNewPass)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black cursor-pointer"
+                              >
+                                {showNewPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] text-black font-bold uppercase tracking-widest block">Confirm New Password</label>
+                            <div className="relative">
+                              <input
+                                type={showConfirmPass ? 'text' : 'password'}
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="Re-enter new password"
+                                className="w-full bg-luxury-dark border border-white/10 rounded text-xs p-3 pr-10 focus:outline-none focus:border-luxury-gold"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowConfirmPass(!showConfirmPass)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black cursor-pointer"
+                              >
+                                {showConfirmPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-neutral-100">
+                          <span className="text-[10px] text-neutral-500">
+                            Must contain at least 8 chars, 1 uppercase, 1 lowercase &amp; 1 symbol.
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleChangePasswordSubmit}
+                            disabled={changePassLoading}
+                            className="px-4 py-2 bg-neutral-900 hover:bg-black text-white text-xs font-bold uppercase tracking-wider rounded transition-colors cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
+                          >
+                            {changePassLoading ? (
+                              <>
+                                <Loader2 size={13} className="animate-spin" />
+                                <span>Updating...</span>
+                              </>
+                            ) : (
+                              <span>Update Password</span>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <h2 className="text-sm font-bold uppercase tracking-widest text-white border-b border-white/5 pt-6 pb-3">Default Shipping Address</h2>
