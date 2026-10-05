@@ -4,6 +4,7 @@ import { selectCurrentCurrency, formatPrice, getDiscountedPrice, fetchFeaturedRe
 import { handleImageError } from '../utils/imageUtils';
 import ProductCard from '../components/ProductCard';
 import LogoMark from '../components/LogoMark';
+import { getProductIdentifier } from '../utils/productRouting';
 import { useSEO } from '../utils/seo';
 
 import {
@@ -643,6 +644,105 @@ function HeroVideoCycler() {
 /* ═══════════════════════════════════════════════════════════════════════
    HOME PAGE
 ═══════════════════════════════════════════════════════════════════════ */
+
+function normalizeSlideWord(w) {
+  if (!w) return '';
+  let s = String(w).toLowerCase().trim();
+  s = s.replace(/a{3,}/g, 'aa').replace(/e{3,}/g, 'ee');
+  return s;
+}
+
+export function findMatchingProductForSlide(slide, products) {
+  if (!Array.isArray(products) || products.length === 0 || !slide) return null;
+
+  const names = [slide.fullName, slide.name, slide.title, slide.label, slide.sub].filter(Boolean);
+
+  // 1. Direct match by exact name or modelNo
+  for (const n of names) {
+    const lower = String(n).toLowerCase().trim();
+    const direct = products.find(p =>
+      String(p.name || '').toLowerCase().trim() === lower ||
+      String(p.modelNo || '').toLowerCase().trim() === lower
+    );
+    if (direct) return direct;
+  }
+
+  // 2. Direct match by image URL
+  const slideImgs = [slide.productImg, slide.img].filter(Boolean);
+  if (slideImgs.length > 0) {
+    const imgMatch = products.find(p => {
+      const pImg = String(p.image || '');
+      const pImages = (p.images || []).map(i => String(i));
+      return slideImgs.some(si => pImg.includes(si) || si.includes(pImg) || pImages.some(pi => pi.includes(si) || si.includes(pi)));
+    });
+    if (imgMatch) return imgMatch;
+  }
+
+  // 3. Synonym & Token-based semantic matching
+  const colorSynonyms = {
+    crimson: 'red',
+    ruby: 'red',
+    emerald: 'green',
+    cobalt: 'blue',
+    azure: 'blue',
+    midnight: 'black',
+    onyx: 'black',
+    sterling: 'silver',
+    steel: 'silver',
+    white: 'silver',
+    silver: 'steel',
+    rose: 'pink',
+    blush: 'pink'
+  };
+
+  let bestMatch = null;
+  let highestScore = -1;
+
+  for (const p of products) {
+    let score = 0;
+    const pName = String(p.name || '').toLowerCase();
+    const pCat = String(p.category || '').toLowerCase();
+    const pModel = String(p.modelNo || '').toLowerCase();
+    const pDesc = String(p.description || '').toLowerCase();
+    const specs = p.specs || {};
+    const pStrap = String(specs.strap || specs.strapMaterial || '').toLowerCase();
+    const pDial = String(specs.dial || specs.dialColor || '').toLowerCase();
+    const pCase = String(specs.case || '').toLowerCase();
+    const pCombined = `${pName} ${pCat} ${pModel} ${pDesc} ${pStrap} ${pDial} ${pCase}`;
+
+    for (const rawName of names) {
+      const clean = String(rawName).toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim();
+      const tokens = clean.split(/\s+/).filter(t => t && t !== 'khroniq' && t !== 'watch' && t !== 'timepiece');
+
+      for (const rawToken of tokens) {
+        const token = normalizeSlideWord(rawToken);
+        const mappedColor = colorSynonyms[token] || token;
+
+        if (pCat && (pCat.includes(token) || token.includes(pCat))) {
+          score += 60;
+        }
+        if (pName.includes(token)) {
+          score += 45;
+        } else if (pName.includes(mappedColor)) {
+          score += 40;
+        }
+        if (pCombined.includes(token)) {
+          score += 25;
+        } else if (pCombined.includes(mappedColor)) {
+          score += 20;
+        }
+      }
+    }
+
+    if (score > highestScore && score > 0) {
+      highestScore = score;
+      bestMatch = p;
+    }
+  }
+
+  return bestMatch || products[0] || null;
+}
+
 /* ─────────────────────────────────────────────────────────────────────
    LIFESTYLE SHOWCASE SLIDER
 ───────────────────────────────────────────────────────────────────── */
@@ -713,15 +813,12 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages, homeTitle
   const currentSlide = slides[activeIndex];
 
   const handleDetailsClick = () => {
-    const matched = products.find(p =>
-      p.name?.toLowerCase() === currentSlide.fullName?.toLowerCase() ||
-      p.name?.toLowerCase() === currentSlide.name?.toLowerCase() ||
-      (currentSlide.name && p.name?.toLowerCase().includes(currentSlide.name.toLowerCase()))
-    );
+    const matched = findMatchingProductForSlide(currentSlide, products);
     if (matched) {
-      onPageChange('product-detail', { id: matched.id || matched._id });
+      const targetId = getProductIdentifier(matched, products) || matched.id || matched._id;
+      onPageChange('product-detail', { id: targetId, slug: targetId, product: matched });
     } else {
-      onPageChange('shop');
+      onPageChange('shop', { search: currentSlide.name || currentSlide.fullName });
     }
   };
 
@@ -776,6 +873,7 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages, homeTitle
                 className="absolute inset-0 flex items-center justify-center p-8"
               >
                 <motion.img
+                  onClick={handleDetailsClick}
                   src={currentSlide.productImg}
                   alt={currentSlide.name}
                   onError={(e) => {
@@ -801,7 +899,8 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages, homeTitle
                     y: { repeat: Infinity, duration: 6, ease: "easeInOut" },
                     rotate: { repeat: Infinity, duration: 12, ease: "easeInOut" }
                   }}
-                  className="max-w-[65%] max-h-[90%] object-contain filter drop-shadow-[0_15px_30px_rgba(255,255,255,0.18)]"
+                  className="max-w-[65%] max-h-[90%] object-contain filter drop-shadow-[0_15px_30px_rgba(255,255,255,0.18)] cursor-pointer"
+                  title={`View ${currentSlide.name} Details`}
                 />
               </motion.div>
             </AnimatePresence>
@@ -818,7 +917,11 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages, homeTitle
           {/* Bottom Half: Details & Navigation */}
           <div className="p-8 lg:p-12 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 bg-white border-t border-black/5 flex-shrink-0">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-black/95 rounded-sm p-1.5 flex items-center justify-center flex-shrink-0 shadow-sm">
+              <div
+                onClick={handleDetailsClick}
+                className="w-14 h-14 bg-black/95 rounded-sm p-1.5 flex items-center justify-center flex-shrink-0 shadow-sm cursor-pointer hover:opacity-90 transition"
+                title={`View ${currentSlide.name} Details`}
+              >
                 <img
                   src={currentSlide.productImg}
                   alt={currentSlide.name ? `${currentSlide.name} — KHRONIQ timepiece` : 'KHRONIQ luxury watch'}
@@ -832,7 +935,11 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages, homeTitle
 
               </div>
               <div className="space-y-0.5">
-                <h3 className="font-serif text-lg font-bold text-black tracking-widest uppercase">
+                <h3
+                  onClick={handleDetailsClick}
+                  className="font-serif text-lg font-bold text-black tracking-widest uppercase cursor-pointer hover:text-neutral-600 transition"
+                  title={`View ${currentSlide.name} Details`}
+                >
                   {currentSlide.name}
                 </h3>
                 <button
@@ -1461,17 +1568,29 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           {[
             { img: homeImages.dive_deeper_tile1 || '/assets/spotlight_green_side.jpeg', label: homeTitles.dive_deeper_tile1 || 'Khroniq Emerald Green', sub: 'Khroniq - femina green', style: { backgroundPosition: 'center center' } },
             { img: homeImages.dive_deeper_tile2 || '/assets/spotlight_red_overhead.png', label: homeTitles.dive_deeper_tile2 || 'Khroniq Crimson Red', sub: 'Khroniq - femina red', style: { backgroundPosition: 'center center' } },
-          ].map(({ img, label, sub, style }, i) => (
-            <motion.div
-              key={i}
-              onClick={() => onPageChange('shop')}
-              className={`relative overflow-hidden cursor-pointer group h-[300px] ${i === 0 ? 'border-r border-luxury-text/8' : ''
-                }`}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] }}
-            >
+          ].map((tile, i) => {
+            const { img, label, sub, style } = tile;
+            const handleTileClick = () => {
+              const matched = findMatchingProductForSlide({ name: label, fullName: sub, img }, products);
+              if (matched) {
+                const targetId = getProductIdentifier(matched, products) || matched.id || matched._id;
+                onPageChange('product-detail', { id: targetId, slug: targetId, product: matched });
+              } else {
+                onPageChange('shop', { search: label || sub });
+              }
+            };
+
+            return (
+              <motion.div
+                key={i}
+                onClick={handleTileClick}
+                className={`relative overflow-hidden cursor-pointer group h-[300px] ${i === 0 ? 'border-r border-luxury-text/8' : ''
+                  }`}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] }}
+              >
               <motion.div
                 className="absolute inset-0 bg-cover bg-center"
                 style={{ backgroundImage: `url('${img}')`, ...style }}
@@ -1491,7 +1610,8 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                 <p className="text-xs tracking-widest uppercase font-semibold" style={{ color: 'rgba(255,255,255,0.92)', textShadow: '0 1px 10px rgba(0,0,0,1)' }}>{sub}</p>
               </div>
             </motion.div>
-          ))}
+          );
+        })}
         </div>
       </section>
 
