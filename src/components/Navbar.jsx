@@ -6,6 +6,9 @@ import {
   ArrowRight, Shield, RefreshCw, Truck, Check, Trash2, Clock, CheckCircle2, ChevronRight, XCircle, Globe, Bell
 } from 'lucide-react';
 import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
+import { searchAndRecommendProducts, POPULAR_SEARCH_SUGGESTIONS } from '../utils/searchUtils';
+import { getProductIdentifier } from '../utils/productRouting';
+import { handleImageError } from '../utils/imageUtils';
 
 
 export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCountryModal }) {
@@ -216,13 +219,33 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
   }, []);
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
+  const searchResultsData = useMemo(() => {
+    return searchAndRecommendProducts(products || [], searchQuery);
+  }, [products, searchQuery]);
+
   const handleSearchSubmit = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (searchQuery.trim()) {
-      onPageChange('shop', { search: searchQuery });
+      onPageChange('shop', { search: searchQuery.trim() });
       setSearchOpen(false);
+      setMobileMenuOpen(false);
       setSearchQuery('');
     }
+  };
+
+  const handleSuggestionClick = (query) => {
+    setSearchQuery('');
+    setSearchOpen(false);
+    setMobileMenuOpen(false);
+    onPageChange('shop', { search: query });
+  };
+
+  const handleProductClick = (product) => {
+    setSearchOpen(false);
+    setMobileMenuOpen(false);
+    setSearchQuery('');
+    const id = getProductIdentifier(product, products) || product.id || product._id;
+    onPageChange('product-detail', { id, slug: id });
   };
 
   const navLinks = [
@@ -589,24 +612,213 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
               </button>
 
               {searchOpen && (
-                <div className="absolute right-0 top-full mt-3 w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-200 text-left">
-                  <form onSubmit={handleSearchSubmit} className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:border-black focus-within:bg-white transition">
+                <div className="absolute right-0 top-full mt-3 w-96 sm:w-[440px] bg-white border border-gray-200 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-200 text-left">
+                  {/* Search Input Bar */}
+                  <form onSubmit={handleSearchSubmit} className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:border-black focus-within:bg-white transition mb-3">
+                    <div className="pl-3.5 text-gray-400 shrink-0">
+                      <Search size={14} />
+                    </div>
                     <input
                       type="text"
-                      placeholder="Search watches..."
+                      placeholder="Search watches, model, leather, men..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-transparent text-gray-900 text-xs px-3.5 py-2.5 focus:outline-none placeholder-gray-400 font-medium"
+                      className="w-full bg-transparent text-gray-900 text-xs px-3 py-2.5 focus:outline-none placeholder-gray-400 font-medium"
                       autoFocus
                     />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="p-1.5 text-gray-400 hover:text-black transition cursor-pointer"
+                        title="Clear"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
                     <button
                       type="submit"
-                      className="bg-black text-white px-3.5 py-2.5 hover:bg-neutral-800 transition cursor-pointer text-xs font-bold uppercase tracking-wider flex items-center gap-1 shrink-0"
+                      className="bg-black text-white px-3.5 py-2.5 hover:bg-neutral-800 transition cursor-pointer text-xs font-bold uppercase tracking-wider shrink-0"
                     >
-                      <Search size={13} />
-                      <span>Search</span>
+                      Search
                     </button>
                   </form>
+
+                  {/* Recommendations & Live Matches (Flipkart Style) */}
+                  <div className="max-h-[380px] overflow-y-auto pr-1 space-y-4 text-gray-800">
+                    {!searchQuery.trim() ? (
+                      /* When input is empty: Show Trending Searches & Recommendations */
+                      <div className="space-y-4">
+                        <div>
+                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                            <Sparkles size={12} className="text-amber-500" />
+                            <span>Trending Searches</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {POPULAR_SEARCH_SUGGESTIONS.slice(0, 6).map((sug) => (
+                              <button
+                                key={sug.label}
+                                type="button"
+                                onClick={() => handleSuggestionClick(sug.query)}
+                                className="px-2.5 py-1 bg-gray-100 hover:bg-black hover:text-white rounded-full text-[11px] font-medium transition cursor-pointer text-gray-700"
+                              >
+                                {sug.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {searchResultsData.recommendations.length > 0 && (
+                          <div className="pt-2 border-t border-gray-100">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">
+                              Popular Timepieces
+                            </span>
+                            <div className="space-y-1.5">
+                              {searchResultsData.recommendations.slice(0, 3).map((item) => (
+                                <div
+                                  key={item.id || item._id}
+                                  onClick={() => handleProductClick(item)}
+                                  className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-gray-50 transition cursor-pointer group"
+                                >
+                                  <div className="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center p-1 overflow-hidden shrink-0 border border-gray-200">
+                                    <img
+                                      src={item.image}
+                                      alt={item.name}
+                                      onError={(e) => handleImageError(e)}
+                                      className="w-full h-full object-contain group-hover:scale-105 transition"
+                                    />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-semibold text-gray-900 truncate group-hover:text-amber-700 transition">
+                                      {item.name}
+                                    </p>
+                                    <p className="text-[10px] text-gray-500">
+                                      {item.specs?.movement || item.category || 'Luxury Watch'}
+                                    </p>
+                                  </div>
+                                  <span className="text-xs font-bold text-black shrink-0">
+                                    {formatPrice(getDiscountedPrice(item), currentCurrency)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* When user is typing: Show Live Matches or Fallback Recommendations */
+                      <div className="space-y-3">
+                        {!searchResultsData.isFallback ? (
+                          <>
+                            <div className="flex items-center justify-between text-[11px] text-gray-500 pb-1 border-b border-gray-100">
+                              <span>Found <strong>{searchResultsData.totalFound}</strong> watches</span>
+                              <button
+                                type="button"
+                                onClick={handleSearchSubmit}
+                                className="text-black font-semibold hover:underline flex items-center gap-0.5 cursor-pointer"
+                              >
+                                View all <ArrowRight size={11} />
+                              </button>
+                            </div>
+                            <div className="space-y-1.5">
+                              {searchResultsData.results.slice(0, 4).map((item) => (
+                                <div
+                                  key={item.id || item._id}
+                                  onClick={() => handleProductClick(item)}
+                                  className="flex items-center gap-3 p-2 rounded-xl hover:bg-amber-50/50 transition cursor-pointer border border-transparent hover:border-amber-200/50 group"
+                                >
+                                  <div className="w-11 h-11 rounded-lg bg-gray-50 flex items-center justify-center p-1 overflow-hidden shrink-0 border border-gray-200">
+                                    <img
+                                      src={item.image}
+                                      alt={item.name}
+                                      onError={(e) => handleImageError(e)}
+                                      className="w-full h-full object-contain group-hover:scale-105 transition"
+                                    />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-semibold text-gray-900 truncate group-hover:text-amber-700 transition">
+                                      {item.name}
+                                    </p>
+                                    <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                                      {item.modelNo && <span>{item.modelNo}</span>}
+                                      {item.gender && (
+                                        <span className="capitalize px-1.5 py-0.2 bg-gray-100 rounded text-[9px] font-medium text-gray-600">
+                                          {item.gender}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-bold text-gray-900 shrink-0">
+                                    {formatPrice(getDiscountedPrice(item), currentCurrency)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleSearchSubmit}
+                              className="w-full py-2 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-black transition text-center cursor-pointer"
+                            >
+                              See all {searchResultsData.totalFound} results for "{searchQuery}"
+                            </button>
+                          </>
+                        ) : (
+                          /* Fallback when 0 exact results match */
+                          <div className="space-y-3 pt-1">
+                            <div className="text-center py-2 px-1 bg-amber-50/60 rounded-xl border border-amber-100">
+                              <p className="text-xs font-semibold text-gray-800">
+                                No exact matches for "{searchQuery}"
+                              </p>
+                              <p className="text-[10px] text-gray-500 mt-0.5">
+                                Showing popular recommendations you might like:
+                              </p>
+                            </div>
+                            <div className="space-y-1.5">
+                              {searchResultsData.recommendations.slice(0, 3).map((item) => (
+                                <div
+                                  key={item.id || item._id}
+                                  onClick={() => handleProductClick(item)}
+                                  className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-gray-50 transition cursor-pointer group"
+                                >
+                                  <div className="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center p-1 overflow-hidden shrink-0 border border-gray-200">
+                                    <img
+                                      src={item.image}
+                                      alt={item.name}
+                                      onError={(e) => handleImageError(e)}
+                                      className="w-full h-full object-contain group-hover:scale-105 transition"
+                                    />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-semibold text-gray-900 truncate group-hover:text-amber-700 transition">
+                                      {item.name}
+                                    </p>
+                                    <p className="text-[10px] text-gray-500">
+                                      {item.specs?.movement || item.category || 'Luxury Watch'}
+                                    </p>
+                                  </div>
+                                  <span className="text-xs font-bold text-black shrink-0">
+                                    {formatPrice(getDiscountedPrice(item), currentCurrency)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {POPULAR_SEARCH_SUGGESTIONS.slice(0, 4).map((sug) => (
+                                <button
+                                  key={sug.label}
+                                  type="button"
+                                  onClick={() => handleSuggestionClick(sug.query)}
+                                  className="px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white rounded-full text-[10px] font-medium transition cursor-pointer text-gray-700"
+                                >
+                                  {sug.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -985,18 +1197,49 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
       {mobileMenuOpen && (
         <div className="md:hidden glass border-t border-luxury-text/10 py-4 px-6 space-y-4 flex flex-col">
           {/* Search bar inside mobile drawer */}
-          <form onSubmit={handleSearchSubmit} className="flex items-center bg-white border border-luxury-text/10 rounded-md p-1.5 mb-2">
-            <input
-              type="text"
-              placeholder="Search watches..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent text-luxury-text text-xs px-2 focus:outline-none"
-            />
-            <button type="submit" className="text-luxury-muted hover:text-black p-1">
-              <Search size={14} />
-            </button>
-          </form>
+          <div className="space-y-2 mb-2">
+            <form onSubmit={handleSearchSubmit} className="flex items-center bg-white border border-luxury-text/10 rounded-xl p-1.5 shadow-sm">
+              <div className="pl-1.5 text-luxury-muted shrink-0">
+                <Search size={14} />
+              </div>
+              <input
+                type="text"
+                placeholder="Search watches, men, leather..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-transparent text-luxury-text text-xs px-2 focus:outline-none placeholder-gray-400 font-medium"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="p-1 text-luxury-muted hover:text-black"
+                >
+                  <X size={13} />
+                </button>
+              )}
+              <button
+                type="submit"
+                className="bg-black text-white px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-neutral-800 transition cursor-pointer"
+              >
+                Go
+              </button>
+            </form>
+
+            {/* Quick Suggestions Pills */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {POPULAR_SEARCH_SUGGESTIONS.slice(0, 4).map((sug) => (
+                <button
+                  key={`mobile-${sug.label}`}
+                  type="button"
+                  onClick={() => handleSuggestionClick(sug.query)}
+                  className="px-2.5 py-1 bg-white/10 hover:bg-white hover:text-black rounded-full text-[10px] text-white/90 font-medium transition border border-white/10 cursor-pointer"
+                >
+                  {sug.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Navigation links */}
           {navLinks.map((link, idx) => {

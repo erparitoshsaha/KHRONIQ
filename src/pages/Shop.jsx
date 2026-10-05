@@ -6,7 +6,13 @@ import Breadcrumbs from '../components/Breadcrumbs';
 import { useSEO } from '../utils/seo';
 
 import { getDiscountedPrice, getProductMrp, selectCurrentCurrency, formatPrice, fetchFilters, fetchProducts } from '../store/slices/watchSlice';
-import { SlidersHorizontal, Search, RotateCcw, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { SlidersHorizontal, Search, RotateCcw, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import {
+  extractSearchIntent,
+  scoreProductForSearch,
+  getPopularRecommendations,
+  POPULAR_SEARCH_SUGGESTIONS
+} from '../utils/searchUtils';
 import {
   productMatchesFilterOption,
   toCleanSlug,
@@ -374,80 +380,109 @@ export default function Shop({ onPageChange, filterParams }) {
     (searchQuery.trim() ? 1 : 0) +
     (currentMaxPrice < maxPrice ? 1 : 0);
 
-  // Filter products logic with dynamic OR within category and AND between categories
-  const filteredProducts = (products || []).filter((product) => {
-    if (!product) return false;
-    // 1. Search Query Match
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase().trim();
-      const matchName = String(product.name || '').toLowerCase().includes(q);
-      const matchDesc = String(product.description || '').toLowerCase().includes(q);
-      const matchModel = String(product.modelNo || '').toLowerCase().includes(q);
-      const matchCategory = String(product.category || '').toLowerCase().includes(q);
-      if (!matchName && !matchDesc && !matchModel && !matchCategory) {
-        return false;
+  // Extract search intent from query
+  const searchIntent = useMemo(() => {
+    return searchQuery.trim() ? extractSearchIntent(searchQuery) : null;
+  }, [searchQuery]);
+
+  // Pre-calculate smart search scores for all products
+  const productSearchScores = useMemo(() => {
+    if (!searchIntent) return new Map();
+    const map = new Map();
+    for (const p of (products || [])) {
+      if (p) {
+        const score = scoreProductForSearch(p, searchIntent);
+        map.set(p.id || p._id, score);
       }
     }
+    return map;
+  }, [products, searchIntent]);
 
-    // 2. Price Range Match (by Selling Price)
-    const effectivePrice = getDiscountedPrice(product);
-    if (typeof priceRange === 'number' && effectivePrice > currentMaxPrice) {
-      return false;
-    }
-    if (typeof minPriceFilter === 'number' && effectivePrice < minPriceFilter) {
-      return false;
-    }
+  // Filter products logic with smart search, dynamic OR within category and AND between categories
+  const filteredProducts = useMemo(() => {
+    return (products || []).filter((product) => {
+      if (!product) return false;
 
-    // 3. Dynamic Category Matches (AND across categories, OR within category)
-    for (const cat of activeCategories) {
-      const selectedOpts = selectedFilters[cat.slug];
-      if (selectedOpts && selectedOpts.length > 0 && !selectedOpts.includes('All')) {
-        // Must match AT LEAST ONE selected option in this category (OR logic)
-        const anyMatch = selectedOpts.some(optSlug => {
-          const optDef = (cat.options || []).find(o => o.slug === optSlug || o.value === optSlug);
-          return matchesOption(product, cat.slug, optSlug, optDef ? optDef.name : optSlug);
-        });
-
-        if (!anyMatch) {
+      // 1. Smart Search Query Match
+      if (searchIntent) {
+        const score = productSearchScores.get(product.id || product._id) || 0;
+        if (score <= 0) {
           return false;
         }
       }
-    }
 
-    return true;
-  });
+      // 2. Price Range Match (by Selling Price)
+      const effectivePrice = getDiscountedPrice(product);
+      if (typeof priceRange === 'number' && effectivePrice > currentMaxPrice) {
+        return false;
+      }
+      if (typeof minPriceFilter === 'number' && effectivePrice < minPriceFilter) {
+        return false;
+      }
+
+      // 3. Dynamic Category Matches (AND across categories, OR within category)
+      for (const cat of activeCategories) {
+        const selectedOpts = selectedFilters[cat.slug];
+        if (selectedOpts && selectedOpts.length > 0 && !selectedOpts.includes('All')) {
+          // Must match AT LEAST ONE selected option in this category (OR logic)
+          const anyMatch = selectedOpts.some(optSlug => {
+            const optDef = (cat.options || []).find(o => o.slug === optSlug || o.value === optSlug);
+            return matchesOption(product, cat.slug, optSlug, optDef ? optDef.name : optSlug);
+          });
+
+          if (!anyMatch) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  }, [products, searchIntent, productSearchScores, currentMaxPrice, minPriceFilter, activeCategories, selectedFilters]);
+
+  // Flipkart-style recommendations
+  const recommendations = useMemo(() => {
+    return getPopularRecommendations(products || [], searchIntent, filteredProducts);
+  }, [products, searchIntent, filteredProducts]);
 
   // Sort products logic
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortOption) {
-      case 'price-asc':
-        return getDiscountedPrice(a) - getDiscountedPrice(b);
-      case 'price-desc':
-        return getDiscountedPrice(b) - getDiscountedPrice(a);
-      case 'name-asc':
-        return String(a.name || '').localeCompare(String(b.name || ''));
-      case 'name-desc':
-        return String(b.name || '').localeCompare(String(a.name || ''));
-      default: { // Featured / Default: newest added watch appears first
-        const getTime = (p) => {
-          if (!p) return 0;
-          if (p.createdAt) {
-            const t = new Date(p.createdAt).getTime();
-            if (!isNaN(t)) return t;
+  const sortedProducts = useMemo(() => {
+    return [...filteredProducts].sort((a, b) => {
+      switch (sortOption) {
+        case 'price-asc':
+          return getDiscountedPrice(a) - getDiscountedPrice(b);
+        case 'price-desc':
+          return getDiscountedPrice(b) - getDiscountedPrice(a);
+        case 'name-asc':
+          return String(a.name || '').localeCompare(String(b.name || ''));
+        case 'name-desc':
+          return String(b.name || '').localeCompare(String(a.name || ''));
+        default: { // Featured / Default: search relevance first, then newest
+          if (searchIntent) {
+            const scoreA = productSearchScores.get(a.id || a._id) || 0;
+            const scoreB = productSearchScores.get(b.id || b._id) || 0;
+            if (scoreA !== scoreB) return scoreB - scoreA;
           }
-          const idStr = String(p._id || p.id || '');
-          if (idStr.length === 24 && /^[0-9a-fA-F]{24}$/.test(idStr)) {
-            return parseInt(idStr.substring(0, 8), 16) * 1000;
-          }
-          return Number(p.id) || 0;
-        };
-        const timeA = getTime(a);
-        const timeB = getTime(b);
-        if (timeA !== timeB) return timeB - timeA;
-        return String(b._id || b.id || '').localeCompare(String(a._id || a.id || ''));
+          const getTime = (p) => {
+            if (!p) return 0;
+            if (p.createdAt) {
+              const t = new Date(p.createdAt).getTime();
+              if (!isNaN(t)) return t;
+            }
+            const idStr = String(p._id || p.id || '');
+            if (idStr.length === 24 && /^[0-9a-fA-F]{24}$/.test(idStr)) {
+              return parseInt(idStr.substring(0, 8), 16) * 1000;
+            }
+            return Number(p.id) || 0;
+          };
+          const timeA = getTime(a);
+          const timeB = getTime(b);
+          if (timeA !== timeB) return timeB - timeA;
+          return String(b._id || b.id || '').localeCompare(String(a._id || a.id || ''));
+        }
       }
-    }
-  });
+    });
+  }, [filteredProducts, sortOption, searchIntent, productSearchScores]);
 
   // Pagination Slicing
   const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
@@ -464,12 +499,26 @@ export default function Shop({ onPageChange, filterParams }) {
         <div className="relative">
           <input
             type="text"
-            placeholder="Search..."
+            placeholder="Search watches, model, specs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white text-luxury-text text-xs px-3 py-2 pl-8 border border-luxury-text/10 rounded focus:outline-none focus:border-black"
+            className="w-full bg-white text-luxury-text text-xs px-3 py-2 pl-8 pr-7 border border-luxury-text/10 rounded focus:outline-none focus:border-black"
           />
           <Search size={12} className="absolute left-2.5 top-3 text-luxury-muted" />
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                if (filterParams?.search) {
+                  window.history.replaceState({}, '', '/shop');
+                }
+              }}
+              className="absolute right-2 top-2.5 text-luxury-muted hover:text-black p-0.5 cursor-pointer"
+              title="Clear search"
+            >
+              <X size={12} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -669,17 +718,77 @@ export default function Shop({ onPageChange, filterParams }) {
 
           {/* Catalog grid */}
           {sortedProducts.length === 0 ? (
-            <div className="border border-dashed border-luxury-text/20 rounded-md p-16 text-center space-y-4">
-              <p className="text-luxury-muted text-sm">No luxury watches match your current filter selections.</p>
-              <button
-                onClick={resetFilters}
-                className="px-6 py-2.5 bg-neutral-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-neutral-700 transition cursor-pointer border border-neutral-700"
-              >
-                Clear Filters
-              </button>
-            </div>
+            searchQuery.trim() ? (
+              <div className="space-y-10">
+                <div className="border border-dashed border-luxury-text/20 rounded-2xl p-8 sm:p-12 text-center space-y-4 bg-luxury-text/[0.02]">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600">
+                    <Search size={22} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="text-base sm:text-lg font-bold text-luxury-text tracking-wide">
+                      No exact matches found for "{searchQuery}"
+                    </h3>
+                    <p className="text-xs sm:text-sm text-luxury-muted max-w-md mx-auto">
+                      Don't worry! Explore our popular recommendations or tap a trending search below:
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-2 pt-2">
+                    {POPULAR_SEARCH_SUGGESTIONS.slice(0, 5).map(sug => (
+                      <button
+                        key={sug.label}
+                        onClick={() => {
+                          setSearchQuery(sug.query);
+                          window.history.replaceState({}, '', `/shop?search=${encodeURIComponent(sug.query)}`);
+                        }}
+                        className="px-3.5 py-1.5 bg-white border border-luxury-text/15 rounded-full text-xs font-semibold text-luxury-text hover:border-black hover:bg-neutral-50 transition cursor-pointer shadow-sm"
+                      >
+                        {sug.label}
+                      </button>
+                    ))}
+                    <button
+                      onClick={resetFilters}
+                      className="px-4 py-1.5 bg-black text-white rounded-full text-xs font-semibold hover:bg-neutral-800 transition cursor-pointer"
+                    >
+                      Clear Search & View All
+                    </button>
+                  </div>
+                </div>
+
+                {/* Flipkart-Style Recommendations Grid when 0 exact results */}
+                {recommendations.length > 0 && (
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-2 pb-3 border-b border-luxury-text/10">
+                      <Sparkles size={18} className="text-luxury-gold" />
+                      <div>
+                        <span className="text-[10px] font-bold text-luxury-gold uppercase tracking-widest block">Trending Now</span>
+                        <h4 className="text-base sm:text-lg font-bold text-luxury-text">Recommended Timepieces For You</h4>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4 xl:gap-4.5">
+                      {recommendations.map(product => (
+                        <ProductCard
+                          key={`fallback-rec-${product.id || product._id}`}
+                          product={product}
+                          onPageChange={onPageChange}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="border border-dashed border-luxury-text/20 rounded-md p-16 text-center space-y-4">
+                <p className="text-luxury-muted text-sm">No luxury watches match your current filter selections.</p>
+                <button
+                  onClick={resetFilters}
+                  className="px-6 py-2.5 bg-neutral-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-neutral-700 transition cursor-pointer border border-neutral-700"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            )
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-12">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4 xl:gap-4.5">
                 {currentProducts.map((product) => (
                   <ProductCard 
@@ -734,6 +843,32 @@ export default function Shop({ onPageChange, filterParams }) {
                   >
                     Next
                   </button>
+                </div>
+              )}
+
+              {/* Flipkart-Style Recommendations Strip for active search */}
+              {searchQuery.trim() && recommendations.length > 0 && (
+                <div className="pt-10 border-t border-luxury-text/10 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5 text-luxury-gold text-xs font-bold tracking-widest uppercase mb-1">
+                        <Sparkles size={14} />
+                        <span>Recommended For You</span>
+                      </div>
+                      <h3 className="font-serif text-lg sm:text-xl font-bold text-luxury-text">
+                        More Timepieces You Might Like
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4 xl:gap-4.5">
+                    {recommendations.slice(0, 4).map((recProduct) => (
+                      <ProductCard
+                        key={`rec-${recProduct.id || recProduct._id}`}
+                        product={recProduct}
+                        onPageChange={onPageChange}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
