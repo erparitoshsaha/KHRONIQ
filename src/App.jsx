@@ -61,6 +61,11 @@ class ErrorBoundary extends React.Component {
           <p className="text-xs text-gray-400 max-w-md">
             An unexpected error occurred while loading this view. You can return to the homepage or reload the page.
           </p>
+          {this.state.error && (
+            <p className="text-[11px] font-mono text-red-500 bg-neutral-100 p-2 rounded max-w-lg break-words">
+              {this.state.error.message || String(this.state.error)}
+            </p>
+          )}
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => {

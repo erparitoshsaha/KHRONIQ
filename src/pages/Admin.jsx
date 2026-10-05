@@ -275,11 +275,13 @@ export default function Admin({ onPageChange }) {
     { key: 'blogs', label: 'Blogs Editorial', icon: BookOpen, permission: 'blogs' },
   ];
 
-  const visibleTabs = ALL_ADMIN_TABS.filter(tab => {
-    if (isSuperAdmin) return true;
-    if (tab.superAdminOnly) return false;
-    return userPermissions.includes(tab.permission);
-  });
+  const visibleTabs = useMemo(() => {
+    return ALL_ADMIN_TABS.filter(tab => {
+      if (isSuperAdmin) return true;
+      if (tab.superAdminOnly) return false;
+      return userPermissions.includes(tab.permission);
+    });
+  }, [isSuperAdmin, userPermissions]);
 
   // Active Admin Sub-Tab
   const [activeTab, setActiveTab] = useState('analytics');
@@ -499,10 +501,7 @@ export default function Admin({ onPageChange }) {
 
   useEffect(() => {
     dispatch(fetchAdminFilters());
-    if (!products || products.length === 0) {
-      dispatch(fetchProducts());
-    }
-  }, [dispatch, products]);
+  }, [dispatch]);
 
   useEffect(() => {
     if (activeTab === 'filters') {
@@ -1428,20 +1427,24 @@ export default function Admin({ onPageChange }) {
     : 1000;
 
   // Compile all active (approved) reviews for management
-  const activeReviews = [];
-  products.forEach(p => {
-    const pId = p._id || p.id;
-    p.reviews?.forEach(r => {
-      if (r.status === 'approved') {
-        activeReviews.push({
-          productId: pId,
-          productName: p.name,
-          review: r,
-          reviewId: r._id || r.id
-        });
-      }
+  const activeReviews = useMemo(() => {
+    const list = [];
+    (products || []).forEach(p => {
+      if (!p) return;
+      const pId = p._id || p.id;
+      (p.reviews || []).forEach(r => {
+        if (r && r.status === 'approved') {
+          list.push({
+            productId: pId,
+            productName: p.name,
+            review: r,
+            reviewId: r._id || r.id
+          });
+        }
+      });
     });
-  });
+    return list;
+  }, [products]);
 
   // Track seen reviews so the red badge disappears once viewed
   const [seenReviewIds, setSeenReviewIds] = useState(() => {
@@ -1690,7 +1693,8 @@ export default function Admin({ onPageChange }) {
 
   const handleDownloadInventoryCSV = () => {
     const rows = [];
-    products.forEach((p) => {
+    (products || []).forEach((p) => {
+      if (!p) return;
       (p.unitCodes || []).forEach((code) => {
         rows.push({
           watchName: p.name,
@@ -7232,7 +7236,7 @@ export default function Admin({ onPageChange }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 text-gray-300">
-                    {products.map((p) => (
+                    {(products || []).map((p) => (
                       <tr key={p.id} className="hover:bg-white/5 transition">
                         <td className="p-4 flex items-center space-x-3">
                           <div className="h-10 w-10 bg-luxury-dark border border-white/5 p-1 rounded flex items-center justify-center">
@@ -7349,7 +7353,7 @@ export default function Admin({ onPageChange }) {
                 })}
               </div>
 
-              {orders.length === 0 ? (
+              {(!orders || orders.length === 0) ? (
                 <p className="text-gray-400 text-xs italic p-4 text-center border border-dashed border-white/10 rounded">No order records found in simulated database.</p>
               ) : (
                 <div className="bg-luxury-gray border border-white/5 rounded-md overflow-x-auto">
@@ -7366,7 +7370,7 @@ export default function Admin({ onPageChange }) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5 text-gray-300">
-                      {orders.map((o) => {
+                      {(orders || []).map((o) => {
                         const logistics = o.logistics || {};
                         const partner = logistics.courierPartner || 'Blue Dart Air Express';
                         const isManual = logistics.assignedMode === 'Manual';
@@ -7726,7 +7730,7 @@ export default function Admin({ onPageChange }) {
                 <h4 className="text-xs font-bold uppercase tracking-widest text-white">Active Promo Database</h4>
 
                 <div className="bg-luxury-gray border border-white/5 rounded-md divide-y divide-white/5">
-                  {coupons.map((c) => (
+                  {(coupons || []).map((c) => (
                     <div key={c.code} className="flex justify-between items-center p-4">
                       <div className="space-y-1">
                         <div className="flex items-center space-x-2">

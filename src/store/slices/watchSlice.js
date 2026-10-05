@@ -551,6 +551,10 @@ const watchSlice = createSlice({
       }
     },
     setProductsAction: (state, action) => {
+      if (Array.isArray(action.payload) && action.payload.length === 0 && Array.isArray(state.products) && state.products.length === 0) {
+        state.productsLoaded = true;
+        return;
+      }
       state.products = action.payload;
       state.productsLoaded = true;
     },
