@@ -875,6 +875,8 @@ router.put('/profile', protect, async (req, res) => {
     console.error('Profile update error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
+});
+
 // @route   PUT /api/auth/change-password
 // @desc    Update password for authenticated user
 // @access  Private
