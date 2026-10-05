@@ -656,7 +656,7 @@ export default function Shop({ onPageChange, filterParams }) {
 
       {/* Main Grid: Filters & Products */}
       <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 items-start">
-        
+
         {/* Filters Panel (Desktop Sidebar) - Independently Scrollable */}
         <aside className="hidden lg:flex flex-col w-56 xl:w-60 flex-shrink-0 sticky top-24 max-h-[calc(100vh-7.5rem)] bg-white">
           <div className="flex items-center justify-between border-b border-luxury-text/10 pb-4 shrink-0">
@@ -687,7 +687,7 @@ export default function Shop({ onPageChange, filterParams }) {
         {/* Mobile Filters Trigger & Sorting Section */}
         <div className="flex-1 min-w-0 space-y-5">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white border border-luxury-text/10 px-5 py-3.5 rounded-md shadow-sm">
-            
+
             {/* Left Mobile Toggle */}
             <button
               onClick={() => setShowFiltersMobile(true)}
@@ -713,8 +713,6 @@ export default function Shop({ onPageChange, filterParams }) {
                 <option value="featured">Featured</option>
                 <option value="price-asc">Price: Low to High</option>
                 <option value="price-desc">Price: High to Low</option>
-                <option value="name-asc">Name: A to Z</option>
-                <option value="name-desc">Name: Z to A</option>
               </select>
             </div>
           </div>
@@ -794,9 +792,9 @@ export default function Shop({ onPageChange, filterParams }) {
             <div className="space-y-12">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4 xl:gap-4.5">
                 {currentProducts.map((product) => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
+                  <ProductCard
+                    key={product.id}
+                    product={product}
                     onPageChange={onPageChange}
                   />
                 ))}
@@ -825,11 +823,10 @@ export default function Shop({ onPageChange, filterParams }) {
                           setCurrentPage(pageNum);
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
-                        className={`w-9 h-9 rounded-md text-xs font-bold transition cursor-pointer ${
-                          currentPage === pageNum
-                            ? 'bg-black text-white'
-                            : 'border border-luxury-text/10 text-luxury-text hover:border-black'
-                        }`}
+                        className={`w-9 h-9 rounded-md text-xs font-bold transition cursor-pointer ${currentPage === pageNum
+                          ? 'bg-black text-white'
+                          : 'border border-luxury-text/10 text-luxury-text hover:border-black'
+                          }`}
                       >
                         {pageNum}
                       </button>
@@ -883,7 +880,7 @@ export default function Shop({ onPageChange, filterParams }) {
       {showFiltersMobile && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowFiltersMobile(false)} />
-          
+
           <div className="relative w-80 max-w-sm bg-white border-r border-luxury-text/10 h-full p-6 flex flex-col z-10">
             <div className="flex justify-between items-center border-b border-luxury-text/10 pb-4 shrink-0">
               <h2 className="text-sm font-bold uppercase tracking-widest text-luxury-text flex items-center space-x-2">
