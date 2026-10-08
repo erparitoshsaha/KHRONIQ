@@ -1369,6 +1369,47 @@ export default function Admin({ onPageChange }) {
   };
 
 
+  // Compile all active (approved) reviews for management
+  const activeReviews = useMemo(() => {
+    const list = [];
+    (products || []).forEach(p => {
+      if (!p) return;
+      const pId = p._id || p.id;
+      (p.reviews || []).forEach(r => {
+        if (r && r.status === 'approved') {
+          list.push({
+            productId: pId,
+            productName: p.name,
+            review: r,
+            reviewId: r._id || r.id
+          });
+        }
+      });
+    });
+    return list;
+  }, [products]);
+
+  // Track seen reviews so the red badge disappears once viewed
+  const [seenReviewIds, setSeenReviewIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('khroniq_seen_review_ids') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  // Jaise hi admin Reviews tab open kare, sabhi reviews ko 'seen' mark kar do
+  useEffect(() => {
+    if (activeTab === 'reviews' && activeReviews.length > 0) {
+      const allIds = activeReviews.map(item => String(item.reviewId));
+      setSeenReviewIds(allIds);
+      localStorage.setItem('khroniq_seen_review_ids', JSON.stringify(allIds));
+    }
+  }, [activeTab, activeReviews]);
+
+  // Sirf unread/new reviews count calculate karein
+  const newReviewsCount = activeReviews.filter(item => !seenReviewIds.includes(String(item.reviewId))).length;
+
   // Validation checking for security
   if (!currentUser || !isAdminRole(currentUser.role)) {
     const hasToken = typeof window !== 'undefined' && localStorage.getItem('khroniq_token');
@@ -1425,47 +1466,6 @@ export default function Admin({ onPageChange }) {
   const maxVal = dynamicSalesData && dynamicSalesData.length > 0
     ? Math.max(...Object.values(displaySales), 1000)
     : 1000;
-
-  // Compile all active (approved) reviews for management
-  const activeReviews = useMemo(() => {
-    const list = [];
-    (products || []).forEach(p => {
-      if (!p) return;
-      const pId = p._id || p.id;
-      (p.reviews || []).forEach(r => {
-        if (r && r.status === 'approved') {
-          list.push({
-            productId: pId,
-            productName: p.name,
-            review: r,
-            reviewId: r._id || r.id
-          });
-        }
-      });
-    });
-    return list;
-  }, [products]);
-
-  // Track seen reviews so the red badge disappears once viewed
-  const [seenReviewIds, setSeenReviewIds] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('khroniq_seen_review_ids') || '[]');
-    } catch {
-      return [];
-    }
-  });
-
-  // Jaise hi admin Reviews tab open kare, sabhi reviews ko 'seen' mark kar do
-  useEffect(() => {
-    if (activeTab === 'reviews' && activeReviews.length > 0) {
-      const allIds = activeReviews.map(item => String(item.reviewId));
-      setSeenReviewIds(allIds);
-      localStorage.setItem('khroniq_seen_review_ids', JSON.stringify(allIds));
-    }
-  }, [activeTab, activeReviews]);
-
-  // Sirf unread/new reviews count calculate karein
-  const newReviewsCount = activeReviews.filter(item => !seenReviewIds.includes(String(item.reviewId))).length;
 
 
 
