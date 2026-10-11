@@ -868,7 +868,71 @@ export default function Admin({ onPageChange }) {
   const [mediaTitles, setMediaTitles] = useState({});
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [mediaUploadStatus, setMediaUploadStatus] = useState({});
+  const [mediaUploadError, setMediaUploadError] = useState({});
   const [mediaTitleSaveStatus, setMediaTitleSaveStatus] = useState({});
+
+  // Helper: Client-side image compression to ensure image never exceeds Vercel 4.5MB serverless limit
+  const compressImageIfNeeded = async (file, maxDimension = 2400, quality = 0.85) => {
+    if (!file || typeof window === 'undefined' || !file.type || !file.type.startsWith('image/')) {
+      return file;
+    }
+    // If file is already small (under 2.5 MB) and standard format, keep original
+    if (file.size <= 2.5 * 1024 * 1024 && ['image/jpeg', 'image/png', 'image/webp'].includes(file.type.toLowerCase())) {
+      return file;
+    }
+    return new Promise((resolve) => {
+      try {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              let width = img.width;
+              let height = img.height;
+              if (width > maxDimension || height > maxDimension) {
+                if (width > height) {
+                  height = Math.round((height * maxDimension) / width);
+                  width = maxDimension;
+                } else {
+                  width = Math.round((width * maxDimension) / height);
+                  height = maxDimension;
+                }
+              }
+              const canvas = document.createElement('canvas');
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              canvas.toBlob(
+                (blob) => {
+                  if (blob) {
+                    const cleanName = (file.name || 'image').replace(/\.[^.]+$/, '') + '.jpg';
+                    const compressed = new File([blob], cleanName, {
+                      type: 'image/jpeg',
+                      lastModified: Date.now()
+                    });
+                    resolve(compressed);
+                  } else {
+                    resolve(file);
+                  }
+                },
+                'image/jpeg',
+                quality
+              );
+            } catch (canvasErr) {
+              resolve(file);
+            }
+          };
+          img.onerror = () => resolve(file);
+          img.src = e.target.result;
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+      } catch (err) {
+        resolve(file);
+      }
+    });
+  };
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('khroniq_token');
@@ -942,12 +1006,16 @@ export default function Admin({ onPageChange }) {
   };
 
   const handleSectionImageUpload = async (fileOrEvent, sectionKey) => {
-    const file = fileOrEvent?.target?.files ? fileOrEvent.target.files[0] : fileOrEvent;
-    if (!file) return null;
+    const rawFile = fileOrEvent?.target?.files ? fileOrEvent.target.files[0] : fileOrEvent;
+    if (!rawFile) return null;
 
     setMediaUploadStatus(prev => ({ ...prev, [sectionKey]: 'uploading' }));
+    setMediaUploadError(prev => ({ ...prev, [sectionKey]: null }));
     setUploadingMedia(true);
     try {
+      // 1. Auto-compress large images client-side to ensure they stay within Vercel's 4.5MB limit
+      const file = await compressImageIfNeeded(rawFile);
+
       const formData = new FormData();
       formData.append('files', file);
       formData.append('section', sectionKey);
@@ -960,19 +1028,55 @@ export default function Admin({ onPageChange }) {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData
       });
-      const data = await res.json();
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        data = {
+          success: false,
+          message: res.status === 413 ? 'File too large (Vercel 4.5MB limit)' : `Server response error (${res.status})`
+        };
+      }
+
       if (data.success && data.media?.[0]?.url) {
         const uploadedUrl = data.media[0].url;
         setMediaList(prev => ({ ...prev, [sectionKey]: uploadedUrl }));
         setMediaUploadStatus(prev => ({ ...prev, [sectionKey]: 'uploaded' }));
+        setMediaUploadError(prev => ({ ...prev, [sectionKey]: null }));
         return uploadedUrl;
-      } else {
-        setMediaUploadStatus(prev => ({ ...prev, [sectionKey]: 'failed' }));
-        return null;
       }
+
+      // If /api/admin/media multipart upload failed, try fallback upload to /api/upload then save URL
+      try {
+        const fallbackForm = new FormData();
+        fallbackForm.append('image', file);
+        const fbRes = await fetch('/api/upload', {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: fallbackForm
+        });
+        const fbData = await fbRes.json();
+        if (fbData.success && fbData.imageUrl) {
+          await handleDirectUrlSave(fbData.imageUrl, sectionKey);
+          setMediaList(prev => ({ ...prev, [sectionKey]: fbData.imageUrl }));
+          setMediaUploadStatus(prev => ({ ...prev, [sectionKey]: 'uploaded' }));
+          setMediaUploadError(prev => ({ ...prev, [sectionKey]: null }));
+          return fbData.imageUrl;
+        }
+      } catch (fallbackErr) {
+        console.warn('Fallback upload also failed:', fallbackErr);
+      }
+
+      const errMsg = data.message || (res.status === 413 ? 'File too large (>4.5MB)' : `Upload failed (${res.status || 'Error'})`);
+      setMediaUploadStatus(prev => ({ ...prev, [sectionKey]: 'failed' }));
+      setMediaUploadError(prev => ({ ...prev, [sectionKey]: errMsg }));
+      return null;
     } catch (err) {
       console.error('Section image upload error:', err);
+      const errMsg = err.message || 'Upload error';
       setMediaUploadStatus(prev => ({ ...prev, [sectionKey]: 'failed' }));
+      setMediaUploadError(prev => ({ ...prev, [sectionKey]: errMsg }));
       return null;
     } finally {
       setUploadingMedia(false);
@@ -8133,9 +8237,9 @@ export default function Admin({ onPageChange }) {
                                         <span>Uploaded</span>
                                       </span>
                                     ) : status === 'failed' ? (
-                                      <span className="text-red-400 not-italic font-semibold flex items-center space-x-1">
-                                        <AlertTriangle size={11} className="text-red-400 inline mr-1" />
-                                        <span>Upload failed</span>
+                                      <span className="text-red-400 not-italic font-semibold flex items-center space-x-1" title={mediaUploadError[slot.key] || ''}>
+                                        <AlertTriangle size={11} className="text-red-400 inline mr-1 shrink-0" />
+                                        <span className="truncate max-w-[200px]">{mediaUploadError[slot.key] || 'Upload failed'}</span>
                                       </span>
                                     ) : (
                                       'Supports live preview, direct URL entry, or file replacement'
@@ -8157,9 +8261,9 @@ export default function Admin({ onPageChange }) {
                                       </span>
                                     )}
                                     {status === 'failed' && (
-                                      <span className="text-red-400 font-bold flex items-center space-x-1 text-[11px]">
-                                        <AlertTriangle size={12} className="text-red-400" />
-                                        <span>Upload failed</span>
+                                      <span className="text-red-400 font-bold flex items-center space-x-1 text-[11px]" title={mediaUploadError[slot.key] || ''}>
+                                        <AlertTriangle size={12} className="text-red-400 shrink-0" />
+                                        <span className="truncate max-w-[180px]">{mediaUploadError[slot.key] || 'Upload failed'}</span>
                                       </span>
                                     )}
                                   </div>
@@ -8211,9 +8315,9 @@ export default function Admin({ onPageChange }) {
                               <span>Uploaded</span>
                             </span>
                           ) : status === 'failed' ? (
-                            <span className="text-red-400 not-italic font-semibold flex items-center space-x-1">
-                              <AlertTriangle size={11} className="text-red-400 inline mr-1" />
-                              <span>Upload failed</span>
+                            <span className="text-red-400 not-italic font-semibold flex items-center space-x-1" title={mediaUploadError[slotKey] || ''}>
+                              <AlertTriangle size={11} className="text-red-400 inline mr-1 shrink-0" />
+                              <span className="truncate max-w-[200px]">{mediaUploadError[slotKey] || 'Upload failed'}</span>
                             </span>
                           ) : (
                             'Supports live preview, direct URL entry, or file replacement'
@@ -8235,9 +8339,9 @@ export default function Admin({ onPageChange }) {
                             </span>
                           )}
                           {status === 'failed' && (
-                            <span className="text-red-400 font-bold flex items-center space-x-1 text-[11px]">
-                              <AlertTriangle size={12} className="text-red-400" />
-                              <span>Upload failed</span>
+                            <span className="text-red-400 font-bold flex items-center space-x-1 text-[11px]" title={mediaUploadError[slotKey] || ''}>
+                              <AlertTriangle size={12} className="text-red-400 shrink-0" />
+                              <span className="truncate max-w-[200px]">{mediaUploadError[slotKey] || 'Upload failed'}</span>
                             </span>
                           )}
                         </div>

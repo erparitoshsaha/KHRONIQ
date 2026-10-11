@@ -15,18 +15,27 @@ const storage = new CloudinaryStorage({
     return {
       folder: 'zenith-watches',
       resource_type: isVideo ? 'video' : 'image',
-      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'mp4', 'webm']
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif', 'mp4', 'webm', 'mov']
     };
   }
 });
 
 // Filter for image-only uploads (10 MB limit)
 const imageFileFilter = (req, file, cb) => {
-  const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
-  if (allowedMimes.includes(file.mimetype)) {
+  const allowedMimes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/pjpeg',
+    'image/jfif',
+    'image/png',
+    'image/webp',
+    'image/avif',
+    'image/gif'
+  ];
+  if (file.mimetype && (allowedMimes.includes(file.mimetype.toLowerCase()) || file.mimetype.startsWith('image/'))) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file format. Only JPEG, PNG, and WEBP images are allowed.'), false);
+    cb(new Error('Invalid file format. Only JPEG, PNG, WEBP, AVIF, and GIF images are allowed.'), false);
   }
 };
 
@@ -34,15 +43,21 @@ const imageFileFilter = (req, file, cb) => {
 const mediaFileFilter = (req, file, cb) => {
   const allowedMimes = [
     'image/jpeg',
+    'image/jpg',
+    'image/pjpeg',
+    'image/jfif',
     'image/png',
     'image/webp',
+    'image/avif',
+    'image/gif',
     'video/mp4',
-    'video/webm'
+    'video/webm',
+    'video/quicktime'
   ];
-  if (allowedMimes.includes(file.mimetype)) {
+  if (file.mimetype && (allowedMimes.includes(file.mimetype.toLowerCase()) || file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/'))) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file format. Only JPEG, PNG, WEBP images and MP4/WEBM videos are allowed.'), false);
+    cb(new Error('Invalid file format. Only images (JPEG, PNG, WEBP, AVIF, GIF) and videos (MP4, WEBM) are allowed.'), false);
   }
 };
 
