@@ -139,7 +139,9 @@ function Marquee({ items, speed = 20, reverse = false }) {
 ───────────────────────────────────────────────────────────────────── */
 function GenderPanel({ label, img, gender, delay, accent, onPageChange }) {
   const panelRef = useRef(null);
-  const defaultFallback = gender === 'women' ? '/assets/women_watches_beach.jpeg' : '/assets/men_watches.jpg';
+  const defaultFallback = gender === 'women'
+    ? '/assets/women_watches_beach.jpeg'
+    : 'https://res.cloudinary.com/ysl2umba/image/upload/v1791723929/zenith-watches/rcqfcahjql0gcc8awfil.jpg';
   const [panelImg, setPanelImg] = useState(img || defaultFallback);
 
   useEffect(() => {
@@ -986,7 +988,7 @@ export const HOMEPAGE_MEDIA_SECTIONS = [
   {
     key: 'gender_men',
     title: "Shop by Gender — Men's Banner",
-    slots: [{ key: 'gender_men', label: "Banner Image", default: '/assets/men_watches.jpg', defaultTitle: "Men's Collection" }]
+    slots: [{ key: 'gender_men', label: "Banner Image", default: 'https://res.cloudinary.com/ysl2umba/image/upload/v1791723929/zenith-watches/rcqfcahjql0gcc8awfil.jpg', defaultTitle: "Men's Collection" }]
   },
   {
     key: 'gender_women',
@@ -1104,16 +1106,38 @@ const updateSlideVariants = {
   }),
 };
 
-let publicMediaCache = null;
-let publicTitlesCache = null;
+let publicMediaCache = (() => {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('khroniq_public_media_cache') : null;
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+})();
+
+let publicTitlesCache = (() => {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('khroniq_public_titles_cache') : null;
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+})();
+
 let publicMediaPromise = null;
 
 export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, updatesOpen }) {
   const dispatch = useDispatch();
   const products = useSelector(state => state.watch.products);
   const featuredReviews = useSelector(state => state.watch.featuredReviews || []);
-  const [homeImages, setHomeImages] = useState(defaultHomeImages);
-  const [homeTitles, setHomeTitles] = useState(defaultHomeTitles);
+  const [homeImages, setHomeImages] = useState(() => ({
+    ...defaultHomeImages,
+    ...(publicMediaCache || {})
+  }));
+  const [homeTitles, setHomeTitles] = useState(() => ({
+    ...defaultHomeTitles,
+    ...(publicTitlesCache || {})
+  }));
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
   const spotlightImages = [
     homeImages.khronomaster_professional || "/assets/spotlight_red_angled.png",
@@ -1171,10 +1195,16 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
           if (data && data.success) {
             if (data.media) {
               publicMediaCache = data.media;
+              try {
+                localStorage.setItem('khroniq_public_media_cache', JSON.stringify(data.media));
+              } catch (e) {}
               setHomeImages(prev => ({ ...prev, ...data.media }));
             }
             if (data.titles) {
               publicTitlesCache = data.titles;
+              try {
+                localStorage.setItem('khroniq_public_titles_cache', JSON.stringify(data.titles));
+              } catch (e) {}
               setHomeTitles(prev => ({ ...prev, ...data.titles }));
             }
           }
@@ -1497,7 +1527,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                 genderSplitSection.items[0].image.trim()) ||
               homeImages?.gender_men ||
               genderSplitSection?.items?.[0]?.image ||
-              "/assets/men_watches.jpg"
+              "https://res.cloudinary.com/ysl2umba/image/upload/v1791723929/zenith-watches/rcqfcahjql0gcc8awfil.jpg"
             }
             gender="men"
             delay={0}

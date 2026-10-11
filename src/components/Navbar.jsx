@@ -258,7 +258,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
       gender: 'men',
       bannerTitle: "MEN'S TIMEPIECES",
       bannerSubtitle: "Crafted for those who master time.",
-      bannerBg: "/assets/men_watches.jpg"
+      bannerBg: "https://res.cloudinary.com/ysl2umba/image/upload/v1791723929/zenith-watches/rcqfcahjql0gcc8awfil.jpg"
     },
     {
       label: 'WOMEN',

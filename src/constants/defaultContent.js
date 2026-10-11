@@ -52,7 +52,7 @@ export const DEFAULT_CONTENT_SECTIONS = [
       {
         id: 'item-gs-1',
         title: "Men's Watches",
-        image: '/assets/men_watches.jpg',
+        image: 'https://res.cloudinary.com/ysl2umba/image/upload/v1791723929/zenith-watches/rcqfcahjql0gcc8awfil.jpg',
         buttonText: 'Discover',
         buttonLink: '/shop?gender=men',
         metadata: { gender: 'men' },
