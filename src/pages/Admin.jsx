@@ -3099,7 +3099,14 @@ export default function Admin({ onPageChange }) {
                           description: (editingCat.description || '').trim(),
                           order: Number(editingCat.order) || 0,
                           isActive: editingCat.isActive !== false,
-                          options: editingCat.options || []
+                          options: (editingCat.options || []).map((o, i) => ({
+                            ...o,
+                            name: (o.name || '').trim(),
+                            slug: toFilterSlug(o.slug || o.value || o.name),
+                            value: (o.value && o.value.trim()) ? o.value.trim() : toFilterSlug(o.name),
+                            order: o.order !== undefined ? Number(o.order) : i + 1,
+                            isActive: o.isActive !== false
+                          }))
                         }));
 
                         if (res.success) {

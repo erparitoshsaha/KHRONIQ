@@ -465,7 +465,7 @@ const initialState = {
   shippingCountry: loadSaved('khroniq_shipping_country', 'India'),
   blogs: [],
   featuredReviews: [],
-  filters: DEFAULT_FILTER_CATEGORIES,
+  filters: loadSaved('khroniq_saved_filters', DEFAULT_FILTER_CATEGORIES),
   adminFilters: DEFAULT_FILTER_CATEGORIES,
   footerSections: DEFAULT_FOOTER_SECTIONS,
   adminFooterSections: DEFAULT_FOOTER_SECTIONS,
@@ -588,6 +588,9 @@ const watchSlice = createSlice({
     },
     setFiltersAction: (state, action) => {
       state.filters = action.payload;
+      try {
+        localStorage.setItem('khroniq_saved_filters', JSON.stringify(action.payload));
+      } catch {}
     },
     setAdminFiltersAction: (state, action) => {
       state.adminFilters = action.payload;
@@ -1788,13 +1791,29 @@ const parseApiResponse = async (res, defaultErrMsg) => {
   }
 };
 
+const notifyFilterSync = () => {
+  try {
+    localStorage.setItem('khroniq_filters_sync', Date.now().toString());
+  } catch {}
+};
+
 export const fetchFilters = () => async (dispatch) => {
   try {
-    const res = await fetch('/api/filters');
+    const res = await fetch(`/api/filters?_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    });
     const data = await parseApiResponse(res, 'Failed to fetch filters');
     if (data.success) {
-      dispatch(setFiltersAction(data.categories || []));
-      return { success: true, categories: data.categories };
+      const cats = data.categories || [];
+      dispatch(setFiltersAction(cats));
+      try {
+        localStorage.setItem('khroniq_saved_filters', JSON.stringify(cats));
+      } catch {}
+      return { success: true, categories: cats };
     }
     return { success: false, message: data.message };
   } catch (error) {
@@ -1805,8 +1824,13 @@ export const fetchFilters = () => async (dispatch) => {
 
 export const fetchAdminFilters = () => async (dispatch) => {
   try {
-    const res = await fetch('/api/filters/admin', {
-      headers: getHeaders()
+    const res = await fetch(`/api/filters/admin?_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        ...getHeaders(),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
     });
     const data = await parseApiResponse(res, 'Failed to fetch admin filters');
     if (data.success) {
@@ -1828,8 +1852,9 @@ export const seedDefaultFilters = () => async (dispatch) => {
     });
     const data = await parseApiResponse(res, 'Failed to seed default filters.');
     if (data.success) {
-      dispatch(fetchAdminFilters());
-      dispatch(fetchFilters());
+      await dispatch(fetchAdminFilters());
+      await dispatch(fetchFilters());
+      notifyFilterSync();
       return { success: true, message: data.message };
     }
     return { success: false, message: data.message };
@@ -1847,8 +1872,9 @@ export const createFilterCategory = (categoryData) => async (dispatch) => {
     });
     const data = await parseApiResponse(res, 'Failed to create filter category.');
     if (data.success) {
-      dispatch(fetchAdminFilters());
-      dispatch(fetchFilters());
+      await dispatch(fetchAdminFilters());
+      await dispatch(fetchFilters());
+      notifyFilterSync();
       return { success: true, category: data.category };
     }
     return { success: false, message: data.message || 'Failed to create filter category.' };
@@ -1867,8 +1893,9 @@ export const updateFilterCategory = (categoryId, categoryData) => async (dispatc
     });
     const data = await parseApiResponse(res, 'Failed to update filter category.');
     if (data.success) {
-      dispatch(fetchAdminFilters());
-      dispatch(fetchFilters());
+      await dispatch(fetchAdminFilters());
+      await dispatch(fetchFilters());
+      notifyFilterSync();
       return { success: true, category: data.category };
     }
     return { success: false, message: data.message || 'Failed to update filter category.' };
@@ -1886,8 +1913,9 @@ export const deleteFilterCategory = (categoryId) => async (dispatch) => {
     });
     const data = await parseApiResponse(res, 'Failed to delete filter category.');
     if (data.success) {
-      dispatch(fetchAdminFilters());
-      dispatch(fetchFilters());
+      await dispatch(fetchAdminFilters());
+      await dispatch(fetchFilters());
+      notifyFilterSync();
       return { success: true };
     }
     return { success: false, message: data.message || 'Failed to delete filter category.' };
@@ -1906,8 +1934,9 @@ export const createFilterOption = (categoryId, optionData) => async (dispatch) =
     });
     const data = await parseApiResponse(res, 'Failed to create filter option.');
     if (data.success) {
-      dispatch(fetchAdminFilters());
-      dispatch(fetchFilters());
+      await dispatch(fetchAdminFilters());
+      await dispatch(fetchFilters());
+      notifyFilterSync();
       return { success: true, category: data.category };
     }
     return { success: false, message: data.message || 'Failed to create filter option.' };
@@ -1926,8 +1955,9 @@ export const updateFilterOption = (categoryId, optionId, optionData) => async (d
     });
     const data = await parseApiResponse(res, 'Failed to update filter option.');
     if (data.success) {
-      dispatch(fetchAdminFilters());
-      dispatch(fetchFilters());
+      await dispatch(fetchAdminFilters());
+      await dispatch(fetchFilters());
+      notifyFilterSync();
       return { success: true, category: data.category };
     }
     return { success: false, message: data.message || 'Failed to update filter option.' };
@@ -1945,8 +1975,9 @@ export const deleteFilterOption = (categoryId, optionId) => async (dispatch) => 
     });
     const data = await parseApiResponse(res, 'Failed to delete filter option.');
     if (data.success) {
-      dispatch(fetchAdminFilters());
-      dispatch(fetchFilters());
+      await dispatch(fetchAdminFilters());
+      await dispatch(fetchFilters());
+      notifyFilterSync();
       return { success: true };
     }
     return { success: false, message: data.message || 'Failed to delete filter option.' };

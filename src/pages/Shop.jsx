@@ -96,6 +96,33 @@ export default function Shop({ onPageChange, filterParams }) {
     if (!products || products.length === 0) {
       dispatch(fetchProducts());
     }
+
+    // Real-time synchronization when switching tabs or when Admin modifies filters
+    const handleSync = () => {
+      dispatch(fetchFilters());
+    };
+
+    const handleStorage = (e) => {
+      if (e.key === 'khroniq_filters_sync' || e.key === 'khroniq_saved_filters') {
+        dispatch(fetchFilters());
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        dispatch(fetchFilters());
+      }
+    };
+
+    window.addEventListener('focus', handleSync);
+    window.addEventListener('storage', handleStorage);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('focus', handleSync);
+      window.removeEventListener('storage', handleStorage);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [dispatch, products]);
 
   const baseCategories = dynamicFilterCategories.length > 0 ? dynamicFilterCategories : DEFAULT_FALLBACK_CATEGORIES;
@@ -106,28 +133,6 @@ export default function Shop({ onPageChange, filterParams }) {
     return (baseCategories || [])
       .filter(cat => cat && cat.isActive !== false)
       .map(cat => {
-        // Build set of inactive options to respect admin deactivation
-        const inactiveSet = new Set();
-        const inactiveOptions = [
-          ...(cat.inactiveOptions || []),
-          ...(cat.options || []).filter(o => o && o.isActive === false)
-        ];
-        inactiveOptions.forEach(opt => {
-          if (opt.name) inactiveSet.add(normalizeFilterKey(opt.name));
-          if (opt.slug) inactiveSet.add(normalizeFilterKey(opt.slug));
-          if (opt.value) inactiveSet.add(normalizeFilterKey(opt.value));
-        });
-
-        const isDeactivated = (val, slug, name) => {
-          const nVal = normalizeFilterKey(val);
-          const nSlug = normalizeFilterKey(slug);
-          const nName = normalizeFilterKey(name);
-          if (nVal && inactiveSet.has(nVal)) return true;
-          if (nSlug && inactiveSet.has(nSlug)) return true;
-          if (nName && inactiveSet.has(nName)) return true;
-          return false;
-        };
-
         const activeRaw = (cat.options || []).filter(o => o && o.isActive !== false);
         const shownOptions = [];
         const seenKeys = new Set();
@@ -137,12 +142,8 @@ export default function Shop({ onPageChange, filterParams }) {
           const optName = opt.name || optVal;
           const optSlug = opt.slug || toCleanSlug(optVal);
 
-          if (isDeactivated(optVal, optSlug, optName)) {
-            continue;
-          }
-
           // Duplicate normalization: ensure no duplicate equivalent options are rendered
-          const normKey = normalizeFilterKey(optName) || optSlug.toLowerCase().trim();
+          const normKey = (optSlug || optVal || optName).toString().toLowerCase().trim();
           if (!seenKeys.has(normKey)) {
             seenKeys.add(normKey);
             shownOptions.push({

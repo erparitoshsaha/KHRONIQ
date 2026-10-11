@@ -170,6 +170,13 @@ export async function seedDefaultFiltersSafe() {
 // @access  Public
 router.get('/', async (req, res, next) => {
   try {
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Surrogate-Control': 'no-store'
+    });
+
     const rawCategories = await FilterCategory.find({ isActive: true }).sort({ order: 1, name: 1 });
 
     const categories = rawCategories.map(cat => {
@@ -220,6 +227,13 @@ router.get('/', async (req, res, next) => {
 // @access  Private/Admin
 router.get('/admin', protect, requirePermission('catalog_filters'), async (req, res, next) => {
   try {
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Surrogate-Control': 'no-store'
+    });
+
     const categories = await FilterCategory.find({}).sort({ order: 1, name: 1 });
     res.json({ success: true, categories });
   } catch (error) {
