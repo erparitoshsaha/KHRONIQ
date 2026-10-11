@@ -184,7 +184,7 @@ function GenderPanel({ label, img, gender, delay, accent, onPageChange }) {
       onMouseMove={handleMove}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={handleLeave}
-      className="dark-panel relative h-[420px] sm:h-[500px] md:h-[560px] lg:h-[620px] overflow-hidden cursor-pointer rounded-2xl md:rounded-none shadow-md md:shadow-none"
+      className="dark-panel relative h-[420px] sm:h-[500px] md:h-[580px] lg:h-[640px] xl:h-[680px] overflow-hidden cursor-pointer rounded-2xl md:rounded-none shadow-md md:shadow-none"
       initial={{ opacity: 0, y: 60 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -205,9 +205,9 @@ function GenderPanel({ label, img, gender, delay, accent, onPageChange }) {
 
       {/* ── Image — follows mouse direction with responsive focal alignment ── */}
       <motion.div
-        className={`absolute inset-[-5%] bg-cover ${gender === 'men'
-          ? 'bg-[position:22%_center] md:bg-center'
-          : 'bg-[position:50%_center] md:bg-center'
+        className={`absolute inset-x-[-24px] inset-y-[-10px] bg-cover ${gender === 'men'
+          ? 'bg-[position:22%_center] md:bg-[position:center_top]'
+          : 'bg-[position:50%_center] md:bg-[position:center_top]'
           }`}
         style={{
           backgroundImage: `url('${panelImg}')`,
