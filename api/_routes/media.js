@@ -149,6 +149,12 @@ router.delete('/:id', protect, requirePermission('homepage_media'), async (req, 
 // GET /api/admin/media/public - public, returns the latest image and title per section
 router.get('/public', async (req, res) => {
   try {
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Surrogate-Control': 'no-store'
+    });
     const list = await Media.find({})
       .sort({ createdAt: -1 })
       .select('section url title')

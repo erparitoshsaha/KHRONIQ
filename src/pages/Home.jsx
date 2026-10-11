@@ -1157,29 +1157,47 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
     if (publicTitlesCache) {
       setHomeTitles(prev => ({ ...prev, ...publicTitlesCache }));
     }
-    if (!publicMediaPromise) {
-      publicMediaPromise = fetch('/api/admin/media/public')
+
+    const fetchLatestMedia = () => {
+      fetch(`/api/admin/media/public?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      })
         .then(res => res.json())
         .then(data => {
           if (data && data.success) {
-            if (data.media) publicMediaCache = data.media;
-            if (data.titles) publicTitlesCache = data.titles;
-            return data;
+            if (data.media) {
+              publicMediaCache = data.media;
+              setHomeImages(prev => ({ ...prev, ...data.media }));
+            }
+            if (data.titles) {
+              publicTitlesCache = data.titles;
+              setHomeTitles(prev => ({ ...prev, ...data.titles }));
+            }
           }
-          return null;
         })
         .catch(err => {
           console.error('Failed to fetch homepage media:', err);
-          publicMediaPromise = null;
-          return null;
         });
-    }
-    publicMediaPromise.then(data => {
-      if (data) {
-        if (data.media) setHomeImages(prev => ({ ...prev, ...data.media }));
-        if (data.titles) setHomeTitles(prev => ({ ...prev, ...data.titles }));
+    };
+
+    fetchLatestMedia();
+
+    window.addEventListener('focus', fetchLatestMedia);
+    const handleStorage = (e) => {
+      if (e.key === 'khroniq_homepage_media_sync') {
+        fetchLatestMedia();
       }
-    });
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('focus', fetchLatestMedia);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   /* ── Hero unified parallax ── */
@@ -1470,7 +1488,17 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-0 px-3 sm:px-6 md:px-0">
           <GenderPanel
             label={genderSplitSection?.items?.[0]?.title || "Men's Watches"}
-            img={genderSplitSection?.items?.[0]?.image || homeImages.gender_men || "/assets/men_watches.jpg"}
+            img={
+              (homeImages?.gender_men &&
+                !homeImages.gender_men.includes('men_watches.jpg') &&
+                homeImages.gender_men.trim()) ||
+              (genderSplitSection?.items?.[0]?.image &&
+                !genderSplitSection.items[0].image.includes('men_watches.jpg') &&
+                genderSplitSection.items[0].image.trim()) ||
+              homeImages?.gender_men ||
+              genderSplitSection?.items?.[0]?.image ||
+              "/assets/men_watches.jpg"
+            }
             gender="men"
             delay={0}
             accent="#ffffff"

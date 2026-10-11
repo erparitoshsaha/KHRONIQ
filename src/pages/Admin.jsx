@@ -46,7 +46,7 @@ import {
   assignOrderCourier
 } from '../store/slices/watchSlice';
 import WebsiteContentManager from '../components/admin/WebsiteContentManager';
-import AdminMediaField from '../components/admin/AdminMediaField';
+import AdminMediaField, { resolveDirectImageUrl } from '../components/admin/AdminMediaField';
 import AdminManagement from '../components/admin/AdminManagement';
 import { isAdminRole, isSuperAdminRole } from '../constants/permissions';
 import { useSEO } from '../utils/seo';
@@ -1044,6 +1044,9 @@ export default function Admin({ onPageChange }) {
         setMediaList(prev => ({ ...prev, [sectionKey]: uploadedUrl }));
         setMediaUploadStatus(prev => ({ ...prev, [sectionKey]: 'uploaded' }));
         setMediaUploadError(prev => ({ ...prev, [sectionKey]: null }));
+        try {
+          localStorage.setItem('khroniq_homepage_media_sync', Date.now().toString());
+        } catch {}
         return uploadedUrl;
       }
 
@@ -1062,6 +1065,9 @@ export default function Admin({ onPageChange }) {
           setMediaList(prev => ({ ...prev, [sectionKey]: fbData.imageUrl }));
           setMediaUploadStatus(prev => ({ ...prev, [sectionKey]: 'uploaded' }));
           setMediaUploadError(prev => ({ ...prev, [sectionKey]: null }));
+          try {
+            localStorage.setItem('khroniq_homepage_media_sync', Date.now().toString());
+          } catch {}
           return fbData.imageUrl;
         }
       } catch (fallbackErr) {
@@ -1085,10 +1091,11 @@ export default function Admin({ onPageChange }) {
 
   const handleDirectUrlSave = async (url, sectionKey) => {
     if (!sectionKey || !url) return;
+    const directUrl = resolveDirectImageUrl(url);
     try {
       const token = localStorage.getItem('khroniq_token');
       const formData = new FormData();
-      formData.append('url', url);
+      formData.append('url', directUrl);
       formData.append('section', sectionKey);
       if (mediaTitles[sectionKey]) {
         formData.append('title', mediaTitles[sectionKey]);
@@ -1102,8 +1109,11 @@ export default function Admin({ onPageChange }) {
       if (data.success && data.media?.[0]?.url) {
         setMediaList(prev => ({ ...prev, [sectionKey]: data.media[0].url }));
       } else {
-        setMediaList(prev => ({ ...prev, [sectionKey]: url }));
+        setMediaList(prev => ({ ...prev, [sectionKey]: directUrl }));
       }
+      try {
+        localStorage.setItem('khroniq_homepage_media_sync', Date.now().toString());
+      } catch {}
     } catch (e) {
       console.error('Failed to save media URL:', e);
     }

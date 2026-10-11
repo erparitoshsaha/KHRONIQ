@@ -2,6 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, Film, Upload, X, ExternalLink, AlertCircle, Eye, Check, Edit3 } from 'lucide-react';
 
 /**
+ * Helper to transform Google Drive sharing links to direct image CDN links
+ */
+export const resolveDirectImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return url;
+  const str = url.trim();
+  if (str.includes('drive.google.com')) {
+    const match = str.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || str.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      return `https://lh3.googleusercontent.com/d/${match[1]}`;
+    }
+  }
+  return str;
+};
+
+/**
  * AdminMediaField
  * Universal media editor & preview component for Admin CMS panels.
  */
@@ -28,7 +43,8 @@ export default function AdminMediaField({
   const [showModal, setShowModal] = useState(false);
 
   // Auto-detect video from URL or prop
-  const cleanVal = (value || '').trim();
+  const rawVal = (value || '').trim();
+  const cleanVal = resolveDirectImageUrl(rawVal);
   const detectedVideo = isVideo || (allowVideo && /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(cleanVal));
 
   useEffect(() => {
@@ -214,7 +230,10 @@ export default function AdminMediaField({
             <input
               type="text"
               value={cleanVal}
-              onChange={(e) => onChange && onChange(e.target.value)}
+              onChange={(e) => {
+                const val = resolveDirectImageUrl(e.target.value);
+                onChange && onChange(val);
+              }}
               onBlur={onBlur}
               placeholder={placeholder}
               className="w-full bg-black/60 border border-white/10 rounded px-2.5 py-1.5 text-white text-xs font-mono focus:outline-none focus:border-white"
