@@ -1120,6 +1120,9 @@ export const addToCart = (productId, quantity = 1, price = null, customization =
   const productMrp = getProductMrp(product);
   const finalPrice = price !== null ? price : getSellingPrice(product);
 
+  // Optimistic update — immediate 0ms UI response so bag count updates instantly
+  dispatch(addToCartAction({ productId: targetId, quantity: addQty, price: finalPrice, mrp: productMrp, customization }));
+
   if (currentUser) {
     try {
       const res = await fetch('/api/cart/add', {
@@ -1130,14 +1133,12 @@ export const addToCart = (productId, quantity = 1, price = null, customization =
       const data = await res.json();
       if (data.success) {
         dispatch(setCartAction(data.cart));
-        return { success: true, message: 'Added to Cart' };
       }
     } catch (error) {
-      console.error('Failed to add to database cart:', error);
+      console.error('Failed to sync database cart:', error);
     }
   }
 
-  dispatch(addToCartAction({ productId: targetId, quantity: addQty, price: finalPrice, mrp: productMrp, customization }));
   return { success: true, message: 'Added to Cart' };
 };
 

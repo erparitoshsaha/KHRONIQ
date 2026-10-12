@@ -27,6 +27,8 @@ export default function ProductDetail({ params, onPageChange }) {
   const [isSearchingApi, setIsSearchingApi] = useState(false);
   const [apiAttempted, setApiAttempted] = useState(false);
 
+
+
   // If not found in current Redux catalog, query backend
   useEffect(() => {
     if (!rawParamId) return;
@@ -55,7 +57,8 @@ export default function ProductDetail({ params, onPageChange }) {
   }, [rawParamId, products, dispatch]);
 
   const product = storeProduct || apiProduct;
-
+  const [addedFeedback, setAddedFeedback] = useState(false);
+  const [isBuying, setIsBuying] = useState(false);
   // States
   const [qty, setQty] = useState(1);
 
@@ -234,31 +237,40 @@ export default function ProductDetail({ params, onPageChange }) {
   const mrp = getProductMrp(product);
   const discountPercent = getDiscountPercent(product);
   const isDiscounted = mrp > sellingPrice && discountPercent > 0;
-
-
   const handleAddToCart = async () => {
-    const targetId = product.id || product._id;
-    const result = await dispatch(addToCart(targetId, qty));
-    if (result && result.success) {
-      showToast('Added to Shopping Bag', 'success');
-    } else {
-      showToast(result?.message || 'Failed to add to cart', 'error');
-    }
-  };
+  // 1. Turant upar scroll karein (Navbar / Cart icon ke paas)
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
-  const handleBuyNow = async () => {
-    const targetId = product.id || product._id;
-    const result = await dispatch(addToCart(targetId, qty));
-    if (result && result.success) {
-      if (currentUser) {
-        onPageChange('checkout');
-      } else {
-        onPageChange('login', { redirect: 'checkout' });
-      }
+  // 2. Button par turant click feel / "Added!" tick animation
+  setAddedFeedback(true);
+  setTimeout(() => setAddedFeedback(false), 1500);
+
+  // 3. Background mein cart update karein
+  const targetId = product.id || product._id;
+  const result = await dispatch(addToCart(targetId, qty));
+  if (result && result.success) {
+    showToast('Added to Shopping Bag', 'success');
+  } else {
+    showToast(result?.message || 'Failed to add to cart', 'error');
+  }
+};
+
+const handleBuyNow = async () => {
+  setIsBuying(true);
+  const targetId = product.id || product._id;
+  const result = await dispatch(addToCart(targetId, qty));
+  if (result && result.success) {
+    if (currentUser) {
+      onPageChange('checkout');
     } else {
-      showToast(result?.message || 'Failed to proceed to checkout', 'error');
+      onPageChange('login', { redirect: 'checkout' });
     }
-  };
+  } else {
+    setIsBuying(false);
+    showToast(result?.message || 'Failed to proceed to checkout', 'error');
+  }
+};
+
 
   const isMyReview = (rev) => {
     if (!currentUser) return false;
@@ -735,21 +747,38 @@ export default function ProductDetail({ params, onPageChange }) {
             <div className="space-y-3 pt-2">
               {product.stock > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    onClick={handleAddToCart}
-                    className="py-4 px-4 bg-luxury-red hover:bg-red-700 text-white text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-luxury-red/10 text-center whitespace-nowrap"
-                  >
-                    <ShoppingBag size={16} />
-                    <span>Add to Shopping Bag</span>
-                  </button>
+                  {/* Add to Shopping Bag Button */}
+<button
+  onClick={handleAddToCart}
+  className={`py-4 px-4 text-white text-xs font-bold tracking-widest uppercase transition-all duration-150 active:scale-95 active:brightness-90 flex items-center justify-center space-x-2 cursor-pointer shadow-md text-center whitespace-nowrap select-none ${
+    addedFeedback 
+      ? 'bg-emerald-600 scale-[0.98]' 
+      : 'bg-luxury-red hover:bg-red-700'
+  }`}
+>
+  {addedFeedback ? (
+    <>
+      <CheckCircle2 size={16} className="animate-bounce" />
+      <span>Added to Bag!</span>
+    </>
+  ) : (
+    <>
+      <ShoppingBag size={16} />
+      <span>Add to Shopping Bag</span>
+    </>
+  )}
+</button>
 
-                  <button
-                    onClick={handleBuyNow}
-                    className="py-4 px-4 bg-black hover:bg-neutral-800 text-white text-xs font-bold tracking-widest uppercase transition duration-300 flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-black/10 text-center whitespace-nowrap"
-                  >
-                    <Zap size={16} className="text-amber-400 fill-amber-400" />
-                    <span>Buy Now</span>
-                  </button>
+{/* Buy Now Button */}
+<button
+  onClick={handleBuyNow}
+  disabled={isBuying}
+  className="py-4 px-4 bg-black hover:bg-neutral-800 active:scale-95 active:brightness-90 text-white text-xs font-bold tracking-widest uppercase transition-all duration-150 flex items-center justify-center space-x-2 cursor-pointer shadow-md text-center whitespace-nowrap select-none disabled:opacity-70"
+>
+  <Zap size={16} className="text-amber-400 fill-amber-400" />
+  <span>{isBuying ? 'Proceeding...' : 'Buy Now'}</span>
+</button>
+
                 </div>
               )}
 
