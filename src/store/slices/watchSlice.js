@@ -455,11 +455,7 @@ const initialState = {
   cart: loadSaved('khroniq_cart', []),
   wishlist: loadSaved('khroniq_wishlist', []),
   orders: [],
-  coupons: [
-    { code: 'FIRST20', discountPercent: 20, description: '20% off on your first luxury timepiece purchase' },
-    { code: 'KHRONIQSTAR', discountPercent: 20, description: '20% off Khroniq Signature Collection' },
-    { code: 'WELCOME10', discountPercent: 10, description: '10% off for first-time buyers' }
-  ],
+  coupons: [],
   currentUser: null,
   currentCurrency: loadSaved('khroniq_currency', 'INR'),
   shippingCountry: loadSaved('khroniq_shipping_country', 'India'),
@@ -851,18 +847,13 @@ export const fetchCoupons = () => async (dispatch) => {
   try {
     const res = await fetch('/api/coupons');
     const data = await res.json();
-    if (data && data.success && Array.isArray(data.coupons) && data.coupons.length > 0) {
+    if (data && data.success && Array.isArray(data.coupons)) {
       dispatch(setCouponsAction(data.coupons));
       return;
     }
   } catch (error) {
     console.error('Failed to fetch coupons:', error);
   }
-  dispatch(setCouponsAction([
-    { code: 'FIRST20', discountPercent: 20, description: '20% off on your first luxury timepiece purchase' },
-    { code: 'KHRONIQSTAR', discountPercent: 20, description: '20% off Khroniq Signature Collection' },
-    { code: 'WELCOME10', discountPercent: 10, description: '10% off for first-time buyers' }
-  ]));
 };
 
 export const fetchOrders = () => async (dispatch) => {
@@ -1428,21 +1419,49 @@ export const addCoupon = (code, discountPercent, description) => async (dispatch
   }
 };
 
-export const deleteCoupon = (code) => async (dispatch) => {
+export const deleteCoupon = (code) => async (dispatch, getState) => {
+  const currentCoupons = getState().watch.coupons || [];
+  dispatch(setCouponsAction(currentCoupons.filter(c => c.code?.toUpperCase() !== code?.toUpperCase())));
+
   try {
-    const res = await fetch(`/api/coupons/${code}`, {
+    const res = await fetch(`/api/coupons/${encodeURIComponent(code)}`, {
       method: 'DELETE',
       headers: getHeaders()
     });
     const data = await res.json();
-    if (data.success) {
+    if (data && data.success) {
       dispatch(fetchCoupons());
       return { success: true };
     } else {
-      return { success: false, message: data.message };
+      dispatch(setCouponsAction(currentCoupons));
+      return { success: false, message: data?.message || 'Failed to delete coupon' };
     }
   } catch (error) {
+    dispatch(setCouponsAction(currentCoupons));
     return { success: false, message: 'Failed to delete coupon.' };
+  }
+};
+
+export const deleteAllCoupons = () => async (dispatch, getState) => {
+  const currentCoupons = getState().watch.coupons || [];
+  dispatch(setCouponsAction([]));
+
+  try {
+    const res = await fetch('/api/coupons', {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    const data = await res.json();
+    if (data && data.success) {
+      dispatch(fetchCoupons());
+      return { success: true };
+    } else {
+      dispatch(setCouponsAction(currentCoupons));
+      return { success: false, message: data?.message || 'Failed to delete all coupons' };
+    }
+  } catch (error) {
+    dispatch(setCouponsAction(currentCoupons));
+    return { success: false, message: 'Failed to delete all coupons.' };
   }
 };
 

@@ -9,6 +9,7 @@ import {
   deleteProduct,
   addCoupon,
   deleteCoupon,
+  deleteAllCoupons,
   deleteReview,
   fetchAnalytics,
   selectCurrentCurrency,
@@ -1861,6 +1862,26 @@ export default function Admin({ onPageChange }) {
       setNewCouponDesc('');
     } else {
       alert(res?.message || 'Failed to add coupon.');
+    }
+  };
+
+  const handleDeleteCoupon = async (code) => {
+    if (!window.confirm(`Are you sure you want to delete coupon "${code}"?`)) return;
+    const res = await dispatch(deleteCoupon(code));
+    if (res && res.success) {
+      showToast(`Coupon "${code}" deleted successfully.`, 'success');
+    } else {
+      showToast(res?.message || 'Failed to delete coupon.', 'error');
+    }
+  };
+
+  const handleDeleteAllCoupons = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL coupons from the store database? This action cannot be undone.')) return;
+    const res = await dispatch(deleteAllCoupons());
+    if (res && res.success) {
+      showToast('All promo coupons deleted successfully.', 'success');
+    } else {
+      showToast(res?.message || 'Failed to delete all coupons.', 'error');
     }
   };
 
@@ -7848,31 +7869,50 @@ export default function Admin({ onPageChange }) {
 
               {/* Right: List active coupons */}
               <div className="lg:col-span-7 space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-widest text-white">Active Promo Database</h4>
-
-                <div className="bg-luxury-gray border border-white/5 rounded-md divide-y divide-white/5">
-                  {(coupons || []).map((c) => (
-                    <div key={c.code} className="flex justify-between items-center p-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-mono text-white text-sm font-bold tracking-wider">{c.code}</span>
-                          <span className="bg-emerald-500/10 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded border border-emerald-500/20">
-                            {c.discountPercent}% OFF
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-gray-500">{c.description || 'No description tag provided'}</p>
-                      </div>
-
-                      <button
-                        onClick={() => dispatch(deleteCoupon(c.code))}
-                        className="p-1.5 text-gray-500 hover:text-luxury-red transition hover:bg-white/5 rounded"
-                        title="Revoke code"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-white">Active Promo Database</h4>
+                  {coupons && coupons.length > 0 && (
+                    <button
+                      onClick={handleDeleteAllCoupons}
+                      className="text-[10px] text-luxury-red hover:text-red-400 font-bold uppercase tracking-wider flex items-center space-x-1 hover:bg-luxury-red/10 px-2 py-1 rounded transition cursor-pointer"
+                      title="Delete all active promo codes"
+                    >
+                      <Trash2 size={12} />
+                      <span>Delete All</span>
+                    </button>
+                  )}
                 </div>
+
+                {(!coupons || coupons.length === 0) ? (
+                  <div className="bg-luxury-gray border border-white/5 rounded-md p-8 text-center space-y-2">
+                    <p className="text-xs text-gray-400 font-medium">No active promo codes.</p>
+                    <p className="text-[10px] text-gray-500">Create a new coupon code on the left to activate promotions.</p>
+                  </div>
+                ) : (
+                  <div className="bg-luxury-gray border border-white/5 rounded-md divide-y divide-white/5">
+                    {coupons.map((c) => (
+                      <div key={c.code} className="flex justify-between items-center p-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-mono text-white text-sm font-bold tracking-wider">{c.code}</span>
+                            <span className="bg-emerald-500/10 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded border border-emerald-500/20">
+                              {c.discountPercent}% OFF
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-gray-500">{c.description || 'No description tag provided'}</p>
+                        </div>
+
+                        <button
+                          onClick={() => handleDeleteCoupon(c.code)}
+                          className="p-1.5 text-gray-500 hover:text-luxury-red transition hover:bg-white/5 rounded cursor-pointer"
+                          title={`Revoke code ${c.code}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

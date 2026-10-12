@@ -25,30 +25,18 @@ export async function seedDefaultCouponsSafe() {
   }
 }
 
-// Helper: Resilient case-insensitive coupon lookup with fallback to default seeding
+// Helper: Resilient case-insensitive coupon lookup
 export async function findCouponByCode(rawCode) {
   if (!rawCode || typeof rawCode !== 'string' || !rawCode.trim()) return null;
   const cleanCode = rawCode.toUpperCase().trim();
   const escaped = cleanCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  let coupon = await Coupon.findOne({
+  const coupon = await Coupon.findOne({
     $or: [
       { code: cleanCode },
       { code: { $regex: new RegExp(`^\\s*${escaped}\\s*$`, 'i') } }
     ]
   });
-
-  if (!coupon) {
-    const isDefaultCode = DEFAULT_COUPONS.some(c => c.code === cleanCode);
-    const totalCount = await Coupon.countDocuments();
-    if (isDefaultCode || totalCount === 0) {
-      await seedDefaultCouponsSafe();
-      coupon = await Coupon.findOne({ code: cleanCode });
-    }
-    if (!coupon && isDefaultCode) {
-      return DEFAULT_COUPONS.find(c => c.code === cleanCode) || null;
-    }
-  }
 
   return coupon;
 }
@@ -58,15 +46,11 @@ export async function findCouponByCode(rawCode) {
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    let coupons = await Coupon.find({});
-    if (!coupons || coupons.length === 0) {
-      await seedDefaultCouponsSafe();
-      coupons = await Coupon.find({});
-    }
-    res.json({ success: true, coupons: coupons.length > 0 ? coupons : DEFAULT_COUPONS });
+    const coupons = await Coupon.find({}).sort({ createdAt: -1 });
+    res.json({ success: true, coupons });
   } catch (error) {
     console.error('Fetch coupons error:', error);
-    res.json({ success: true, coupons: DEFAULT_COUPONS });
+    res.json({ success: true, coupons: [] });
   }
 });
 
@@ -101,19 +85,34 @@ router.post('/', protect, requirePermission('coupons'), async (req, res) => {
   }
 });
 
+// @route   DELETE /api/coupons
+// @desc    Delete all coupons
+// @access  Private/Admin
+router.delete('/', protect, requirePermission('coupons'), async (req, res) => {
+  try {
+    await Coupon.deleteMany({});
+    res.json({ success: true, message: 'All coupons removed' });
+  } catch (error) {
+    console.error('Delete all coupons error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // @route   DELETE /api/coupons/:code
 // @desc    Delete a coupon
 // @access  Private/Admin
 router.delete('/:code', protect, requirePermission('coupons'), async (req, res) => {
   try {
     const codeUpper = req.params.code.toUpperCase().trim();
-    const coupon = await Coupon.findOne({ code: codeUpper });
+    const escaped = codeUpper.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    if (!coupon) {
-      return res.status(404).json({ success: false, message: 'Coupon not found' });
-    }
+    await Coupon.deleteMany({
+      $or: [
+        { code: codeUpper },
+        { code: { $regex: new RegExp(`^\\s*${escaped}\\s*$`, 'i') } }
+      ]
+    });
 
-    await Coupon.deleteOne({ code: codeUpper });
     res.json({ success: true, message: 'Coupon removed' });
   } catch (error) {
     console.error('Delete coupon error:', error);
