@@ -32,6 +32,7 @@ import filterRoutes, { seedDefaultFiltersSafe } from './_routes/filters.js';
 import footerRoutes, { seedDefaultFooterSafe } from './_routes/footer.js';
 import contentRoutes, { seedDefaultContentSafe } from './_routes/content.js';
 import sitemapRoutes from './_routes/sitemap.js';
+import feedRoutes from './_routes/feed.js';
 import logisticsRoutes from './_routes/logistics.js';
 import ensureSuperAdminRoleIntegrity from './utils/ensureSuperAdmin.js';
 
@@ -183,6 +184,8 @@ app.use('/api/content', contentRoutes);
 app.use('/api/logistics', logisticsRoutes);
 app.use('/api/sitemap.xml', sitemapRoutes);
 app.use('/sitemap-products.xml', sitemapRoutes);
+app.use('/api/google-feed.xml', feedRoutes);
+app.use('/google-feed.xml', feedRoutes);
 
 // Base Endpoint
 app.get('/api', (req, res) => {
