@@ -162,15 +162,20 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
                       </div>
 
                       <div className="flex items-center justify-between">
-                        {/* Quantity controls */}
-                        <div className="flex items-center border border-luxury-text/10 rounded-md bg-luxury-bg">
+                        {/* Quantity controls — tactile modern pill */}
+                        <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50/80 p-0.5 shadow-2xs">
                           <button
                             onClick={() => dispatch(updateCartQty(item.productId, item.quantity - 1, item.customization))}
-                            className="p-1.5 text-luxury-muted hover:text-luxury-text transition cursor-pointer"
+                            className="w-7 h-7 flex items-center justify-center text-gray-600 hover:text-black hover:bg-white active:scale-90 active:bg-gray-200 rounded-md transition-all duration-100 cursor-pointer select-none"
+                            title={item.quantity === 1 ? "Remove item" : "Decrease quantity"}
                           >
-                            <Minus size={12} />
+                            {item.quantity === 1 ? (
+                              <Trash2 size={13} className="text-red-500 hover:text-red-600" />
+                            ) : (
+                              <Minus size={13} />
+                            )}
                           </button>
-                          <span className="px-3 text-xs font-semibold text-luxury-text">
+                          <span className="w-8 text-center text-xs font-bold text-gray-900 tabular-nums select-none">
                             {item.quantity}
                           </span>
                           <button
@@ -181,10 +186,10 @@ export default function CartDrawer({ isOpen, onClose, onPageChange }) {
                               }
                             }}
                             disabled={item.quantity >= (item.product?.stock ?? 0)}
-                            className="p-1.5 text-luxury-muted hover:text-luxury-text disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+                            className="w-7 h-7 flex items-center justify-center text-gray-600 hover:text-black hover:bg-white active:scale-90 active:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:active:scale-100 disabled:cursor-not-allowed rounded-md transition-all duration-100 cursor-pointer select-none"
                             title={item.quantity >= (item.product?.stock ?? 0) ? "Maximum available stock reached" : "Increase quantity"}
                           >
-                            <Plus size={12} />
+                            <Plus size={13} />
                           </button>
                         </div>
 

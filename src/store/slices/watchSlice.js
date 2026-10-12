@@ -1156,6 +1156,10 @@ export const updateCartQty = (productId, qty, customization = null) => async (di
     return;
   }
 
+  // 1. Optimistic Update IMMEDIATELY (0ms instant response)
+  dispatch(updateCartQtyAction({ productId: targetId, qty: finalQty, customization }));
+
+  // 2. Sync with database in background
   if (currentUser) {
     try {
       const res = await fetch('/api/cart/update', {
@@ -1166,20 +1170,21 @@ export const updateCartQty = (productId, qty, customization = null) => async (di
       const data = await res.json();
       if (data.success) {
         dispatch(setCartAction(data.cart));
-        return;
       }
     } catch (error) {
       console.error('Failed to update database cart qty:', error);
     }
   }
-
-  dispatch(updateCartQtyAction({ productId: targetId, qty: finalQty, customization }));
 };
 
 export const removeFromCart = (productId, customization = null) => async (dispatch, getState) => {
   const { currentUser } = getState().watch;
   const targetId = (productId?._id || productId)?.toString();
 
+  // 1. Optimistic removal IMMEDIATELY (0ms instant response)
+  dispatch(removeFromCartAction({ productId: targetId, customization }));
+
+  // 2. Sync with database in background
   if (currentUser) {
     try {
       const res = await fetch('/api/cart/remove', {
@@ -1190,14 +1195,11 @@ export const removeFromCart = (productId, customization = null) => async (dispat
       const data = await res.json();
       if (data.success) {
         dispatch(setCartAction(data.cart));
-        return;
       }
     } catch (error) {
       console.error('Failed to remove from database cart:', error);
     }
   }
-
-  dispatch(removeFromCartAction({ productId: targetId, customization }));
 };
 
 export const toggleWishlist = (productId) => async (dispatch, getState) => {
