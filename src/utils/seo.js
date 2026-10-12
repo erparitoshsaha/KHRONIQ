@@ -279,3 +279,48 @@ export function buildBreadcrumbSchema(items) {
   };
 }
 
+/**
+ * Formats a clean, high-CTR Google search snippet title (< 65 chars)
+ * @param {Object} product
+ * @returns {string}
+ */
+export function formatProductSeoTitle(product) {
+  if (!product) return 'KHRONIQ — Luxury Timepiece';
+
+  const raw = product.name || '';
+  const parts = raw.split('|').map(s => s.trim()).filter(Boolean);
+
+  if (parts.length >= 3) {
+    const collection = parts[2]
+      .replace(/MEN\x27S/i, "Men's")
+      .replace(/WOMEN\x27S/i, "Women's")
+      .replace(/WATCH/i, 'Watch')
+      .replace(/-+/g, '—')
+      .trim();
+    const dial = parts[3] ? ` (${parts[3].toLowerCase().replace(/\b\w/g, c => c.toUpperCase())})` : '';
+    return `KHRONIQ ${collection}${dial} | Buy Online India`;
+  }
+
+  return `${product.name} | Luxury Analog Watch — KHRONIQ India`;
+}
+
+/**
+ * Formats an engaging, keyword-rich Google meta description (155-165 chars)
+ * @param {Object} product
+ * @param {number} [sellingPrice]
+ * @returns {string}
+ */
+export function formatProductSeoDescription(product, sellingPrice) {
+  if (!product) return 'Discover luxury timepieces crafted for modern distinction at KHRONIQ.';
+
+  const priceVal = sellingPrice || product.price;
+  const priceText = priceVal ? ` at ₹${Number(priceVal).toLocaleString('en-IN')}` : '';
+  const dial = product.specs?.dialColor ? `${product.specs.dialColor} dial` : '';
+  const caseMat = product.specs?.caseMaterial || product.specs?.case || 'stainless steel case';
+  const movement = product.specs?.movement || 'quartz movement';
+  const gender = product.gender === 'women' ? "women's" : "men's";
+  const cat = product.category || 'luxury';
+
+  return `Buy KHRONIQ ${cat} ${gender} analog watch online${priceText} in India. Features ${dial ? `${dial}, ` : ''}${caseMat}, ${movement} & 12 months warranty. Free insured express shipping.`;
+}
+

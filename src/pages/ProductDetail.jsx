@@ -9,7 +9,7 @@ import Breadcrumbs from '../components/Breadcrumbs';
 
 import { Star, Shield, RefreshCw, Truck, Heart, ShoppingBag, Plus, Minus, ArrowLeft, CheckCircle2, Zap, Share2, Edit2, Trash2, X } from 'lucide-react';
 import { getExpectedDeliveryDate, calculateDeliveryEstimate } from '../utils/deliveryUtils';
-import { useSEO, buildProductSchema } from '../utils/seo';
+import { useSEO, buildProductSchema, formatProductSeoTitle, formatProductSeoDescription } from '../utils/seo';
 import { showToast } from '../utils/toast';
 
 export default function ProductDetail({ params, onPageChange }) {
@@ -166,10 +166,12 @@ export default function ProductDetail({ params, onPageChange }) {
   const canonicalIdentifier = product ? (product.slug || product.modelNo || product.id || '') : (rawParamId || '');
   const canonicalUrl = `https://www.khroniq.com/product/${encodeURIComponent(canonicalIdentifier)}`;
 
-  const productDescription = product
-    ? (product.description
-      ? `${product.name} — ${product.description.slice(0, 160).trim()}`
-      : `${product.name} luxury timepiece featuring ${product.specs?.movement || 'precision quartz movement'}, ${product.specs?.case || 'refined stainless steel case'}, and ${product.specs?.waterResistance || 'water-resistant design'}.`)
+  const seoTitle = product
+    ? formatProductSeoTitle(product)
+    : (productsLoaded && apiAttempted ? 'KHRONIQ — Timepiece Not Found' : 'KHRONIQ — Luxury Timepiece');
+
+  const seoDescription = product
+    ? formatProductSeoDescription(product, sellingPrice)
     : 'Discover luxury timepieces crafted for modern distinction at KHRONIQ.';
 
   const productSchema = useMemo(() => {
@@ -177,11 +179,11 @@ export default function ProductDetail({ params, onPageChange }) {
   }, [product, sellingPrice, canonicalUrl]);
 
   useSEO({
-    title: product ? `${product.name} — Luxury Timepiece | KHRONIQ` : (productsLoaded && apiAttempted ? 'KHRONIQ — Timepiece Not Found' : 'KHRONIQ — Luxury Timepiece'),
-    description: productDescription,
+    title: seoTitle,
+    description: seoDescription,
     canonicalUrl: canonicalUrl,
-    ogTitle: product ? `${product.name} | KHRONIQ` : 'KHRONIQ Luxury Watch',
-    ogDescription: productDescription,
+    ogTitle: seoTitle,
+    ogDescription: seoDescription,
     ogImage: product?.image,
     ogType: 'product',
     keywords: product ? `${product.name}, KHRONIQ ${product.name}, KHRONIQ Watches India, ${product.gender === 'women' ? "women's analog watches, stylish watches for women, ladies analog watches, women's leather strap watches" : "men's analog watches, stylish watches for men, classic watches for men, black dial watches for men, leather strap watches for men"}, ${product.category || 'luxury'} watch, analog watches online India` : 'luxury watches, KHRONIQ Watches India',
