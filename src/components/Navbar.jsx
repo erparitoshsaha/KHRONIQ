@@ -1197,7 +1197,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
       {mobileMenuOpen && (
         <div className="md:hidden glass border-t border-luxury-text/10 py-4 px-6 space-y-4 flex flex-col">
           {/* Search bar inside mobile drawer */}
-          <div className="space-y-2 mb-2">
+          <div className="space-y-2 mb-2 relative">
             <form onSubmit={handleSearchSubmit} className="flex items-center bg-white border border-luxury-text/10 rounded-xl p-1.5 shadow-sm">
               <div className="pl-1.5 text-luxury-muted shrink-0">
                 <Search size={14} />
@@ -1213,7 +1213,7 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="p-1 text-luxury-muted hover:text-black"
+                  className="p-1 text-luxury-muted hover:text-black cursor-pointer"
                 >
                   <X size={13} />
                 </button>
@@ -1226,19 +1226,65 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
               </button>
             </form>
 
-            {/* Quick Suggestions Pills */}
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {POPULAR_SEARCH_SUGGESTIONS.slice(0, 4).map((sug) => (
-                <button
-                  key={`mobile-${sug.label}`}
-                  type="button"
-                  onClick={() => handleSuggestionClick(sug.query)}
-                  className="px-2.5 py-1 bg-white/10 hover:bg-white hover:text-black rounded-full text-[10px] text-white/90 font-medium transition border border-white/10 cursor-pointer"
-                >
-                  {sug.label}
-                </button>
-              ))}
-            </div>
+            {/* Quick Suggestions Pills (Black text on crisp pills) */}
+            {!searchQuery.trim() && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {POPULAR_SEARCH_SUGGESTIONS.slice(0, 4).map((sug) => (
+                  <button
+                    key={`mobile-${sug.label}`}
+                    type="button"
+                    onClick={() => handleSuggestionClick(sug.query)}
+                    className="px-2.5 py-1 bg-white hover:bg-black text-gray-900 hover:text-white rounded-full text-[10px] font-bold transition border border-gray-300 shadow-xs cursor-pointer select-none"
+                  >
+                    {sug.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Live Search Recommendations on Mobile */}
+            {searchQuery.trim() && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-xl p-2 max-h-64 overflow-y-auto space-y-1 mt-1 text-gray-800">
+                {searchResultsData.results.length > 0 ? (
+                  <>
+                    <div className="flex items-center justify-between text-[11px] text-gray-500 pb-1 border-b border-gray-100 px-1">
+                      <span>Found <strong>{searchResultsData.totalFound}</strong> watches</span>
+                      <button
+                        type="button"
+                        onClick={handleSearchSubmit}
+                        className="text-black font-semibold hover:underline flex items-center gap-0.5 cursor-pointer"
+                      >
+                        View all <ArrowRight size={11} />
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      {searchResultsData.results.slice(0, 4).map((item) => (
+                        <div
+                          key={item.id || item._id}
+                          onClick={() => handleProductClick(item)}
+                          className="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+                        >
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            onError={(e) => handleImageError(e)}
+                            className="w-10 h-10 object-contain rounded bg-gray-50 border border-gray-200 shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-gray-900 truncate">{item.name}</p>
+                            <p className="text-[10px] text-gray-500 font-bold">
+                              {formatPrice(getDiscountedPrice(item), currentCurrency)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-gray-500 text-center py-3 font-medium">No matching watches found</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Navigation links */}
