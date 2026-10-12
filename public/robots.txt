@@ -19,9 +19,18 @@ Allow: /returns
 Allow: /cancellation
 Allow: /api/sitemap.xml
 Allow: /sitemap-products.xml
+Allow: /api/products
+Allow: /api/products/
+Allow: /api/blogs
+Allow: /api/blogs/
+Disallow: /api/admin/
+Disallow: /api/auth/
+Disallow: /api/cart
+Disallow: /api/orders
+Disallow: /api/payments
+
 Disallow: /admin
 Disallow: /admin/
-Disallow: /api/
 Disallow: /checkout
 Disallow: /profile
 Disallow: /cart
