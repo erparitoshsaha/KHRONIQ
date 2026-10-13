@@ -1197,14 +1197,14 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
               publicMediaCache = data.media;
               try {
                 localStorage.setItem('khroniq_public_media_cache', JSON.stringify(data.media));
-              } catch (e) {}
+              } catch (e) { }
               setHomeImages(prev => ({ ...prev, ...data.media }));
             }
             if (data.titles) {
               publicTitlesCache = data.titles;
               try {
                 localStorage.setItem('khroniq_public_titles_cache', JSON.stringify(data.titles));
-              } catch (e) {}
+              } catch (e) { }
               setHomeTitles(prev => ({ ...prev, ...data.titles }));
             }
           }
@@ -1845,7 +1845,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
 
                 <div className="space-y-3 sm:space-y-4 w-full">
                   <h3
-                    className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl uppercase leading-tight"
+                    className="text-xl sm:text-2xl md:text-3xl lg:text-[32px] xl:text-[36px] uppercase leading-snug max-w-xl"
                     style={{
                       color: "#111111",
                       fontFamily: "'Cormorant Garamond', serif",
