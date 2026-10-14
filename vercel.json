@@ -32,6 +32,6 @@
     { "source": "/google-feed.xml", "destination": "/api/index" },
     { "source": "/sitemap-products.xml", "destination": "/api/index" },
     { "source": "/api/:path*", "destination": "/api/index" },
-    { "source": "/((?!api).*)", "destination": "/index.html" }
+    { "source": "/((?!api|assets).*)", "destination": "/index.html" }
   ]
 }

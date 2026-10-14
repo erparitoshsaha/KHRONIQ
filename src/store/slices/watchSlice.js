@@ -1620,18 +1620,15 @@ export const validateCoupon = (code, subtotal) => async (dispatch, getState) => 
     if (data && data.success && data.coupon) {
       return data;
     }
+    if (data && !data.success) {
+      return { success: false, message: data.message || 'Invalid coupon code.' };
+    }
   } catch (error) {
-    // Fallback to client-side store coupons if API is unreachable
+    // Network offline fallback to client-side active coupons
   }
 
   const stateCoupons = getState()?.watch?.coupons || [];
-  const defaultCoupons = [
-    { code: 'FIRST20', discountPercent: 20, description: '20% off on your first luxury timepiece purchase' },
-    { code: 'KHRONIQSTAR', discountPercent: 20, description: '20% off Khroniq Signature Collection' },
-    { code: 'WELCOME10', discountPercent: 10, description: '10% off for first-time buyers' }
-  ];
-  const allCoupons = [...stateCoupons, ...defaultCoupons];
-  const matched = allCoupons.find(c => (c.code || '').toUpperCase().trim() === cleanCode);
+  const matched = stateCoupons.find(c => (c.code || '').toUpperCase().trim() === cleanCode);
 
   if (matched) {
     const numSubtotal = Number(subtotal) || 0;
