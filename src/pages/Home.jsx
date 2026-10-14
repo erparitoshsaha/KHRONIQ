@@ -760,14 +760,18 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages, homeTitle
     {
       name: (homeTitles.hero_slide2_product || homeTitles.hero_slide2_lifestyle || 'EMERALD GREEN').toUpperCase(),
       fullName: homeTitles.hero_slide2_product || homeTitles.hero_slide2_lifestyle || 'Khroniq Emerald Green',
-      lifestyleImg: homeImages.hero_slide2_lifestyle || '/assets/slide_green_lifestyle.jpg',
+      lifestyleImg: (homeImages.hero_slide2_lifestyle && homeImages.hero_slide2_lifestyle.includes('itlyoqrtv9a8y5q0cshp')
+        ? 'https://res.cloudinary.com/ysl2umba/image/upload/b_gen_fill,c_pad,h_1200,w_1024,g_south/v1790072245/zenith-watches/homepage/itlyoqrtv9a8y5q0cshp.jpg'
+        : (homeImages.hero_slide2_lifestyle || '/assets/slide_green_lifestyle.jpg')),
       productImg: homeImages.hero_slide2_product || '/assets/watch_green.jpg',
       lifestyleStyle: { filter: 'brightness(0.78) contrast(1.12) saturate(1.08)', objectPosition: 'center top' },
     },
     {
       name: (homeTitles.hero_slide3_product || homeTitles.hero_slide3_lifestyle || 'MIDNIGHT BLACK').toUpperCase(),
       fullName: homeTitles.hero_slide3_product || homeTitles.hero_slide3_lifestyle || 'Khroniq Midnight Black',
-      lifestyleImg: homeImages.hero_slide3_lifestyle || '/assets/lifestyle_black_cafe.jpg',
+      lifestyleImg: (homeImages.hero_slide3_lifestyle && homeImages.hero_slide3_lifestyle.includes('uz3h7gu82lakdxbaqyab')
+        ? 'https://res.cloudinary.com/ysl2umba/image/upload/b_gen_fill,c_pad,h_1200,w_1024,g_south/v1791180517/zenith-watches/homepage/uz3h7gu82lakdxbaqyab.jpg'
+        : (homeImages.hero_slide3_lifestyle || '/assets/lifestyle_black_cafe.jpg')),
       productImg: homeImages.hero_slide3_product || '/assets/watch_black_steel.png',
       lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', objectPosition: 'center top' },
     },
