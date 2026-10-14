@@ -1133,18 +1133,218 @@ let publicTitlesCache = (() => {
 
 let publicMediaPromise = null;
 
+function InteractiveReviewsMarquee({ reviews }) {
+  const scrollRef = useRef(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const resumeTimerRef = useRef(null);
+  const animIdRef = useRef(null);
+
+  // Mouse drag support for desktop
+  const isMouseDownRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollStartRef = useRef(0);
+
+  // Triplicate reviews to allow seamless wrapping
+  const displayReviews = useMemo(() => {
+    if (!reviews || reviews.length <= 1) return [];
+    let list = [...reviews];
+    while (list.length < 5) {
+      list = [...list, ...reviews];
+    }
+    // Return 3 copies for seamless infinite loop wrapping
+    return [...list, ...list, ...list];
+  }, [reviews]);
+
+  // Initialize scroll position in the middle set so user can scroll both left and right immediately
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || displayReviews.length === 0) return;
+    const singleWidth = el.scrollWidth / 3;
+    if (singleWidth > 0 && el.scrollLeft === 0) {
+      el.scrollLeft = singleWidth;
+    }
+  }, [displayReviews]);
+
+  // Continuous auto-sliding ticker
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || displayReviews.length === 0) return;
+
+    let lastTimestamp = performance.now();
+
+    const tick = (now) => {
+      const delta = Math.min(now - lastTimestamp, 50);
+      lastTimestamp = now;
+
+      if (!isPaused && el) {
+        el.scrollLeft += (delta * 0.045);
+
+        const singleSetWidth = el.scrollWidth / 3;
+        if (singleSetWidth > 0) {
+          if (el.scrollLeft >= singleSetWidth * 2) {
+            el.scrollLeft -= singleSetWidth;
+          } else if (el.scrollLeft <= singleSetWidth * 0.1) {
+            el.scrollLeft += singleSetWidth;
+          }
+        }
+      }
+
+      animIdRef.current = requestAnimationFrame(tick);
+    };
+
+    animIdRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (animIdRef.current) cancelAnimationFrame(animIdRef.current);
+    };
+  }, [isPaused, displayReviews]);
+
+  // Touch handlers for mobile (pauses on touch, resumes smoothly when finger released)
+  const handleTouchStart = () => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    setIsPaused(true);
+  };
+
+  const handleTouchEnd = () => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    // Pause briefly (1200ms) after touch release so user can read what they stopped on, then resume!
+    resumeTimerRef.current = setTimeout(() => {
+      setIsPaused(false);
+    }, 1200);
+  };
+
+  // Mouse handlers for desktop
+  const handleMouseEnter = () => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    setIsPaused(true);
+  };
+
+  const handleMouseLeave = () => {
+    isMouseDownRef.current = false;
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    setIsPaused(false);
+  };
+
+  const handleMouseDown = (e) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    isMouseDownRef.current = true;
+    startXRef.current = e.pageX - el.offsetLeft;
+    scrollStartRef.current = el.scrollLeft;
+    setIsPaused(true);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isMouseDownRef.current) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    e.preventDefault();
+    const currentX = e.pageX - el.offsetLeft;
+    const distance = (currentX - startXRef.current) * 1.2;
+    el.scrollLeft = scrollStartRef.current - distance;
+  };
+
+  const handleMouseUp = () => {
+    isMouseDownRef.current = false;
+  };
+
+  // Wrap check on manual scroll (e.g. touch swipe or trackpad scroll)
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const singleSetWidth = el.scrollWidth / 3;
+    if (singleSetWidth > 0) {
+      if (el.scrollLeft >= singleSetWidth * 2.5) {
+        el.scrollLeft -= singleSetWidth;
+      } else if (el.scrollLeft <= singleSetWidth * 0.1) {
+        el.scrollLeft += singleSetWidth;
+      }
+    }
+  };
+
+  return (
+    <div className="relative w-full overflow-hidden select-none">
+      {/* Left and right subtle gradient masks */}
+      <div className="absolute left-0 top-0 bottom-0 w-10 sm:w-24 bg-gradient-to-r from-[#0e0d0b] to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-10 sm:w-24 bg-gradient-to-l from-[#0e0d0b] to-transparent z-10 pointer-events-none" />
+
+      {/* Interactive horizontal scrolling ticker */}
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        className="flex items-stretch gap-5 overflow-x-auto overflow-y-hidden py-3 px-6 cursor-grab active:cursor-grabbing [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        {displayReviews.map((review, idx) => (
+          <div
+            key={`${review.id || review._id || 'rev'}-${idx}`}
+            className="relative bg-[#1a1916]/85 border border-white/[0.06] rounded-2xl p-5 sm:p-6 space-y-3 backdrop-blur-sm hover:border-[#34d399]/40 transition-colors duration-300 w-[280px] sm:w-[320px] md:w-[360px] shrink-0 flex flex-col justify-between group pointer-events-auto"
+          >
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[#34d399]/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={13}
+                    fill={star <= review.rating ? '#c5a880' : 'transparent'}
+                    stroke={star <= review.rating ? '#c5a880' : '#555'}
+                    strokeWidth={1.5}
+                  />
+                ))}
+              </div>
+
+              <p
+                className="text-xs sm:text-sm leading-relaxed font-light italic line-clamp-3 select-none"
+                style={{ color: 'rgba(255, 255, 255, 0.9)' }}
+              >
+                &ldquo;{review.comment}&rdquo;
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2.5 border-t border-white/[0.06]">
+              {review.productImage && (
+                <div className="w-9 h-9 rounded-full overflow-hidden bg-white/10 border border-white/10 flex-shrink-0">
+                  <img
+                    src={review.productImage}
+                    alt={review.productName ? `${review.productName} luxury timepiece review` : 'Client Review Timepiece'}
+                    loading="lazy"
+                    decoding="async"
+                    width="36"
+                    height="36"
+                    onError={(e) => handleImageError(e)}
+                    className="w-full h-full object-cover pointer-events-none"
+                  />
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-xs font-bold tracking-wide truncate" style={{ color: '#ffffff' }}>
+                  {review.userName}
+                </p>
+                <p className="text-[10px] font-medium tracking-wider uppercase truncate" style={{ color: '#34d399' }}>
+                  on {review.productName}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, updatesOpen }) {
   const dispatch = useDispatch();
   const products = useSelector(state => state.watch.products);
   const featuredReviews = useSelector(state => state.watch.featuredReviews || []);
-  const repeatedReviews = useMemo(() => {
-    if (!featuredReviews || featuredReviews.length <= 1) return [];
-    let list = [...featuredReviews];
-    while (list.length < 6) {
-      list = [...list, ...featuredReviews];
-    }
-    return [...list, ...list];
-  }, [featuredReviews]);
   const [homeImages, setHomeImages] = useState(() => ({
     ...defaultHomeImages,
     ...(publicMediaCache || {})
@@ -2062,73 +2262,8 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
               </div>
             </div>
           ) : (
-            /* When multiple reviews exist (2+): Horizontal Infinite Marquee Carousel */
-            <div className="relative w-full overflow-hidden select-none">
-              <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-r from-[#0e0d0b] to-transparent z-10 pointer-events-none" />
-              <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-l from-[#0e0d0b] to-transparent z-10 pointer-events-none" />
-
-              <div
-                className="flex items-stretch gap-5 w-max animate-reviews-marquee hover:[animation-play-state:paused] py-2 px-6"
-                style={{
-                  animationDuration: `${Math.max(22, (repeatedReviews.length / 2) * 5.5)}s`
-                }}
-              >
-                {repeatedReviews.map((review, idx) => (
-                  <div
-                    key={`${review.id || review._id || 'rev'}-${idx}`}
-                    className="relative bg-[#1a1916]/85 border border-white/[0.06] rounded-2xl p-5 sm:p-6 space-y-3 backdrop-blur-sm hover:border-[#34d399]/40 transition-all duration-300 w-[280px] sm:w-[320px] md:w-[360px] shrink-0 flex flex-col justify-between group"
-                  >
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[#34d399]/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-0.5">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            size={13}
-                            fill={star <= review.rating ? '#c5a880' : 'transparent'}
-                            stroke={star <= review.rating ? '#c5a880' : '#555'}
-                            strokeWidth={1.5}
-                          />
-                        ))}
-                      </div>
-
-                      <p
-                        className="text-xs sm:text-sm leading-relaxed font-light italic line-clamp-3"
-                        style={{ color: 'rgba(255, 255, 255, 0.9)' }}
-                      >
-                        &ldquo;{review.comment}&rdquo;
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-3 pt-2.5 border-t border-white/[0.06]">
-                      {review.productImage && (
-                        <div className="w-9 h-9 rounded-full overflow-hidden bg-white/10 border border-white/10 flex-shrink-0">
-                          <img
-                            src={review.productImage}
-                            alt={review.productName ? `${review.productName} luxury timepiece review` : 'Client Review Timepiece'}
-                            loading="lazy"
-                            decoding="async"
-                            width="36"
-                            height="36"
-                            onError={(e) => handleImageError(e)}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold tracking-wide truncate" style={{ color: '#ffffff' }}>
-                          {review.userName}
-                        </p>
-                        <p className="text-[10px] font-medium tracking-wider uppercase truncate" style={{ color: '#34d399' }}>
-                          on {review.productName}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            /* When multiple reviews exist (2+): Interactive Infinite Marquee with Touch Swipe & Auto-Resume */
+            <InteractiveReviewsMarquee reviews={featuredReviews} />
           )}
         </section>
       )}
