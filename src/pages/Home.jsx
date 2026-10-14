@@ -755,35 +755,35 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages, homeTitle
       fullName: homeTitles.hero_slide1_product || homeTitles.hero_slide1_lifestyle || 'Khroniq Crimson Red',
       lifestyleImg: homeImages.hero_slide1_lifestyle || '/assets/lifestyle_red.jpg',
       productImg: homeImages.hero_slide1_product || '/assets/watch_red.jpg',
-      lifestyleStyle: { filter: 'brightness(0.82) contrast(1.1) saturate(1.05)', backgroundPosition: 'center 40%' },
+      lifestyleStyle: { filter: 'brightness(0.82) contrast(1.1) saturate(1.05)', objectPosition: 'center top' },
     },
     {
       name: (homeTitles.hero_slide2_product || homeTitles.hero_slide2_lifestyle || 'EMERALD GREEN').toUpperCase(),
       fullName: homeTitles.hero_slide2_product || homeTitles.hero_slide2_lifestyle || 'Khroniq Emerald Green',
       lifestyleImg: homeImages.hero_slide2_lifestyle || '/assets/slide_green_lifestyle.jpg',
       productImg: homeImages.hero_slide2_product || '/assets/watch_green.jpg',
-      lifestyleStyle: { filter: 'brightness(0.78) contrast(1.12) saturate(1.08)', backgroundPosition: 'center 35%' },
+      lifestyleStyle: { filter: 'brightness(0.78) contrast(1.12) saturate(1.08)', objectPosition: 'center top' },
     },
     {
       name: (homeTitles.hero_slide3_product || homeTitles.hero_slide3_lifestyle || 'MIDNIGHT BLACK').toUpperCase(),
       fullName: homeTitles.hero_slide3_product || homeTitles.hero_slide3_lifestyle || 'Khroniq Midnight Black',
       lifestyleImg: homeImages.hero_slide3_lifestyle || '/assets/lifestyle_black_cafe.jpg',
       productImg: homeImages.hero_slide3_product || '/assets/watch_black_steel.png',
-      lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
+      lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', objectPosition: 'center top' },
     },
     {
       name: (homeTitles.hero_slide4_product || homeTitles.hero_slide4_lifestyle || 'COBALT BLUE').toUpperCase(),
       fullName: homeTitles.hero_slide4_product || homeTitles.hero_slide4_lifestyle || 'Khroniq Cobalt Blue',
       lifestyleImg: homeImages.hero_slide4_lifestyle || '/assets/lifestyle_blue_window.jpg',
       productImg: homeImages.hero_slide4_product || '/assets/watch_blue_brown.png',
-      lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
+      lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', objectPosition: 'center top' },
     },
     {
       name: (homeTitles.hero_slide5_product || homeTitles.hero_slide5_lifestyle || 'STERLING SILVER').toUpperCase(),
       fullName: homeTitles.hero_slide5_product || homeTitles.hero_slide5_lifestyle || 'Khroniq Sterling Silver',
       lifestyleImg: homeImages.hero_slide5_lifestyle || '/assets/lifestyle_pink_cafe.jpg',
       productImg: homeImages.hero_slide5_product || '/assets/slide_white_product.png',
-      lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 30%' },
+      lifestyleStyle: { filter: 'brightness(0.85) contrast(1.1)', objectPosition: 'center top' },
     }
   ];
 
@@ -847,8 +847,11 @@ function LifestyleShowcaseSlider({ products, onPageChange, homeImages, homeTitle
                   e.target.src = fallbacks[activeIndex];
                 }
               }}
-              className="absolute inset-0 w-full h-full object-cover"
-              style={currentSlide.lifestyleStyle}
+              className="absolute inset-0 w-full h-full object-cover object-top"
+              style={{
+                ...currentSlide.lifestyleStyle,
+                objectPosition: currentSlide.lifestyleStyle?.objectPosition || 'center top'
+              }}
               initial={{ opacity: 0, scale: 1.04 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
