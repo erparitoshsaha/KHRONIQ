@@ -1134,7 +1134,7 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
   const products = useSelector(state => state.watch.products);
   const featuredReviews = useSelector(state => state.watch.featuredReviews || []);
   const repeatedReviews = useMemo(() => {
-    if (!featuredReviews || featuredReviews.length === 0) return [];
+    if (!featuredReviews || featuredReviews.length <= 1) return [];
     let list = [...featuredReviews];
     while (list.length < 6) {
       list = [...list, ...featuredReviews];
@@ -1978,7 +1978,8 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
                 What Our Patrons Say
               </motion.p>
               <motion.h2
-                className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-wide uppercase"
+                className="text-2xl sm:text-3xl font-serif font-bold tracking-wide uppercase"
+                style={{ color: '#ffffff' }}
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -1996,75 +1997,135 @@ export default function Home({ onPageChange, onUpdatesOpen, onUpdatesClose, upda
             </div>
           </div>
 
-          {/* Horizontal Infinite Marquee Carousel */}
-          <div className="relative w-full overflow-hidden select-none">
-            {/* Subtle Gradient Edge Fades */}
-            <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-r from-[#0e0d0b] to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-l from-[#0e0d0b] to-transparent z-10 pointer-events-none" />
+          {/* If only 1 review: show single card cleanly centered with no duplicate */}
+          {featuredReviews.length === 1 ? (
+            <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 flex justify-center">
+              <div
+                key={featuredReviews[0].id || featuredReviews[0]._id || 'single-rev'}
+                className="relative bg-[#1a1916]/85 border border-white/[0.08] rounded-2xl p-6 sm:p-7 space-y-4 backdrop-blur-sm hover:border-[#34d399]/40 transition-all duration-300 w-full max-w-[360px] sm:max-w-[420px] flex flex-col justify-between group shadow-xl"
+              >
+                {/* Glow on hover */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[#34d399]/[0.05] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-            <div
-              className="flex items-stretch gap-5 w-max animate-reviews-marquee hover:[animation-play-state:paused] py-2 px-6"
-              style={{
-                animationDuration: `${Math.max(22, (repeatedReviews.length / 2) * 5.5)}s`
-              }}
-            >
-              {repeatedReviews.map((review, idx) => (
-                <div
-                  key={`${review.id || review._id || 'rev'}-${idx}`}
-                  className="relative bg-[#1a1916]/85 border border-white/[0.06] rounded-2xl p-5 sm:p-6 space-y-3 backdrop-blur-sm hover:border-[#34d399]/40 transition-all duration-300 w-[280px] sm:w-[320px] md:w-[360px] shrink-0 flex flex-col justify-between group"
-                >
-                  {/* Glow on hover */}
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[#34d399]/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                <div className="space-y-3">
+                  {/* Stars */}
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        size={15}
+                        fill={star <= featuredReviews[0].rating ? '#c5a880' : 'transparent'}
+                        stroke={star <= featuredReviews[0].rating ? '#c5a880' : '#555'}
+                        strokeWidth={1.5}
+                      />
+                    ))}
+                  </div>
 
-                  <div className="space-y-2">
-                    {/* Stars */}
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          size={13}
-                          fill={star <= review.rating ? '#c5a880' : 'transparent'}
-                          stroke={star <= review.rating ? '#c5a880' : '#555'}
-                          strokeWidth={1.5}
-                        />
-                      ))}
+                  {/* Comment */}
+                  <p
+                    className="text-sm leading-relaxed font-light italic"
+                    style={{ color: 'rgba(255, 255, 255, 0.92)' }}
+                  >
+                    &ldquo;{featuredReviews[0].comment}&rdquo;
+                  </p>
+                </div>
+
+                {/* Reviewer Info */}
+                <div className="flex items-center gap-3 pt-3 border-t border-white/[0.08]">
+                  {featuredReviews[0].productImage && (
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10 border border-white/10 flex-shrink-0">
+                      <img
+                        src={featuredReviews[0].productImage}
+                        alt={featuredReviews[0].productName ? `${featuredReviews[0].productName} luxury timepiece review` : 'Client Review Timepiece'}
+                        loading="lazy"
+                        decoding="async"
+                        width="40"
+                        height="40"
+                        onError={(e) => handleImageError(e)}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-
-                    {/* Comment */}
-                    <p className="text-white/85 text-xs sm:text-sm leading-relaxed font-light italic line-clamp-3">
-                      &ldquo;{review.comment}&rdquo;
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold tracking-wide truncate" style={{ color: '#ffffff' }}>
+                      {featuredReviews[0].userName}
+                    </p>
+                    <p className="text-[10px] font-medium tracking-wider uppercase truncate" style={{ color: '#34d399' }}>
+                      on {featuredReviews[0].productName}
                     </p>
                   </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* When multiple reviews exist (2+): Horizontal Infinite Marquee Carousel */
+            <div className="relative w-full overflow-hidden select-none">
+              <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-r from-[#0e0d0b] to-transparent z-10 pointer-events-none" />
+              <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-l from-[#0e0d0b] to-transparent z-10 pointer-events-none" />
 
-                  {/* Reviewer Info */}
-                  <div className="flex items-center gap-3 pt-2.5 border-t border-white/[0.06]">
-                    {review.productImage && (
-                      <div className="w-9 h-9 rounded-full overflow-hidden bg-white/10 border border-white/10 flex-shrink-0">
-                        <img
-                          src={review.productImage}
-                          alt={review.productName ? `${review.productName} luxury timepiece review` : 'Client Review Timepiece'}
-                          loading="lazy"
-                          decoding="async"
-                          width="36"
-                          height="36"
-                          onError={(e) => handleImageError(e)}
-                          className="w-full h-full object-cover"
-                        />
+              <div
+                className="flex items-stretch gap-5 w-max animate-reviews-marquee hover:[animation-play-state:paused] py-2 px-6"
+                style={{
+                  animationDuration: `${Math.max(22, (repeatedReviews.length / 2) * 5.5)}s`
+                }}
+              >
+                {repeatedReviews.map((review, idx) => (
+                  <div
+                    key={`${review.id || review._id || 'rev'}-${idx}`}
+                    className="relative bg-[#1a1916]/85 border border-white/[0.06] rounded-2xl p-5 sm:p-6 space-y-3 backdrop-blur-sm hover:border-[#34d399]/40 transition-all duration-300 w-[280px] sm:w-[320px] md:w-[360px] shrink-0 flex flex-col justify-between group"
+                  >
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[#34d399]/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            size={13}
+                            fill={star <= review.rating ? '#c5a880' : 'transparent'}
+                            stroke={star <= review.rating ? '#c5a880' : '#555'}
+                            strokeWidth={1.5}
+                          />
+                        ))}
                       </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold tracking-wide truncate text-white">
-                        {review.userName}
-                      </p>
-                      <p className="text-[10px] font-medium tracking-wider uppercase truncate text-[#34d399]">
-                        on {review.productName}
+
+                      <p
+                        className="text-xs sm:text-sm leading-relaxed font-light italic line-clamp-3"
+                        style={{ color: 'rgba(255, 255, 255, 0.9)' }}
+                      >
+                        &ldquo;{review.comment}&rdquo;
                       </p>
                     </div>
+
+                    <div className="flex items-center gap-3 pt-2.5 border-t border-white/[0.06]">
+                      {review.productImage && (
+                        <div className="w-9 h-9 rounded-full overflow-hidden bg-white/10 border border-white/10 flex-shrink-0">
+                          <img
+                            src={review.productImage}
+                            alt={review.productName ? `${review.productName} luxury timepiece review` : 'Client Review Timepiece'}
+                            loading="lazy"
+                            decoding="async"
+                            width="36"
+                            height="36"
+                            onError={(e) => handleImageError(e)}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold tracking-wide truncate" style={{ color: '#ffffff' }}>
+                          {review.userName}
+                        </p>
+                        <p className="text-[10px] font-medium tracking-wider uppercase truncate" style={{ color: '#34d399' }}>
+                          on {review.productName}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </section>
       )}
 
