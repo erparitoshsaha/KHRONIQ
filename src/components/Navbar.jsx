@@ -568,7 +568,13 @@ export default function Navbar({ onCartOpen, onPageChange, currentPage, onOpenCo
             <button
               onClick={() => {
                 localStorage.setItem('khroniq_is_gifting_journey', 'false');
-                onPageChange('home');
+                if (typeof window !== 'undefined') {
+                  if (window.location.pathname === '/' || window.location.pathname === '') {
+                    window.location.reload();
+                  } else {
+                    window.location.href = '/';
+                  }
+                }
               }}
               className="flex flex-col items-center gap-0.5 sm:gap-1 transition duration-300 cursor-pointer py-1 max-w-[130px] sm:max-w-none"
             >

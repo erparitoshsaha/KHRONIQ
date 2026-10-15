@@ -657,7 +657,7 @@ const handleBuyNow = async () => {
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <span className="text-luxury-gold-dark text-xs font-bold tracking-widest uppercase">{(product.category === 'Khronomaster' ? 'Classic' : product.category)} COLLECTION</span>
-                <h1 className="text-3xl sm:text-4xl font-bold text-luxury-text uppercase tracking-wider" style={{ fontFamily: 'Arial, sans-serif' }}>{product.name}</h1>
+                <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-luxury-text uppercase tracking-wide leading-snug" style={{ fontFamily: 'Arial, sans-serif' }}>{product.name}</h1>
               </div>
               <button
                 type="button"

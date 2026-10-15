@@ -33,7 +33,6 @@ export default function Checkout({ params, onPageChange }) {
   const cart = useSelector(state => state.watch.cart);
   const products = useSelector(state => state.watch.products);
   const currentUser = useSelector(state => state.watch.currentUser);
-  const availableCoupons = useSelector(state => state.watch.coupons);
   const currentCurrency = useSelector(selectCurrentCurrency);
   const reduxShippingCountry = useSelector(selectShippingCountry);
 
@@ -1331,22 +1330,6 @@ export default function Checkout({ params, onPageChange }) {
                           {couponLoading ? <Loader2 size={14} className="animate-spin" /> : 'Apply'}
                         </button>
                       </div>
-                      {Array.isArray(availableCoupons) && availableCoupons.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Available:</span>
-                          {availableCoupons.map((c) => (
-                            <button
-                              key={c.code}
-                              type="button"
-                              onClick={() => handleApplyCoupon(c.code)}
-                              className="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded border border-dashed border-neutral-400 text-neutral-800 hover:border-black hover:bg-neutral-100 transition cursor-pointer"
-                              title={c.description || `${c.discountPercent}% OFF`}
-                            >
-                              {c.code} ({c.discountPercent}% OFF)
-                            </button>
-                          ))}
-                        </div>
-                      )}
                     </>
                   )}
                   {couponError && (
