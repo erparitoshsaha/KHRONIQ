@@ -15,7 +15,8 @@ import {
   Move,
   Layers,
   Upload,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from 'lucide-react';
 
 /**
@@ -76,6 +77,7 @@ export default function ImageCropModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(null);
+  const [naturalSize, setNaturalSize] = useState({ width: 0, height: 0 });
 
   // Dragging state
   const isDraggingRef = useRef(false);
@@ -84,7 +86,6 @@ export default function ImageCropModal({
 
   const imageRef = useRef(null);
   const containerRef = useRef(null);
-  const previewCanvasRef = useRef(null);
 
   // Temporary object URL if imageSource is a File
   const [imageUrl, setImageUrl] = useState('');
@@ -100,6 +101,7 @@ export default function ImageCropModal({
       setImageUrl('');
       setImageLoaded(false);
       setImageError(null);
+      setNaturalSize({ width: 0, height: 0 });
       return;
     }
 
@@ -136,8 +138,56 @@ export default function ImageCropModal({
     return ASPECT_RATIOS.find((r) => r.id === selectedRatioId) || ASPECT_RATIOS[0];
   }, [selectedRatioId]);
 
+  // Calculate live crop box style inside the crop viewport
+  const cropBoxDimensions = useMemo(() => {
+    const maxW = 340;
+    const maxH = 340;
+
+    if (!activeRatio.widthRatio || !activeRatio.heightRatio) {
+      return { width: maxW, height: maxH };
+    }
+
+    const ratio = activeRatio.widthRatio / activeRatio.heightRatio;
+    let w = maxW;
+    let h = w / ratio;
+
+    if (h > maxH) {
+      h = maxH;
+      w = h * ratio;
+    }
+
+    return { width: Math.round(w), height: Math.round(h) };
+  }, [activeRatio]);
+
+  // Calculate base display size so the image actually fits or covers the crop box
+  const imageDisplaySize = useMemo(() => {
+    if (!naturalSize.width || !naturalSize.height) {
+      return { width: 340, height: 340, baseScale: 1 };
+    }
+
+    const isRotated = rotation === 90 || rotation === 270;
+    const effectiveW = isRotated ? naturalSize.height : naturalSize.width;
+    const effectiveH = isRotated ? naturalSize.width : naturalSize.height;
+
+    const boxW = cropBoxDimensions.width;
+    const boxH = cropBoxDimensions.height;
+
+    const coverScale = Math.max(boxW / effectiveW, boxH / effectiveH);
+    const containScale = Math.min(boxW / effectiveW, boxH / effectiveH);
+
+    const baseScale = fitMode === 'cover' ? coverScale : containScale;
+
+    return {
+      width: Math.round(naturalSize.width * baseScale),
+      height: Math.round(naturalSize.height * baseScale),
+      baseScale
+    };
+  }, [naturalSize, rotation, cropBoxDimensions, fitMode]);
+
   // Handle image load
   const handleImageLoad = (e) => {
+    const { naturalWidth, naturalHeight } = e.target;
+    setNaturalSize({ width: naturalWidth, height: naturalHeight });
     setImageLoaded(true);
     setImageError(null);
     setPan({ x: 0, y: 0 });
@@ -197,7 +247,7 @@ export default function ImageCropModal({
   const handleWheel = (e) => {
     e.preventDefault();
     const delta = e.deltaY * -0.0015;
-    setZoom((prev) => Math.min(3.5, Math.max(0.5, Number((prev + delta).toFixed(2)))));
+    setZoom((prev) => Math.min(3.0, Math.max(0.3, Number((prev + delta).toFixed(2)))));
   };
 
   // Reset framing
@@ -213,41 +263,15 @@ export default function ImageCropModal({
     setRotation((prev) => (prev + 90) % 360);
   };
 
-  // Calculate live crop box style inside the crop viewport
-  const cropBoxDimensions = useMemo(() => {
-    // Target display box within a 440 x 360 space
-    const maxW = 380;
-    const maxH = 340;
-
-    if (!activeRatio.widthRatio || !activeRatio.heightRatio) {
-      return { width: maxW, height: maxH };
-    }
-
-    const ratio = activeRatio.widthRatio / activeRatio.heightRatio;
-    let w = maxW;
-    let h = w / ratio;
-
-    if (h > maxH) {
-      h = maxH;
-      w = h * ratio;
-    }
-
-    return { width: Math.round(w), height: Math.round(h) };
-  }, [activeRatio]);
-
   // Export high resolution cropped file
   const handleGenerateCrop = async () => {
-    if (!imageRef.current) return;
+    if (!imageRef.current || !naturalSize.width || !naturalSize.height) return;
     setIsProcessing(true);
 
     try {
       const img = imageRef.current;
-      const naturalW = img.naturalWidth;
-      const naturalH = img.naturalHeight;
-
-      if (!naturalW || !naturalH) {
-        throw new Error('Image dimensions not available.');
-      }
+      const naturalW = naturalSize.width;
+      const naturalH = naturalSize.height;
 
       // Desired export resolution (Retina HD)
       let exportW = 1200;
@@ -264,7 +288,7 @@ export default function ImageCropModal({
         }
       } else {
         exportW = Math.min(1920, naturalW);
-        exportH = Math.min(1920, naturalH);
+        exportH = Math.min(1600, naturalH);
       }
 
       const canvas = document.createElement('canvas');
@@ -275,47 +299,23 @@ export default function ImageCropModal({
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
-      // Background fill
+      // Background fill (dark luxury)
       ctx.fillStyle = '#0d0d0d';
       ctx.fillRect(0, 0, exportW, exportH);
 
       // Ratio of export canvas to on-screen crop box
       const scaleToCanvas = exportW / cropBoxDimensions.width;
 
-      // Base dimension inside crop box
-      const isRotated = rotation === 90 || rotation === 270;
-      const effectiveImgW = isRotated ? naturalH : naturalW;
-      const effectiveImgH = isRotated ? naturalW : naturalH;
-
-      let baseScale = 1;
-      if (fitMode === 'cover') {
-        baseScale = Math.max(
-          cropBoxDimensions.width / effectiveImgW,
-          cropBoxDimensions.height / effectiveImgH
-        );
-      } else {
-        baseScale = Math.min(
-          cropBoxDimensions.width / effectiveImgW,
-          cropBoxDimensions.height / effectiveImgH
-        );
-      }
-
-      const totalScale = baseScale * zoom * scaleToCanvas;
-
       ctx.save();
       // Translate to center of canvas + scaled pan offset
       ctx.translate(exportW / 2 + pan.x * scaleToCanvas, exportH / 2 + pan.y * scaleToCanvas);
       ctx.rotate((rotation * Math.PI) / 180);
 
-      // Draw image centered at origin
-      ctx.drawImage(
-        img,
-        -naturalW * totalScale / (scaleToCanvas * baseScale * zoom * 2) * (baseScale * zoom * scaleToCanvas),
-        -naturalH * totalScale / (scaleToCanvas * baseScale * zoom * 2) * (baseScale * zoom * scaleToCanvas),
-        naturalW * totalScale,
-        naturalH * totalScale
-      );
+      // Draw image dimensions based on on-screen display size
+      const drawW = imageDisplaySize.width * scaleToCanvas * zoom;
+      const drawH = imageDisplaySize.height * scaleToCanvas * zoom;
 
+      ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
       ctx.restore();
 
       // Convert to Blob
@@ -349,6 +349,23 @@ export default function ImageCropModal({
     }
   };
 
+  // Mockup card dimensions for right side
+  const mockupDimensions = useMemo(() => {
+    if (previewTab === 'mobile') {
+      return { width: 190, height: 320 };
+    }
+    const ratio = activeRatio.widthRatio && activeRatio.heightRatio
+      ? activeRatio.widthRatio / activeRatio.heightRatio
+      : 0.75;
+    const w = 270;
+    const h = Math.round(w / ratio);
+    return { width: w, height: Math.min(320, Math.max(220, h)) };
+  }, [previewTab, activeRatio]);
+
+  const mockupScale = useMemo(() => {
+    return mockupDimensions.width / cropBoxDimensions.width;
+  }, [mockupDimensions, cropBoxDimensions]);
+
   if (!isOpen) return null;
 
   return (
@@ -356,7 +373,7 @@ export default function ImageCropModal({
       <div className="bg-[#121212] border border-white/15 rounded-xl shadow-2xl max-w-5xl w-full my-auto overflow-hidden flex flex-col text-white animate-in fade-in duration-200">
         
         {/* ── Top Header ── */}
-        <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between bg-black/40">
+        <div className="px-5 py-3.5 border-b border-white/10 flex items-center justify-between bg-black/40">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-lg bg-luxury-gold/15 border border-luxury-gold/30 flex items-center justify-center text-luxury-gold">
               <Crop size={17} />
@@ -387,7 +404,7 @@ export default function ImageCropModal({
         </div>
 
         {/* ── Aspect Ratio Preset Bar ── */}
-        <div className="px-5 py-3 border-b border-white/10 bg-[#161616] flex items-center overflow-x-auto gap-2 scrollbar-none">
+        <div className="px-5 py-2.5 border-b border-white/10 bg-[#161616] flex items-center overflow-x-auto gap-2 scrollbar-none">
           <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 shrink-0 flex items-center mr-1">
             <Layers size={13} className="mr-1 text-luxury-gold" />
             Aspect Ratio:
@@ -428,13 +445,52 @@ export default function ImageCropModal({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-white/10 min-h-[460px]">
           
           {/* ──── Left Column: Interactive Framing Canvas (7 cols) ──── */}
-          <div className="lg:col-span-7 p-4 sm:p-5 flex flex-col justify-between space-y-4 bg-[#0d0d0d]">
-            <div className="flex items-center justify-between text-xs text-neutral-400">
+          <div className="lg:col-span-7 p-4 sm:p-5 flex flex-col justify-between space-y-3 bg-[#0d0d0d]">
+            
+            {/* Top Toolbar: Instructions & Quick Toggles */}
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-400">
               <span className="flex items-center space-x-1.5 text-[11px] font-mono uppercase tracking-wider text-neutral-300">
-                <Move size={13} className="text-luxury-gold" />
-                <span>Drag image to position • Scroll / Slider to zoom</span>
+                <Move size={13} className="text-luxury-gold shrink-0" />
+                <span>Drag to move photo • Zoom slider to resize</span>
               </span>
+
               <div className="flex items-center space-x-2">
+                {/* Fit Mode Switcher: Fit All vs Cover */}
+                <div className="flex items-center bg-black/60 rounded p-0.5 border border-white/15">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFitMode('contain');
+                      setPan({ x: 0, y: 0 });
+                      setZoom(1);
+                    }}
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${
+                      fitMode === 'contain'
+                        ? 'bg-luxury-gold text-black shadow-sm'
+                        : 'text-neutral-400 hover:text-white'
+                    }`}
+                    title="Fit entire photo without any cutting"
+                  >
+                    Puri Photo (Fit All)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFitMode('cover');
+                      setPan({ x: 0, y: 0 });
+                      setZoom(1);
+                    }}
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${
+                      fitMode === 'cover'
+                        ? 'bg-luxury-gold text-black shadow-sm'
+                        : 'text-neutral-400 hover:text-white'
+                    }`}
+                    title="Fill the entire frame (Cover)"
+                  >
+                    Fill Frame
+                  </button>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setShowGrid((v) => !v)}
@@ -443,7 +499,7 @@ export default function ImageCropModal({
                   }`}
                   title="Toggle framing grid lines"
                 >
-                  Grid {showGrid ? 'ON' : 'OFF'}
+                  Grid
                 </button>
                 <button
                   type="button"
@@ -468,41 +524,61 @@ export default function ImageCropModal({
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
               onWheel={handleWheel}
-              className="relative w-full h-[360px] sm:h-[390px] rounded-lg bg-black border border-white/10 overflow-hidden flex items-center justify-center select-none cursor-grab active:cursor-grabbing group shadow-inner"
+              className="relative w-full h-[360px] sm:h-[390px] rounded-lg bg-[#080808] border border-white/15 overflow-hidden flex items-center justify-center select-none cursor-grab active:cursor-grabbing group shadow-inner"
             >
-              {/* Dimmed Background Overlay */}
+              {/* Outer Dimmed Background Image (Shows whole photo in dim so user sees context!) */}
+              {imageUrl && imageLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-25 filter blur-[0.5px]">
+                  <img
+                    src={imageUrl}
+                    alt="Context background"
+                    draggable={false}
+                    className="max-w-none select-none transition-transform duration-75"
+                    style={{
+                      width: `${imageDisplaySize.width}px`,
+                      height: `${imageDisplaySize.height}px`,
+                      minWidth: `${imageDisplaySize.width}px`,
+                      minHeight: `${imageDisplaySize.height}px`,
+                      transform: `translate(${pan.x}px, ${pan.y}px) rotate(${rotation}deg) scale(${zoom})`,
+                      transformOrigin: 'center center'
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Dimmed Masking Outside Crop Area */}
               <div className="absolute inset-0 bg-black/60 pointer-events-none z-10" />
 
-              {/* Crop Window Box */}
+              {/* Crop Window Box (Highlighted area with Gold border) */}
               <div
                 style={{
                   width: `${cropBoxDimensions.width}px`,
                   height: `${cropBoxDimensions.height}px`
                 }}
-                className="relative z-20 border-2 border-luxury-gold shadow-[0_0_25px_rgba(212,175,55,0.25)] rounded-sm overflow-hidden flex items-center justify-center bg-transparent"
+                className="relative z-20 border-2 border-luxury-gold shadow-[0_0_35px_rgba(212,175,55,0.4)] rounded-sm overflow-hidden flex items-center justify-center bg-black/80"
               >
                 {/* 3x3 Rule of Thirds Grid */}
                 {showGrid && (
-                  <div className="absolute inset-0 pointer-events-none z-30 grid grid-cols-3 grid-rows-3 opacity-35">
+                  <div className="absolute inset-0 pointer-events-none z-30 grid grid-cols-3 grid-rows-3 opacity-30">
                     <div className="border-r border-b border-white/40" />
                     <div className="border-r border-b border-white/40" />
                     <div className="border-b border-white/40" />
                     <div className="border-r border-b border-white/40" />
                     <div className="border-r border-b border-white/40" />
                     <div className="border-b border-white/40" />
-                    <div className="border-r border-white/40" />
-                    <div className="border-r border-white/40" />
+                    <div className="border-r border-b border-white/40" />
+                    <div className="border-r border-b border-white/40" />
                     <div />
                   </div>
                 )}
 
                 {/* Cropping Corner Handles */}
-                <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-luxury-gold z-30 pointer-events-none" />
-                <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-luxury-gold z-30 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-luxury-gold z-30 pointer-events-none" />
-                <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-luxury-gold z-30 pointer-events-none" />
+                <div className="absolute top-0 left-0 w-3.5 h-3.5 border-t-2 border-l-2 border-luxury-gold z-30 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-3.5 h-3.5 border-t-2 border-r-2 border-luxury-gold z-30 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-3.5 h-3.5 border-b-2 border-l-2 border-luxury-gold z-30 pointer-events-none" />
+                <div className="absolute bottom-0 right-0 w-3.5 h-3.5 border-b-2 border-r-2 border-luxury-gold z-30 pointer-events-none" />
 
-                {/* Target Image with Realtime Pan / Zoom / Rotation */}
+                {/* Target Image inside Crop Window (Crisp 100% opacity) */}
                 {imageUrl && (
                   <img
                     ref={imageRef}
@@ -511,11 +587,14 @@ export default function ImageCropModal({
                     onLoad={handleImageLoad}
                     onError={handleImageError}
                     draggable={false}
-                    className="max-w-none pointer-events-none transition-transform duration-75"
+                    className="max-w-none pointer-events-none select-none transition-transform duration-75"
                     style={{
+                      width: `${imageDisplaySize.width}px`,
+                      height: `${imageDisplaySize.height}px`,
+                      minWidth: `${imageDisplaySize.width}px`,
+                      minHeight: `${imageDisplaySize.height}px`,
                       transform: `translate(${pan.x}px, ${pan.y}px) rotate(${rotation}deg) scale(${zoom})`,
                       transformOrigin: 'center center',
-                      objectFit: fitMode === 'cover' ? 'cover' : 'contain',
                       opacity: imageLoaded ? 1 : 0
                     }}
                   />
@@ -537,31 +616,20 @@ export default function ImageCropModal({
             </div>
 
             {/* Slider & Pan Controls */}
-            <div className="bg-[#141414] border border-white/10 rounded-lg p-3 space-y-3">
+            <div className="bg-[#141414] border border-white/10 rounded-lg p-3 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[10px] uppercase tracking-wider text-neutral-400 font-bold flex items-center space-x-1.5">
                   <Sliders size={12} className="text-luxury-gold" />
-                  <span>Zoom & Framing Scale ({Math.round(zoom * 100)}%)</span>
+                  <span>Zoom Scale: {Math.round(zoom * 100)}%</span>
                 </span>
                 <div className="flex items-center space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => setFitMode(fitMode === 'cover' ? 'contain' : 'cover')}
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono border transition ${
-                      fitMode === 'cover'
-                        ? 'bg-neutral-800 text-white border-neutral-600'
-                        : 'bg-luxury-gold/20 text-luxury-gold border-luxury-gold/40'
-                    }`}
-                  >
-                    Mode: {fitMode === 'cover' ? 'Fill Frame (Cover)' : 'Fit All (Contain)'}
-                  </button>
                   <button
                     type="button"
                     onClick={handleReset}
                     className="text-[10px] text-neutral-400 hover:text-white flex items-center space-x-1 transition cursor-pointer"
                   >
                     <RefreshCw size={10} />
-                    <span>Center</span>
+                    <span>Reset Center</span>
                   </button>
                 </div>
               </div>
@@ -569,15 +637,15 @@ export default function ImageCropModal({
               <div className="flex items-center space-x-3">
                 <button
                   type="button"
-                  onClick={() => setZoom((z) => Math.max(0.5, Number((z - 0.1).toFixed(2))))}
-                  className="p-1 rounded hover:bg-white/10 text-neutral-400 hover:text-white transition"
+                  onClick={() => setZoom((z) => Math.max(0.3, Number((z - 0.1).toFixed(2))))}
+                  className="p-1 rounded hover:bg-white/10 text-neutral-400 hover:text-white transition cursor-pointer"
                   title="Zoom Out"
                 >
                   <ZoomOut size={15} />
                 </button>
                 <input
                   type="range"
-                  min="0.5"
+                  min="0.3"
                   max="3.0"
                   step="0.02"
                   value={zoom}
@@ -586,8 +654,8 @@ export default function ImageCropModal({
                 />
                 <button
                   type="button"
-                  onClick={() => setZoom((z) => Math.min(3.5, Number((z + 0.1).toFixed(2))))}
-                  className="p-1 rounded hover:bg-white/10 text-neutral-400 hover:text-white transition"
+                  onClick={() => setZoom((z) => Math.min(3.0, Number((z + 0.1).toFixed(2))))}
+                  className="p-1 rounded hover:bg-white/10 text-neutral-400 hover:text-white transition cursor-pointer"
                   title="Zoom In"
                 >
                   <ZoomIn size={15} />
@@ -610,7 +678,7 @@ export default function ImageCropModal({
                   <button
                     type="button"
                     onClick={() => setPreviewTab('desktop')}
-                    className={`px-2 py-0.5 rounded text-[10px] font-medium flex items-center space-x-1 transition ${
+                    className={`px-2 py-0.5 rounded text-[10px] font-medium flex items-center space-x-1 transition cursor-pointer ${
                       previewTab === 'desktop' ? 'bg-luxury-gold text-black font-bold' : 'text-neutral-400 hover:text-white'
                     }`}
                   >
@@ -620,7 +688,7 @@ export default function ImageCropModal({
                   <button
                     type="button"
                     onClick={() => setPreviewTab('mobile')}
-                    className={`px-2 py-0.5 rounded text-[10px] font-medium flex items-center space-x-1 transition ${
+                    className={`px-2 py-0.5 rounded text-[10px] font-medium flex items-center space-x-1 transition cursor-pointer ${
                       previewTab === 'mobile' ? 'bg-luxury-gold text-black font-bold' : 'text-neutral-400 hover:text-white'
                     }`}
                   >
@@ -638,13 +706,13 @@ export default function ImageCropModal({
             {/* Live Mockup Frame */}
             <div className="flex-1 flex items-center justify-center p-2">
               <div
-                className={`relative rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black transition-all duration-300 ${
-                  previewTab === 'mobile'
-                    ? 'w-[200px] h-[340px] border-neutral-700 ring-2 ring-white/10'
-                    : 'w-full max-w-[320px] h-[320px]'
-                }`}
+                style={{
+                  width: `${mockupDimensions.width}px`,
+                  height: `${mockupDimensions.height}px`
+                }}
+                className="relative rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black transition-all duration-300 ring-2 ring-white/10 flex items-center justify-center"
               >
-                {/* Simulated Khroniq Website Panel */}
+                {/* Simulated Khroniq Website Panel with Exact Synchronized Cropping */}
                 <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
                   {imageUrl && (
                     <img
@@ -652,11 +720,12 @@ export default function ImageCropModal({
                       alt="Website mockup"
                       className="max-w-none transition-transform duration-75 pointer-events-none select-none"
                       style={{
-                        transform: `translate(${pan.x * (previewTab === 'mobile' ? 0.55 : 0.8)}px, ${
-                          pan.y * (previewTab === 'mobile' ? 0.55 : 0.8)
-                        }px) rotate(${rotation}deg) scale(${zoom})`,
-                        transformOrigin: 'center center',
-                        objectFit: fitMode === 'cover' ? 'cover' : 'contain'
+                        width: `${imageDisplaySize.width * mockupScale}px`,
+                        height: `${imageDisplaySize.height * mockupScale}px`,
+                        minWidth: `${imageDisplaySize.width * mockupScale}px`,
+                        minHeight: `${imageDisplaySize.height * mockupScale}px`,
+                        transform: `translate(${pan.x * mockupScale}px, ${pan.y * mockupScale}px) rotate(${rotation}deg) scale(${zoom})`,
+                        transformOrigin: 'center center'
                       }}
                     />
                   )}
@@ -700,7 +769,7 @@ export default function ImageCropModal({
               <Check size={14} className="text-emerald-400 mt-0.5 shrink-0" />
               <div className="text-[11px] text-neutral-200">
                 <span className="text-emerald-400 font-bold">Cut-off Protected: </span>
-                Image is framed for the {activeRatio.label} display ratio. The subject will stay visible across desktop and mobile screens.
+                Image is scaled & framed for {activeRatio.label}. Both subject and background will stay balanced.
               </div>
             </div>
           </div>
