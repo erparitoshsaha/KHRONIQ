@@ -175,17 +175,6 @@ export default function AdminMediaField({
         </div>
         {cleanVal && (
           <div className="flex items-center space-x-2 shrink-0">
-            {!detectedVideo && enableCropping && (
-              <button
-                type="button"
-                onClick={handleOpenCropExisting}
-                className="text-[10px] text-luxury-gold hover:text-amber-300 flex items-center space-x-1 cursor-pointer transition font-medium"
-                title="Crop & Resize image"
-              >
-                <Crop size={11} />
-                <span>Crop / Frame</span>
-              </button>
-            )}
             <button
               type="button"
               onClick={() => setShowModal(true)}
@@ -265,10 +254,10 @@ export default function AdminMediaField({
                 <button
                   type="button"
                   onClick={handleOpenCropExisting}
-                  className="p-1.5 rounded bg-luxury-gold hover:bg-amber-400 text-black cursor-pointer transition shadow-sm"
+                  className="p-1.5 rounded bg-black/90 hover:bg-black text-white hover:text-white border border-white/30 cursor-pointer transition shadow-sm"
                   title="Crop & Resize for site"
                 >
-                  <Crop size={13} />
+                  <Crop size={13} className="text-white" />
                 </button>
               )}
             </div>
@@ -348,11 +337,12 @@ export default function AdminMediaField({
               <button
                 type="button"
                 onClick={handleOpenCropExisting}
-                className="px-2.5 py-1.5 bg-luxury-gold/15 hover:bg-luxury-gold/25 text-luxury-gold hover:text-amber-300 font-bold uppercase tracking-wider rounded border border-luxury-gold/30 text-[10px] transition flex items-center space-x-1.5 cursor-pointer shadow-sm"
+                className="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded border border-neutral-700 hover:border-white text-[10px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center space-x-1.5 shadow-sm"
+                style={{ color: '#ffffff' }}
                 title="Crop & Resize image to avoid being cut off on site"
               >
-                <Crop size={11} className="text-luxury-gold" />
-                <span>Crop / Frame</span>
+                <Crop size={12} className="text-white shrink-0" style={{ color: '#ffffff' }} />
+                <span className="text-white" style={{ color: '#ffffff' }}>Crop / Frame</span>
               </button>
             )}
 
