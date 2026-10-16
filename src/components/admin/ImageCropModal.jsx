@@ -87,7 +87,7 @@ export default function ImageCropModal({
   const imageRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Temporary object URL if imageSource is a File
+  // Temporary object URL if imageSource is a File or fetched remote blob
   const [imageUrl, setImageUrl] = useState('');
 
   const recommendedRatio = useMemo(
@@ -95,7 +95,7 @@ export default function ImageCropModal({
     [sectionKey, sectionLabel]
   );
 
-  // Initialize image source
+  // Initialize image source: guarantees NO tainted canvas for remote URLs
   useEffect(() => {
     if (!isOpen || !imageSource) {
       setImageUrl('');
@@ -105,19 +105,72 @@ export default function ImageCropModal({
       return;
     }
 
-    let urlToLoad = '';
-    let isCreatedUrl = false;
+    let isCancelled = false;
+    let createdBlobUrl = null;
 
-    if (imageSource instanceof File || imageSource instanceof Blob) {
-      urlToLoad = URL.createObjectURL(imageSource);
-      isCreatedUrl = true;
-    } else if (typeof imageSource === 'string') {
-      urlToLoad = imageSource;
-    }
+    const prepareImageSource = async () => {
+      setImageLoaded(false);
+      setImageError(null);
 
-    setImageUrl(urlToLoad);
-    setImageLoaded(false);
-    setImageError(null);
+      // 1. If it's already a local File or Blob:
+      if (imageSource instanceof File || imageSource instanceof Blob) {
+        createdBlobUrl = URL.createObjectURL(imageSource);
+        if (!isCancelled) setImageUrl(createdBlobUrl);
+        return;
+      }
+
+      // 2. If it's a string URL:
+      if (typeof imageSource === 'string') {
+        const src = imageSource.trim();
+        if (!src) return;
+
+        // Base64 or already a Blob URL
+        if (src.startsWith('data:') || src.startsWith('blob:')) {
+          if (!isCancelled) setImageUrl(src);
+          return;
+        }
+
+        // Relative asset on same host (/assets/...)
+        if (src.startsWith('/')) {
+          if (!isCancelled) setImageUrl(src);
+          return;
+        }
+
+        // Remote HTTP/HTTPS image (e.g. Cloudinary, Google Drive):
+        // Convert to a local same-origin Blob URL through our backend CORS proxy
+        // This is the golden fix that permanently prevents "Tainted canvases may not be exported"
+        try {
+          const proxyUrl = `/api/upload/proxy?url=${encodeURIComponent(src)}`;
+          const res = await fetch(proxyUrl);
+          if (res.ok) {
+            const blob = await res.blob();
+            createdBlobUrl = URL.createObjectURL(blob);
+            if (!isCancelled) {
+              setImageUrl(createdBlobUrl);
+              return;
+            }
+          }
+        } catch (_) {}
+
+        // Fallback: Direct fetch with CORS mode
+        try {
+          const res = await fetch(src, { mode: 'cors' });
+          if (res.ok) {
+            const blob = await res.blob();
+            createdBlobUrl = URL.createObjectURL(blob);
+            if (!isCancelled) {
+              setImageUrl(createdBlobUrl);
+              return;
+            }
+          }
+        } catch (_) {}
+
+        // Fallback to original URL with anonymous CORS
+        if (!isCancelled) setImageUrl(src);
+      }
+    };
+
+    prepareImageSource();
 
     // Reset controls
     setSelectedRatioId(getRecommendedRatio(sectionKey, sectionLabel));
@@ -127,8 +180,9 @@ export default function ImageCropModal({
     setFitMode('cover');
 
     return () => {
-      if (isCreatedUrl && urlToLoad) {
-        URL.revokeObjectURL(urlToLoad);
+      isCancelled = true;
+      if (createdBlobUrl) {
+        URL.revokeObjectURL(createdBlobUrl);
       }
     };
   }, [isOpen, imageSource, sectionKey, sectionLabel]);
@@ -267,6 +321,7 @@ export default function ImageCropModal({
   const handleGenerateCrop = async () => {
     if (!imageRef.current || !naturalSize.width || !naturalSize.height) return;
     setIsProcessing(true);
+    setImageError(null);
 
     try {
       const img = imageRef.current;
@@ -318,16 +373,20 @@ export default function ImageCropModal({
       ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
       ctx.restore();
 
-      // Convert to Blob
+      // Convert to Blob with safety try-catch
       const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob(
-          (b) => {
-            if (b) resolve(b);
-            else reject(new Error('Canvas export failed'));
-          },
-          'image/jpeg',
-          0.92
-        );
+        try {
+          canvas.toBlob(
+            (b) => {
+              if (b) resolve(b);
+              else reject(new Error('Canvas export failed'));
+            },
+            'image/jpeg',
+            0.92
+          );
+        } catch (e) {
+          reject(e);
+        }
       });
 
       const origName = (imageSource?.name || 'cropped_media').replace(/\.[^.]+$/, '');
@@ -343,7 +402,12 @@ export default function ImageCropModal({
       onClose();
     } catch (err) {
       console.error('Failed to crop and export image:', err);
-      setImageError(err.message || 'Crop processing failed.');
+      // If canvas export failed, show a friendly explanation banner
+      setImageError(
+        err.message?.includes('Tainted')
+          ? 'Cross-origin security restriction prevented canvas export. Please use "Upload / Replace" to upload the image directly from your computer.'
+          : (err.message || 'Crop processing failed.')
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -464,7 +528,7 @@ export default function ImageCropModal({
                       setPan({ x: 0, y: 0 });
                       setZoom(1);
                     }}
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
                       fitMode === 'contain'
                         ? 'bg-luxury-gold text-black shadow-sm'
                         : 'text-neutral-400 hover:text-white'
@@ -480,7 +544,7 @@ export default function ImageCropModal({
                       setPan({ x: 0, y: 0 });
                       setZoom(1);
                     }}
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
                       fitMode === 'cover'
                         ? 'bg-luxury-gold text-black shadow-sm'
                         : 'text-neutral-400 hover:text-white'
@@ -494,7 +558,7 @@ export default function ImageCropModal({
                 <button
                   type="button"
                   onClick={() => setShowGrid((v) => !v)}
-                  className={`px-2 py-0.5 rounded text-[10px] font-mono border transition ${
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono border transition cursor-pointer ${
                     showGrid ? 'border-luxury-gold text-luxury-gold bg-luxury-gold/10' : 'border-white/10 text-neutral-400'
                   }`}
                   title="Toggle framing grid lines"
@@ -504,7 +568,7 @@ export default function ImageCropModal({
                 <button
                   type="button"
                   onClick={handleRotate}
-                  className="px-2 py-0.5 rounded text-[10px] font-mono border border-white/10 text-neutral-300 hover:text-white hover:border-white/30 transition flex items-center space-x-1"
+                  className="px-2 py-0.5 rounded text-[10px] font-mono border border-white/10 text-neutral-300 hover:text-white hover:border-white/30 transition flex items-center space-x-1 cursor-pointer"
                   title="Rotate 90 degrees clockwise"
                 >
                   <RotateCw size={11} />
@@ -531,6 +595,7 @@ export default function ImageCropModal({
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-25 filter blur-[0.5px]">
                   <img
                     src={imageUrl}
+                    crossOrigin="anonymous"
                     alt="Context background"
                     draggable={false}
                     className="max-w-none select-none transition-transform duration-75"
@@ -583,6 +648,7 @@ export default function ImageCropModal({
                   <img
                     ref={imageRef}
                     src={imageUrl}
+                    crossOrigin="anonymous"
                     alt="Frame preview"
                     onLoad={handleImageLoad}
                     onError={handleImageError}
@@ -603,13 +669,6 @@ export default function ImageCropModal({
                 {!imageLoaded && !imageError && (
                   <div className="text-center text-xs text-neutral-400 animate-pulse">
                     Loading media asset...
-                  </div>
-                )}
-
-                {imageError && (
-                  <div className="p-3 text-center text-xs text-red-400 flex flex-col items-center space-y-1">
-                    <AlertCircle size={20} />
-                    <span>{imageError}</span>
                   </div>
                 )}
               </div>
@@ -717,6 +776,7 @@ export default function ImageCropModal({
                   {imageUrl && (
                     <img
                       src={imageUrl}
+                      crossOrigin="anonymous"
                       alt="Website mockup"
                       className="max-w-none transition-transform duration-75 pointer-events-none select-none"
                       style={{
@@ -774,6 +834,23 @@ export default function ImageCropModal({
             </div>
           </div>
         </div>
+
+        {/* ── Optional Error Banner (Rendered above footer, NEVER over the image) ── */}
+        {imageError && (
+          <div className="mx-5 my-2 p-2.5 rounded-lg bg-red-950/70 border border-red-500/40 text-red-200 text-xs flex items-center justify-between animate-in fade-in">
+            <div className="flex items-center space-x-2">
+              <AlertCircle size={15} className="text-red-400 shrink-0" />
+              <span>{imageError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setImageError(null)}
+              className="text-red-400 hover:text-white p-1 cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         {/* ── Footer Actions ── */}
         <div className="px-5 py-3.5 border-t border-white/10 bg-[#161616] flex flex-wrap items-center justify-between gap-3">
