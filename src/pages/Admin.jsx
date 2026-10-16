@@ -8259,6 +8259,8 @@ export default function Admin({ onPageChange }) {
                               <div key={slot.key} className="bg-[#111111] border border-white/10 rounded p-3.5 space-y-3 shadow-md">
                                 <AdminMediaField
                                   label={slot.label}
+                                  sectionKey={slot.key}
+                                  sectionTitle={section.title}
                                   value={mediaList[slot.key] || ''}
                                   title={mediaTitles[slot.key] !== undefined ? mediaTitles[slot.key] : (defaultHomeTitles[slot.key] || '')}
                                   onTitleChange={(newTitle) => {
@@ -8337,6 +8339,8 @@ export default function Admin({ onPageChange }) {
                     <div key={slotKey} className="bg-[#1a1a1a] border border-white/10 rounded-lg p-5 space-y-3 shadow-md text-white">
                       <AdminMediaField
                         label={slotLabel}
+                        sectionKey={slotKey}
+                        sectionTitle={section.title || section.label}
                         value={mediaList[slotKey] || ''}
                         title={mediaTitles[slotKey] !== undefined ? mediaTitles[slotKey] : (defaultHomeTitles[slotKey] || '')}
                         onTitleChange={(newTitle) => {

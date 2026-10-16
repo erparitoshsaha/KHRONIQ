@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Image as ImageIcon, Film, Upload, X, ExternalLink, AlertCircle, Eye, Check, Edit3 } from 'lucide-react';
+import { Image as ImageIcon, Film, Upload, X, ExternalLink, AlertCircle, Eye, Check, Edit3, Crop, Sparkles } from 'lucide-react';
+import ImageCropModal, { getRecommendedRatio } from './ImageCropModal';
 
 /**
  * Helper to transform Google Drive sharing links to direct image CDN links
@@ -18,7 +19,8 @@ export const resolveDirectImageUrl = (url) => {
 
 /**
  * AdminMediaField
- * Universal media editor & preview component for Admin CMS panels.
+ * Universal media editor & preview component for Admin CMS panels
+ * equipped with interactive Cropper, Resizer & Live Site Preview.
  */
 export default function AdminMediaField({
   label = 'Media Asset',
@@ -37,15 +39,24 @@ export default function AdminMediaField({
   onTitleBlur,
   titlePlaceholder = '',
   allowTitleEdit = false,
-  titleStatus = null
+  titleStatus = null,
+  sectionKey = '',
+  sectionTitle = '',
+  enableCropping = true
 }) {
   const [hasError, setHasError] = useState(false);
   const [showModal, setShowModal] = useState(false);
+
+  // Cropper Modal state
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [pendingCropSource, setPendingCropSource] = useState(null);
 
   // Auto-detect video from URL or prop
   const rawVal = (value || '').trim();
   const cleanVal = resolveDirectImageUrl(rawVal);
   const detectedVideo = isVideo || (allowVideo && /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(cleanVal));
+
+  const recommendedRatio = getRecommendedRatio(sectionKey || label, label);
 
   useEffect(() => {
     setHasError(false);
@@ -54,8 +65,52 @@ export default function AdminMediaField({
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Reset input so re-selecting same file works
+    e.target.value = '';
+
+    const isVid = allowVideo && (file.type?.startsWith('video/') || /\.(mp4|webm|ogg|mov)$/i.test(file.name));
+    
+    // If it's a video or cropping disabled, upload directly
+    if (isVid || !enableCropping) {
+      if (onUpload) {
+        const uploadedUrl = await onUpload(file);
+        if (uploadedUrl && onChange) {
+          onChange(uploadedUrl);
+        }
+      }
+      return;
+    }
+
+    // Open image cropper & site preview modal
+    setPendingCropSource(file);
+    setIsCropModalOpen(true);
+  };
+
+  const handleOpenCropExisting = () => {
+    if (!cleanVal || detectedVideo) return;
+    setPendingCropSource(cleanVal);
+    setIsCropModalOpen(true);
+  };
+
+  const handleApplyCrop = async (croppedFile) => {
     if (onUpload) {
-      const uploadedUrl = await onUpload(file);
+      const uploadedUrl = await onUpload(croppedFile);
+      if (uploadedUrl && onChange) {
+        onChange(uploadedUrl);
+      }
+    } else if (onChange) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        onChange(evt.target?.result);
+      };
+      reader.readAsDataURL(croppedFile);
+    }
+  };
+
+  const handleSkipCrop = async (originalFile) => {
+    if (onUpload) {
+      const uploadedUrl = await onUpload(originalFile);
       if (uploadedUrl && onChange) {
         onChange(uploadedUrl);
       }
@@ -80,7 +135,7 @@ export default function AdminMediaField({
         const blob = new Blob([u8arr], { type: mime });
         const blobUrl = URL.createObjectURL(blob);
         window.open(blobUrl, '_blank', 'noopener,noreferrer');
-      } catch (err) {
+      } catch {
         const newTab = window.open('');
         if (newTab) {
           newTab.document.write(`
@@ -112,9 +167,25 @@ export default function AdminMediaField({
               {title}
             </span>
           )}
+          {!detectedVideo && enableCropping && (
+            <span className="hidden sm:inline-flex px-1.5 py-0.5 text-[9px] font-mono text-neutral-400 bg-white/5 rounded border border-white/10 shrink-0">
+              Fit: {recommendedRatio}
+            </span>
+          )}
         </div>
         {cleanVal && (
           <div className="flex items-center space-x-2 shrink-0">
+            {!detectedVideo && enableCropping && (
+              <button
+                type="button"
+                onClick={handleOpenCropExisting}
+                className="text-[10px] text-luxury-gold hover:text-amber-300 flex items-center space-x-1 cursor-pointer transition font-medium"
+                title="Crop & Resize image"
+              >
+                <Crop size={11} />
+                <span>Crop / Frame</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowModal(true)}
@@ -181,13 +252,26 @@ export default function AdminMediaField({
           )}
 
           {cleanVal && !hasError && (
-            <button
-              type="button"
-              onClick={() => setShowModal(true)}
-              className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white cursor-pointer"
-            >
-              <Eye size={16} className="text-white" />
-            </button>
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center space-x-1.5 p-1">
+              <button
+                type="button"
+                onClick={() => setShowModal(true)}
+                className="p-1.5 rounded bg-white/20 hover:bg-white/30 text-white cursor-pointer transition"
+                title="Enlarge preview"
+              >
+                <Eye size={13} />
+              </button>
+              {!detectedVideo && enableCropping && (
+                <button
+                  type="button"
+                  onClick={handleOpenCropExisting}
+                  className="p-1.5 rounded bg-luxury-gold hover:bg-amber-400 text-black cursor-pointer transition shadow-sm"
+                  title="Crop & Resize for site"
+                >
+                  <Crop size={13} />
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -260,6 +344,18 @@ export default function AdminMediaField({
               </label>
             )}
 
+            {cleanVal && !detectedVideo && enableCropping && (
+              <button
+                type="button"
+                onClick={handleOpenCropExisting}
+                className="px-2.5 py-1.5 bg-luxury-gold/15 hover:bg-luxury-gold/25 text-luxury-gold hover:text-amber-300 font-bold uppercase tracking-wider rounded border border-luxury-gold/30 text-[10px] transition flex items-center space-x-1.5 cursor-pointer shadow-sm"
+                title="Crop & Resize image to avoid being cut off on site"
+              >
+                <Crop size={11} className="text-luxury-gold" />
+                <span>Crop / Frame</span>
+              </button>
+            )}
+
             {cleanVal && (
               <button
                 type="button"
@@ -291,6 +387,19 @@ export default function AdminMediaField({
                 <span>{label} Preview</span>
               </span>
               <div className="flex items-center space-x-2">
+                {!detectedVideo && enableCropping && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowModal(false);
+                      handleOpenCropExisting();
+                    }}
+                    className="px-2.5 py-1 bg-luxury-gold/20 hover:bg-luxury-gold/30 text-luxury-gold rounded text-[11px] font-medium transition cursor-pointer flex items-center space-x-1 border border-luxury-gold/30"
+                  >
+                    <Crop size={12} />
+                    <span>Adjust Crop</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={handleOpenLink}
@@ -336,6 +445,22 @@ export default function AdminMediaField({
           </div>
         </div>
       )}
+
+      {/* Interactive Image Cropper, Resizer & Site Preview Modal */}
+      <ImageCropModal
+        isOpen={isCropModalOpen}
+        onClose={() => {
+          setIsCropModalOpen(false);
+          setPendingCropSource(null);
+        }}
+        imageSource={pendingCropSource}
+        onApplyCrop={handleApplyCrop}
+        onSkipCrop={handleSkipCrop}
+        sectionKey={sectionKey}
+        sectionLabel={label}
+        sectionTitle={title || sectionTitle}
+        isUploading={uploading}
+      />
     </div>
   );
 }

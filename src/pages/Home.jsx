@@ -207,10 +207,13 @@ function GenderPanel({ label, img, gender, delay, accent, onPageChange }) {
 
       {/* ── Image — follows mouse direction with responsive focal alignment ── */}
       <motion.div
-        className={`absolute inset-x-[-24px] inset-y-[-10px] bg-cover ${gender === 'men'
-          ? 'bg-[position:22%_center] md:bg-[position:center_top]'
-          : 'bg-[position:50%_center] md:bg-[position:center_top]'
-          }`}
+        className={`absolute inset-x-[-24px] inset-y-[-10px] bg-cover ${
+          panelImg !== defaultFallback
+            ? 'bg-center'
+            : gender === 'men'
+              ? 'bg-[position:22%_center] md:bg-[position:center_top]'
+              : 'bg-[position:50%_center] md:bg-[position:center_top]'
+        }`}
         style={{
           backgroundImage: `url('${panelImg}')`,
           x: imgX,
